@@ -1,4 +1,4 @@
-# SmartClass
+# Kawax
 Kawax: Redux on Rails
 Object-oriented (that is, non-functional) approach to Redux.
 
