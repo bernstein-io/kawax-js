@@ -1,4 +1,4 @@
-import Component from './component';
+import Component from '../components';
 import {connect} from 'react-redux';
 
 export default class Container extends Component {

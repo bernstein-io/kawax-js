@@ -2,7 +2,7 @@ import _ from 'lodash';
 import keyMirror from 'key-mirror-nested';
 import DeepMerge from 'deepmerge';
 import SmartClass from 'smart-class';
-import {Exception} from 'lib/exception';
+import Exception from '../exceptions';
 
 export const BUILTINS = keyMirror({
   INIT: {

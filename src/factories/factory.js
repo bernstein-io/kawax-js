@@ -1,9 +1,7 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import Constants from './constants';
-import BodyParser from './body_parser';
-import {Exception, Warn} from 'lib/exception';
-import Store from 'src/store';
+import {Constants} from '../misc/constants';
+import Exception from '../exceptions';
 
 export default class Factory extends SmartClass {
 

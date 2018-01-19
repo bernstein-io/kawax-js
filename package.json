@@ -18,7 +18,7 @@
     "dev": "npm run nodemon",
     "lint": "eslint src/*.js",
     "lint:watch": "nodemon -e js -x 'npm run lint'",
-    "nodemon": "nodemon --watch src -e js -x 'npm run build' --debug",
+    "nodemon": "nodemon --watch src -e js -x 'npm run build' --verbose",
     "postinstall": "npm run build",
     "test": "jest --verbose",
     "test:watch": "jest --verbose --debug --watchAll"
@@ -47,8 +47,7 @@
     "jest": "21.2.1",
     "node-sass": "4.5.3",
     "nodemon": "1.11.0",
-    "regenerator-runtime": "0.11.0",
-    "watchify": "3.7.0"
+    "regenerator-runtime": "0.11.0"
   },
   "dependencies": {
     "babel-polyfill": "6.26.0",
@@ -70,7 +69,7 @@
     "redux-thunk": "2.2.0",
     "request": "2.79.0",
     "request-promise-native": "1.0.4",
-    "smart-class": "1.0.0",
+    "smart-class": "0.0.5",
     "url-pattern": "1.0.3"
   }
 }

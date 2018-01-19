@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import Session from 'src/session';
-import {Exception} from 'lib/exception';
+import Exception from '../exceptions';
 
 export default class BodyMap extends SmartClass {
 
