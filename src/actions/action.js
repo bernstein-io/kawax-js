@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import Constants from './constants';
-import BodyParser from './body_parser';
-import Resource from './resource';
-import {Exception} from 'lib/exception';
+import Constants from '../misc';
+import Resource from '../resources';
+import Exception from '../exceptions';
+import {BodyParser} from '../resources';
 
 export default class Action extends SmartClass {
 

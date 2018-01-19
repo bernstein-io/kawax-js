@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import Constants from './constants.js';
+import {Constants} from '../misc';
 
 export default class Reducer extends SmartClass {
 

@@ -12,6 +12,7 @@ export class Store extends SmartClass {
   required = ['root'];
 
   defaultProps(props) {
+    console.warn('defaultProps! (kawax)', this)
     return {
       root: props.root || this.logger.warn('store','missing `root` property')
     }

@@ -2,8 +2,8 @@ import _ from 'lodash';
 import Request from 'request-promise-native';
 import UrlPattern from 'url-pattern';
 import SmartClass from 'smart-class';
-import Exception from 'smart-exception';
 
+import Exception from '../exceptions';
 import BodyBuilder from './body_builder';
 import BodyParser from './body_parser';
 

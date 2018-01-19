@@ -23,7 +23,7 @@ const logFormatter = ({action, getState, timeStarted, duration}) => {
   ];
 }
 
-export default reduxLogger = () => {
+export default () => {
   return ({ getState }) => next => (action) => {
     let timeStarted = this.timeNow();
     let payload = next(action);
