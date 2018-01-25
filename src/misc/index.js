@@ -1,2 +1,2 @@
-export Constants from './constants';
+export Constant from './constant';
 export ReduxLogger from './redux_logger';

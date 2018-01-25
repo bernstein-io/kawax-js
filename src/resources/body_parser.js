@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import Constants from '../misc/constants';
+import Constant from '../misc/constant';
 import Exception from '../exceptions';
 
 export default class BodyParser extends SmartClass {

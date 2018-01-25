@@ -1,14 +1,6 @@
 import SmartClass from 'smart-class';
 import _ from 'lodash';
-
-export const LEVELS = {
-  SILENT: 0,
-  ERROR: 1,
-  WARN: 2,
-  LOG: 3
-}
-
-global.__EXCEPTION_LEVEL__ = LEVELS.SILENT;
+import uuid from  'uuid';
 
 export default class BaseException extends SmartClass {
 
@@ -19,25 +11,25 @@ export default class BaseException extends SmartClass {
     ERROR: 3
   }
 
+  export() {
+    let state = this.state.toObject();
+    return `id: ${state.id}\n` +
+          ` code: ${state.code}\n` +
+          ` error: ${state.error}\n` +
+          ` stack: [${state.stack}]`;
+  }
+
   defaultProps(props) {
     return {
+      isCli: !(this.window === this),
       level: 'warn',
-      silent: false,
-      error: props.error,
-      message: props.message || (_.isString(this.args[0]) ? this.args[0] : undefined)
+      silent: false
     }
   }
 
-  // overrideProps(props) {
-  //   let level = global.__EXCEPTION_LEVEL__;
-  //   return {
-  //     silent:
-  //   }
-  // }
-
-  defaults() {
+  defaultState() {
     return {
-      id: _.uniqueId(),
+      id: uuid(),
       level: this.getLevel(),
       code : this.getCode(),
       error: this.getError(),
@@ -51,19 +43,19 @@ export default class BaseException extends SmartClass {
     let writter = console;
     let headers = this.getHeaders();
     let level = this.getLevel();
-    this.stackUp();
+    this.pushStack();
     if (!this.props.silent && process.env.NODE_ENV != 'production') {
       if (level == 'log') {
-        writter.log(...headers, this);
+        writter.log(...headers, this.export());
       } else if (level == 'warn') {
-        writter.warn(...headers, this);
+        writter.warn(...headers, this.export());
       } else if (level == 'error') {
-        writter.error(...headers, this);
+        writter.error(...headers, this.export());
       }
     }
   }
 
-  stackUp() {
+  pushStack() {
     let exception = _.clone(this.getError());
     if (exception && exception.error) {
       if (exception.error instanceof BaseException) exception.error.stack = false;
@@ -75,15 +67,15 @@ export default class BaseException extends SmartClass {
     if (this.props.error) {
       return this.props.error;
     } else {
-      return null;
+      return false;
     }
   }
 
   getLevel() {
+    let level = 0;
     let error = this.getError();
-    let rank = this.__getLevelRank(props.level);
-    let isSilent = props.silent ? true : ((rank <= level) ? false : true);
-    if(this.level) return this.level;
+    let rank = this.__getLevelRank(this.props.level);
+    let isSilent = this.props.silent ? true : ((rank <= level) ? false : true);
     if(isSilent) return this.props.level;
     if(error && error.level) return error.level;
     return 'default';
@@ -91,31 +83,29 @@ export default class BaseException extends SmartClass {
 
   getCode() {
     let error = this.getError();
-    if (this.code) return this.code;
     if(this.props.code) return this.props.code;
     if(error && error.code) return error.code;
     if(error && error.statusCode) return error.statusCode;
-    return 0;
+    return false;
   }
 
   getHeaders() {
     if (this.headers) return this.headers;
-    let env = process.env.NODE_ENV;
+    let isCli = this.props.isCli;
     let code = this.getCode();
     let message = this.getMessage();
     let nativeMessage = this.getNativeMessage();
     let style = "font-weight: bold; color: black;";
     return [
-      (env == "test" ? "" : "%c") +
-      "[Exception@" + this.id + "] " + (code != 0 ? code + " - ": "") + message +
+      (isCli ? "" : "%c") +
+      "Exception: " + (code != 0 ? code + " - ": "") + message +
       (nativeMessage ? " (" + nativeMessage + ")": ""),
-      (env == "test" ? "" : style),
-      (env == "test" ? "\n" : "")
+      (isCli ? "" : style),
+      (isCli ? "\n" : "")
     ]
   }
 
   getMessage() {
-    if (this.message) return this.message;
     let error = this.getError();
     if(this.props.message) return this.props.message;
     if(error && error.name) return error.name;

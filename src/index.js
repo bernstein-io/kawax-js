@@ -1,13 +1,11 @@
-import Store from './store';
-import Action from './actions';
-import Reducer from './reducers';
-import Component from './components';
-import Container from './containers';
-import Factory from './factories';
-import Resource from './resources';
-import {Constants} from './misc';
+import Kawax from './kawax.js';
 
-const Kawax = {Store, Reducer, Resource, Action, Factory, Component, Container, Constants};
+export const Action = Kawax.action;
+export const Component = Kawax.component;
+export const Constant = Kawax.constant;
+export const Container = Kawax.container;
+export const Factory = Kawax.factory;
+export const Store = Kawax.store;
+export const Reducer = Kawax.reducer;
 
 export default Kawax;
-module.exports = Kawax;

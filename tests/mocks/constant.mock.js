@@ -1,6 +1,6 @@
-import Constants from '../../modules/constants';
+import Constant from '../../src/misc/constant.js';
 
-export default Constants.import({
+export default Constant.import({
   STATUS: {
     REQUEST: {
       PENDING: null,
