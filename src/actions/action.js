@@ -1,9 +1,15 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import Constants from '../misc';
+import {Constant} from '../misc';
 import Resource from '../resources';
 import Exception from '../exceptions';
 import {BodyParser} from '../resources';
+
+const STATUS = Constant('STATUS', {
+  'PENDING': true,
+  'SUCCESS': true,
+  'ERROR': true
+});
 
 export default class Action extends SmartClass {
 
@@ -18,22 +24,20 @@ export default class Action extends SmartClass {
     }
   }
 
-  defaults(options = {}) {
+  defaultState(options) {
     return {
-      status: Constants.builtins('STATUS.OK'),
-      context: {
-        async: !!(this.props.resource && !(options.async === false))
-      }
+      status: STATUS('PENDING'),
+      async: !!(this.props.resource && !(this.props.async === false))
     }
   }
 
   validate() {
     let required = _.clone(this.props.required).push('type');
-    let context = this.props.context;
+    let state = this.props.state;
     let valid = true;
     let missing = [];
     for(attribute in required) {
-      if (!_.includes(context, attribute)) {
+      if (!_.includes(state, attribute)) {
         missing.push(attribute);
         valid = false;
       }
@@ -43,18 +47,18 @@ export default class Action extends SmartClass {
   }
 
   async processResourceAttempt(body) {
-    let resourceProcessor = this.props.resource(this.context);
+    let resourceProcessor = this.props.resource(this.state);
     if (_.isFunction(resourceProcessor)) {
       let resource = await resourceProcessor(body);
       return this.export({
-        status: Constants.builtins('STATUS.REQUEST.SUCCESS'),
+        status: STATUS('SUCCESS'),
         payload: resource.payload,
         resource: resource
       });
     } else {
       throw Exception.error({
         message: 'Incorrect resource (not a function)',
-        data: {resource: this.props.resource, resourceContext}
+        data: {resource: this.props.resource, resourceState}
       });
     }
   }
@@ -62,15 +66,15 @@ export default class Action extends SmartClass {
   processResourceFail(error) {
     let exception = Exception.warn('Action: Could not process request', {error});
     return this.export({
-      status: Constants.builtins('STATUS.REQUEST.ERROR'),
+      status: Constant.builtins('STATUS.REQUEST.ERROR'),
       error: exception.error,
       errorCode: exception.code
     });
   }
 
-  process = ({payload = {}, ...context} = {}) => {
-    this.set({context});
-    if (this.props.resource && this.context.async == true) {
+  process = ({payload = {}, ...options} = {}) => {
+    this.setState(options);
+    if (this.props.resource && this.state.async == true) {
       return async () => {
         try {
           return await this.processResourceAttempt(payload);
@@ -79,6 +83,7 @@ export default class Action extends SmartClass {
         }
       }
     } else {
+      this.setState({status: STATUS('SUCCESS')});
       return this.export({payload});
     }
   }
@@ -95,7 +100,7 @@ export default class Action extends SmartClass {
     return this.hook({
       type: this.props.type,
       status: options.status || this.status,
-      context: this.context,
+      context: this.state,
       logLevel: this.props.logLevel,
       ...options
     });

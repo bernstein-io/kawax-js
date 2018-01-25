@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import {Constants} from '../misc';
+import {Constant} from '../misc';
 
 export default class Reducer extends SmartClass {
 
@@ -130,7 +130,7 @@ export default class Reducer extends SmartClass {
     let refinedAction = this.refinedAction(action);
     action.matchs = this.matchMap(refinedAction, false);
     let reducedState = this.reducer(state, refinedAction);
-    if (reducedState === false || action.type == _.get(Constants, 'ACTIONS.RESET')) {
+    if (reducedState === false || action.type == _.get(Constant, 'ACTIONS.RESET')) {
       return this.props.initialState;
     } else {
       return this.newState(state, reducedState, refinedAction);

@@ -54,6 +54,7 @@
     "classnames": "2.2.5",
     "deepmerge": "1.5.1",
     "history": "4.6.3",
+    "immutable": "3.8.2",
     "key-mirror-nested": "1.2.4",
     "lodash": "4.17.4",
     "prop-types": "15.5.10",
@@ -70,6 +71,7 @@
     "request": "2.79.0",
     "request-promise-native": "1.0.4",
     "smart-class": "0.0.5",
-    "url-pattern": "1.0.3"
+    "url-pattern": "1.0.3",
+    "uuid": "3.2.1"
   }
 }

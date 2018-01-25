@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import SmartClass from 'smart-class';
-import {Constants} from '../misc/constants';
+import {Constant} from '../misc/constant';
 import Exception from '../exceptions';
 
 export default class Factory extends SmartClass {
 
   succeeded(action) {
-    if (action.status == Constants.builtins('STATUS.REQUEST.SUCCESS')) {
+    if (action.status == Constant('STATUS.REQUEST.SUCCESS')) {
       return true;
     } else {
       return false;
@@ -14,7 +14,7 @@ export default class Factory extends SmartClass {
   }
 
   notFound(action) {
-    if (action.status == Constants.builtins('STATUS.REQUEST.ERROR') &&
+    if (action.status == Constant('STATUS.REQUEST.ERROR') &&
         _.get(action, 'errorCode') == 404) {
       return true;
     } else {

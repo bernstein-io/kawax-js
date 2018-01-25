@@ -1,7 +1,7 @@
 import _ from 'lodash';
-import Action from '../modules/action.js';
+import Action from '../src/actions';
 
-import Constants from './mocks/constants.mock.js';
+import Constant from './mocks/constant.mock.js';
 import {synchronousAction, asynchronousAction} from './mocks/action.mock.js';
 
 describe('SYNCHRONOUS_ACTION', () => {

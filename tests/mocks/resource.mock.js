@@ -1,4 +1,4 @@
-import Resource from '../../modules/resource.js';
+import Resource from '../../src/resources';
 
 export default class ResourceMock extends Resource {
 

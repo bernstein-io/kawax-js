@@ -3,7 +3,7 @@ import Redux from 'redux';
 import reduxThunk from 'redux-thunk';
 import SmartClass from 'smart-class';
 import {applyMiddleware, createStore, compose, composeEnhancers} from 'redux';
-import ReduxLogger from './misc/redux_logger';
+import Logger from './misc/logger';
 
 const DEVTOOLS = global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__;
 
@@ -14,7 +14,8 @@ export class Store extends SmartClass {
   defaultProps(props) {
     console.warn('defaultProps! (kawax)', this)
     return {
-      root: props.root || this.logger.warn('store','missing `root` property')
+      //root: props.root || this.logger.warn('store','missing `root` property'),
+      logger: Logger
     }
   }
 
@@ -23,7 +24,7 @@ export class Store extends SmartClass {
     if (this.props.env == 'production') {
       return applyMiddleware(...middlewares);
     } else {
-      middlewares.push(ReduxLogger);
+      middlewares.push(this.props.logger);
       let composer = DEVTOOLS || compose;
       return composer(applyMiddleware(...middlewares));
     }

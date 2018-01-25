@@ -1,6 +1,6 @@
 import BodyParser from '../modules/body_parser';
 
-import Constants from './mocks/constants.mock.js';
+import Constant from './mocks/constant.mock.js';
 import ResourceMock from './mocks/resource.mock.js';
 
 describe('BODY_PARSER', () => {
