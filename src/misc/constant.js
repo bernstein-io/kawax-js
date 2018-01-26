@@ -21,25 +21,35 @@ class Constant extends SmartClass {
 
   assignSubset(path, payload) {
     let state = this.state.toObject();
-    let subset = this.formatObject(payload);
+    let subset = this.formatPayload(payload);
     _.set(state, path, subset);
     this.setState(keyMirror(state));
   }
 
-  formatObject(payload) {
+  parsePayload(payload) {
     let object = {};
     _.each(payload, (item, key) => {
-      if (_.isArray(payload) && _.isString(item)) {
-        let upperKey = _.toUpper(item);
-        object[upperKey] = true;
-      } else if (_.isArray(payload) && _.isObject(item)) {
-        _.extend(object, this.formatObject(item));
+      if (_.isArray(payload)) {
+        if (_.isString(item)) {
+          let upperKey = _.toUpper(item);
+          object[upperKey] = true;
+        } else if (_.isObject(item)) {
+          _.extend(object, this.parsePayload(item));
+        }
       } else {
         let upperKey = _.toUpper(key);
-        object[upperKey] = _.isObject(item) ? this.formatObject(item) : item;
+        object[upperKey] = _.isObject(item) ? this.parsePayload(item) : item;
       }
     });
     return object;
+  }
+
+  formatPayload(payload) {
+    if (_.isObject(payload)) {
+      return this.parsePayload(payload);
+    } else {
+      return {[payload]:true};
+    }
   }
 
   isScoped(path) {
