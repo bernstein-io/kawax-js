@@ -43,7 +43,7 @@ export default class BaseException extends SmartClass {
     let writter = console;
     let headers = this.getHeaders();
     let level = this.getLevel();
-    let isSilent = this.props.get('silent');
+    let isSilent = this.props.silent;
     this.pushStack();
     if (!isSilent && process.env.NODE_ENV != 'production') {
       if (level == 'log') {
@@ -76,9 +76,9 @@ export default class BaseException extends SmartClass {
     let level = 0;
     let error = this.getError();
     let rank = this.__getLevelRank(this.props.level);
-    let silentProp = this.props.get('silent');
+    let silentProp = this.props.silent;
     let isSilent = silentProp ? true : ((rank <= level) ? false : true);
-    if(isSilent) return this.props.get('level');
+    if(isSilent) return this.props.level;
     if(error && error.level) return error.level;
     return 'default';
   }
@@ -93,7 +93,7 @@ export default class BaseException extends SmartClass {
 
   getHeaders() {
     if (this.headers) return this.headers;
-    let isCli = this.props.get('isCli');
+    let isCli = this.props.isCli;
     let code = this.getCode();
     let message = this.getMessage();
     let nativeMessage = this.getNativeMessage();
