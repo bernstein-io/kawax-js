@@ -2,46 +2,61 @@ import _ from 'lodash';
 import Constant from '../src/misc/constant';
 
 describe('Defining a Constant', () => {
-  let scope = Constant('root1', {'node1': true, 'node2': 'someValue'});
+  let scope = Constant('test1', {'n1': true, 'n2': 'someValue'});
 
   it("returns a function", () => {
     expect(_.isFunction(scope)).toBe(true);
   });
 
   it("can be used as a scope", () => {
-    let constant = scope('node1');
-    expect(constant).toEqual('ROOT1.NODE1');
+    let constant = scope('n1');
+    expect(constant).toEqual('TEST1.N1');
   });
 
   it("mirrors path (upperCase)", () => {
-    let constant = scope('node2');
-    expect(constant).toEqual('ROOT1.NODE2');
+    let constant = scope('n2');
+    expect(constant).toEqual('TEST1.N2');
   });
 
   it("persists values", () => {
-    let constant = Constant('root1.node2');
-    expect(constant).toEqual('ROOT1.NODE2');
+    let constant = Constant('test1.n1');
+    expect(constant).toEqual('TEST1.N1');
+  });
+});
+
+describe('Defining a Constant with an Array', () => {
+  let scope = Constant('test2', {
+    'n1': [
+      'n1-1',
+      {'n1-2': ['n1-2-1','n1-2-2']}
+    ]
+  });
+
+  it("turns it into an object", () => {
+    let constant = Constant('test2.n1.n1-2.n1-2-1');
+    expect(constant).toEqual('TEST2.N1.N1-2.N1-2-1');
   });
 });
 
 describe('Accessing a Constant', () => {
-  let scope = Constant('root2', {
-    'node1': true,
-    'node2': {
-      'node3': {
-        'node4': false
-      }
+  Constant('test3', {
+    'n1': true,
+    'n2': {
+      'n2-1': {
+        'n2-1-1': false
+      },
+      'n2-2': true
     }
   });
 
   it("returns mirrored path (end node)", () => {
-    let constant = Constant('root2.node2.node3.node4');
-    expect(constant).toEqual('ROOT2.NODE2.NODE3.NODE4');
+    let constant = Constant('test3.n2.n2-1.n2-1-1');
+    expect(constant).toEqual('TEST3.N2.N2-1.N2-1-1');
   });
 
   it("returns mirrored path (intermediate node)", () => {
-    let constant = Constant('root2.node2.node3');
-    expect(constant).toEqual('ROOT2.NODE2.NODE3');
+    let constant = Constant('test3.n2.n2-1');
+    expect(constant).toEqual('TEST3.N2.N2-1');
   });
 
 });

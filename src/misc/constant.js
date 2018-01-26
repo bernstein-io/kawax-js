@@ -6,11 +6,6 @@ import {Private, SmartClass} from 'smart-class';
 
 class Constant extends SmartClass {
 
-  initialize() {
-    if (this.yey) this.yey();
-    console.log('---->', this);
-  }
-
   normalizePath(path, scope = false) {
     let stringPath = _.isArray(path) ? path.join('.') : path;
     let normalizedPath = _.toUpper(stringPath)
@@ -25,16 +20,23 @@ class Constant extends SmartClass {
 
   assignSubset(path, payload) {
     let state = this.state.toObject();
-    let subset = this.upperKeys(payload);
+    let subset = this.formatObject(payload);
     _.set(state, path, subset);
     this.setState(keyMirror(state));
   }
 
-  upperKeys(payload) {
+  formatObject(payload) {
     let object = {};
     _.each(payload, (item, key) => {
-      let upperKey = _.toUpper(key);
-      object[upperKey] = _.isPlainObject(item) ? this.upperKeys(item) : item;
+      if (_.isArray(payload) && _.isString(item)) {
+        let upperKey = _.toUpper(item);
+        object[upperKey] = true;
+      } else if (_.isArray(payload) && _.isObject(item)) {
+        _.extend(object, this.formatObject(item));
+      } else {
+        let upperKey = _.toUpper(key);
+        object[upperKey] = _.isObject(item) ? this.formatObject(item) : item;
+      }
     });
     return object;
   }
