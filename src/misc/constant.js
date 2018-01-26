@@ -8,9 +8,10 @@ class Constant extends SmartClass {
 
   normalizePath(path, scope = false) {
     let stringPath = _.isArray(path) ? path.join('.') : path;
-    let normalizedPath = _.toUpper(stringPath)
-    return scope
-      ? `${scope+`${normalizedPath ? '.' : ''}`}${normalizedPath}`
+    let normalizedPath = _.toUpper(stringPath);
+    let upperScope = scope ? _.toUpper(scope) : false;
+    return upperScope
+      ? `${upperScope+`${normalizedPath ? '.' : ''}`}${normalizedPath}`
       : normalizedPath;
   }
 
@@ -41,6 +42,13 @@ class Constant extends SmartClass {
     return object;
   }
 
+  isScoped(path) {
+    if (path && path[path.length - 1] == '.') {
+      return true;
+    }
+    return false;
+  }
+
   define(path, payload) {
     let normalizedPath = this.normalizePath(path);
     this.assignSubset(normalizedPath, payload);
@@ -66,6 +74,9 @@ class Constant extends SmartClass {
   process = (path, payload) => {
     if (payload) {
       let scope = this.define(path, payload);
+      return this.lookup(scope);
+    } else if (this.isScoped(path)) {
+      let scope = path.substring(0, (path.length -1));
       return this.lookup(scope);
     } else {
       return this.lookup()(path);
