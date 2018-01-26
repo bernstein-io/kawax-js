@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import Action from '../src/actions';
-import Constant from './mocks/constant.mock.js';
+import {Constant} from '../src/misc';
 import Resource from './mocks/resource.mock.js';
 
 import {asynchronousAction} from './mocks/action.mock.js';
