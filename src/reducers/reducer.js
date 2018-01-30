@@ -130,7 +130,7 @@ export default class Reducer extends SmartClass {
     let refinedAction = this.refinedAction(action);
     action.matchs = this.matchMap(refinedAction, false);
     let reducedState = this.reducer(state, refinedAction);
-    if (reducedState === false || action.type == _.get(Constant, 'ACTIONS.RESET')) {
+    if (reducedState === false || action.type == _.get(Constant, 'ACTION.RESET')) {
       return this.props.initialState;
     } else {
       return this.newState(state, reducedState, refinedAction);

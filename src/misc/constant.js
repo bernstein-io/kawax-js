@@ -16,40 +16,54 @@ class Constant extends SmartClass {
   }
 
   getSubset(path) {
-    return _.get(this.state.toObject(), path);
-  }
-
-  assignSubset(path, payload) {
     let state = this.state.toObject();
-    let subset = this.formatPayload(payload);
-    _.set(state, path, subset);
-    this.setState(keyMirror(state));
+    return _.get(state, path) || false;
   }
 
-  parsePayload(payload) {
-    let object = {};
-    _.each(payload, (item, key) => {
-      if (_.isArray(payload)) {
-        if (_.isString(item)) {
-          let upperKey = _.toUpper(item);
-          object[upperKey] = true;
-        } else if (_.isObject(item)) {
-          _.extend(object, this.parsePayload(item));
-        }
-      } else {
-        let upperKey = _.toUpper(key);
-        object[upperKey] = _.isObject(item) ? this.parsePayload(item) : item;
-      }
-    });
-    return object;
-  }
-
-  formatPayload(payload) {
-    if (_.isObject(payload)) {
-      return this.parsePayload(payload);
+  getNodeName(context, payload, key) {
+    if (_.isArray(context)) {
+      return _.isString(payload) ? _.toUpper(payload) : false;
     } else {
-      return {[payload]:true};
+      return _.toUpper(key);
     }
+  }
+
+  getNode(path, context, key, payload, fromArray) {
+    let nodeName = this.getNodeName(context, payload, key);
+    if (_.isObject(payload)) {
+      let deepPath = `${path}.${nodeName}`
+      let isArray = _.isArray(payload) ? true : false;
+      var nodeValue = this.mergeSubset(deepPath, payload, isArray);
+    } else {
+      var nodeValue = payload;
+    }
+    return nodeName ? {[nodeName]: nodeValue} : nodeValue;
+  }
+
+  mergeSubset(path, payload, fromArray = false) {
+    let subset = this.getSubset(path);
+    let tree = _.isPlainObject(subset) ? subset : {};
+    _.each(payload, (item, key) => {
+      let node = this.getNode(path, payload, key, item, fromArray);
+      _.extend(tree, node);
+    });
+    return tree;
+  }
+
+  parseSubset(path, payload) {
+    let state = this.state.toObject();
+    if (_.isObject(payload)) {
+      return _.set(state, path, this.mergeSubset(path, payload));
+    } else if (_.isString(payload)) {
+      return _.set(state, path, {[payload]:true});
+    }
+  }
+
+  define(path, payload) {
+    let normalizedPath = this.normalizePath(path);
+    let state = this.parseSubset(normalizedPath, payload);
+    this.setState(keyMirror(state));
+    return normalizedPath;
   }
 
   isScoped(path) {
@@ -57,12 +71,6 @@ class Constant extends SmartClass {
       return true;
     }
     return false;
-  }
-
-  define(path, payload) {
-    let normalizedPath = this.normalizePath(path);
-    this.assignSubset(normalizedPath, payload);
-    return normalizedPath;
   }
 
   lookup(scope = false) {
@@ -73,7 +81,7 @@ class Constant extends SmartClass {
         if (subset) {
           return _.isObject(subset) ? normalizedPath : subset;
         } else {
-          Exception.warn('Unknow constant ' + normalizedPath);
+          Exception.error('Unknow constant ' + normalizedPath);
         }
       } else {
         return this.export();
@@ -93,11 +101,11 @@ class Constant extends SmartClass {
     }
   }
 
-  static singleton() {
+  static instance() {
     let instance = this.new();
     return instance.process;
   }
 
 }
 
-export default Constant.singleton();
+export default Constant.instance();

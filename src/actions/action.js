@@ -66,7 +66,7 @@ export default class Action extends SmartClass {
   processResourceFail(error) {
     let exception = Exception.warn('Action: Could not process request', {error});
     return this.export({
-      status: Constant.builtins('STATUS.REQUEST.ERROR'),
+      status: Constant('STATUS.REQUEST.ERROR'),
       error: exception.error,
       errorCode: exception.code
     });
