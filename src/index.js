@@ -1,11 +1,12 @@
-import Kawax from './kawax.js';
+export Action from './Action';
+export Component from './Component';
+export Container from './Container';
+export Exception from './Exception';
+export Reducer from './Reducer';
+export Resource from './Resource';
+export Router from './Router';
+export History from './History'
+export Runtime from './Runtime';
+export Smart from './Smart';
 
-export const Action = Kawax.action;
-export const Component = Kawax.component;
-export const Constant = Kawax.constant;
-export const Container = Kawax.container;
-export const Factory = Kawax.factory;
-export const Store = Kawax.store;
-export const Reducer = Kawax.reducer;
-
-export default Kawax;
+export default from './Core';
