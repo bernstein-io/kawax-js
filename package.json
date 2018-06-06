@@ -18,7 +18,7 @@
     ],
     "setupTestFrameworkScriptFile": "<rootDir>/tests/setupTests.js"
   },
-  "main": "./src/kawax.js",
+  "main": "./src/index.js",
   "scripts": {
     "build": "webpack",
     "dev": "webpack --watch -d",
@@ -63,8 +63,8 @@
     "react": "^16.4.0",
     "react-dom": "^16.4.0",
     "react-redux": "^5.0.7",
-    "react-router": "^4.2.0",
-    "react-router-dom": "^4.2.2",
+    "react-router": "^4.3.0",
+    "react-router-dom": "^4.3.0",
     "recompose": "^0.27.1",
     "redux": "^4.0.0",
     "redux-logger": "^3.0.6",
