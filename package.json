@@ -18,7 +18,7 @@
     ],
     "setupTestFrameworkScriptFile": "<rootDir>/tests/setupTests.js"
   },
-  "main": "dist/index.js",
+  "main": "./src/kawax.js",
   "scripts": {
     "build": "webpack",
     "dev": "webpack --watch -d",
@@ -33,6 +33,7 @@
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.3",
     "babel-loader": "^7.1.4",
+    "babel-plugin-lodash": "^3.3.3",
     "babel-plugin-transform-class-properties": "^6.23.0",
     "babel-plugin-transform-export-extensions": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
@@ -42,12 +43,13 @@
     "enzyme-adapter-react-16": "^1.1.1",
     "eslint": "^4.19.1",
     "eslint-config-airbnb": "^16.1.0",
+    "eslint-loader": "^2.0.0",
     "eslint-plugin-babel": "^5.1.0",
     "eslint-plugin-import": "^2.12.0",
     "eslint-plugin-jsx-a11y": "^6.0.3",
     "eslint-plugin-react": "^7.9.1",
-    "file-loader": "^1.1.11",
     "jest": "^23.1.0",
+    "lodash-webpack-plugin": "^0.11.5",
     "nodemon": "^1.17.5",
     "webpack": "^4.11.1",
     "webpack-cli": "^3.0.2"
