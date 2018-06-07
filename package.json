@@ -18,7 +18,7 @@
     ],
     "setupTestFrameworkScriptFile": "<rootDir>/tests/setupTests.js"
   },
-  "main": "./src/index.js",
+  "main": "./dist/kawax.js",
   "scripts": {
     "build": "webpack",
     "dev": "webpack --watch -d",

@@ -3,12 +3,17 @@ const LodashModuleReplacementPlugin = require('lodash-webpack-plugin');
 
 const dev = process.env.NODE_ENV !== 'production';
 
+const libraryName = 'kawax-js';
+
 const webpackConfig = {
   entry: './src/index.js',
   mode: dev ? 'development' : 'production',
   output: {
     path: path.resolve(__dirname, 'dist/'),
-    filename: 'kawax.js'
+    filename: 'kawax.js',
+    library: libraryName,
+    libraryTarget: 'umd',
+    umdNamedDefine: true
   },
   module: {
     rules: [
