@@ -8,7 +8,7 @@ describe('Component Class', () => {
   let component;
   beforeAll(() => {
     const context = createRouterContext({ foo: 'fromContext' });
-    component = diveTo(shallow(<MockComponent foobar="bar" />, context), 'wrapper', context);
+    component = diveTo(shallow(<MockComponent foobar="bar" />, context), 'WrappedComponent', context);
   });
 
   test('the component should be created correctly', () => {
@@ -26,6 +26,8 @@ describe('Component Class', () => {
 
   test('component should have the right rendered html', () => {
     const html = component.html();
-    expect(html).toEqual('<div><h1>fromContext : bar : autoset</h1></div>');
+    expect(html).toEqual('<div><h1>bar : autoset</h1></div>');
   });
+
+  // TODO : test context props / test css styles
 });

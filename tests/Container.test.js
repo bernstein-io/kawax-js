@@ -1,28 +1,28 @@
 import { shallow } from 'enzyme';
 import { createStore } from 'redux';
 import React from 'react';
+import { diveTo, createRouterContext } from './helpers/testUtils';
 import MockContainer from './__mocks__/MockContainer';
 
 describe('Container Wrapper', () => {
-  let store;
+  let container;
   beforeAll(() => {
-    store = createStore(() => ({
-      foo: 'fromStore',
-    }));
+    const store = createStore((state, action) => {
+      if (action.type === 'test') {
+        return { foo: 'dispatched' };
+      }
+      return { foo: 'fromStore' };
+    });
+    const context = createRouterContext({ bar: 'fromContext' });
+    container = diveTo(shallow(<MockContainer store={store} />, context), 'MockContainer', context);
   });
 
   test('the container should be created correctly', () => {
-    const wrapper = shallow(<MockContainer store={store} />);
-    expect(wrapper).toBeDefined();
+    expect(container).toBeDefined();
   });
 
   test('the container should have the right name', () => {
     expect(MockContainer.displayName).toEqual('MockContainerContainer');
-  });
-
-  test('the container should have the lifecycle functions wrapped', () => {
-    const wrapper = shallow(<MockContainer store={store} />);
-    expect(wrapper.name()).toEqual('lifecycle(Connect(withContext(MockContainer)))');
   });
 
   test('the container should delete his actions on unmount', () => {
@@ -30,33 +30,41 @@ describe('Container Wrapper', () => {
   });
 
   test('the container should be connected to Redux state', () => {
-    const wrapper = shallow(<MockContainer store={store} />).dive();
-    expect(wrapper.name()).toEqual('Connect(withContext(MockContainer))');
+    const props = container.props();
+    expect(props).toHaveProperty('storeSubscription');
+    expect(props).toHaveProperty('store');
   });
 
   test('the container should have the props from the store defined in mapStateToProps', () => {
-    const wrapper = shallow(<MockContainer store={store} />).dive().dive();
-    expect(wrapper.props()).toHaveProperty('foo', 'fromStore');
+    const props = container.props();
+    expect(props).toHaveProperty('foo', 'fromStore');
   });
 
-  test('the container should have the actions defined in mapDispatchToProps', () => {
-    const wrapper = shallow(<MockContainer store={store} />).dive().dive();
-    expect(wrapper.props()).toHaveProperty('doSomething');
+  test('the container should have the dispatchable actions defined in mapDispatchToProps', () => {
+    const props = container.props();
+    expect(props).toHaveProperty('doSomething');
+    expect(props.doSomething).toBeInstanceOf(Function);
   });
 
   test('the container should have the actions array super prop', () => {
-    const wrapper = shallow(<MockContainer store={store} />).dive().dive();
-    expect(wrapper.props()).toHaveProperty('actions');
-    expect(wrapper.props().actions).toBeInstanceOf(Array);
+    const props = container.props();
+    expect(props).toHaveProperty('actions');
+    expect(props.actions).toBeInstanceOf(Array);
   });
 
-  test('the container should have the context props', () => {
-    const wrapper = shallow(<MockContainer store={store} />).dive().dive();
-    expect(wrapper.name()).toEqual('withContext(MockContainer)');
+  test('the container should have the router props', () => {
+    const props = container.props();
+    expect(props).toHaveProperty('match');
+    expect(props).toHaveProperty('location');
+    expect(props).toHaveProperty('history');
+  });
+
+  test('the container can dispatch an action and redux catch it', () => {
+    container.props().dispatch({ type: 'test' });
+    expect(container.props().store.getState()).toHaveProperty('foo', 'dispatched');
   });
 
   test('the container should render correctly', () => {
-    const wrapper = shallow(<MockContainer store={store} />).dive().dive();
-    expect(wrapper.html()).toEqual('<div>fromStore</div>');
+    expect(container.html()).toEqual('<div>fromStore</div>');
   });
 });

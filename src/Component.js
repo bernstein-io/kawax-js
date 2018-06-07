@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import React from 'react';
-import createReactClass from 'create-react-class';
 import { withRouter } from 'react-router';
 import { compose, getDisplayName, setDisplayName } from 'recompose';
 import { StyleSheet, css } from './helpers/aphrodite';
@@ -36,8 +35,8 @@ export default function wrapComponent(PureComponent) {
     return withRouter;
   }
 
-  /* eslint-disable-next-line react/prefer-es6-class */
-  const wrapper = createReactClass({
+  class WrappedComponent extends React.Component {
+
     render() {
       return (
         <div className={getStyle()}>
@@ -45,7 +44,8 @@ export default function wrapComponent(PureComponent) {
         </div>
       );
     }
-  });
+
+  }
 
   const withName = setDisplayName(`${displayName}Component`);
   const reactRouter = wrapRouter();
@@ -53,5 +53,5 @@ export default function wrapComponent(PureComponent) {
   return compose(
     withName,
     reactRouter,
-  )(wrapper);
+  )(WrappedComponent);
 }
