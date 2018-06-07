@@ -4,10 +4,7 @@ import Component from '../../src/Component';
 
 class MockComponent extends React.Component {
 
-  static withContext = ['foo'];
-
   static propTypes = {
-    foo: PropTypes.string.isRequired,
     foobar: PropTypes.string.isRequired,
     defaultProp: PropTypes.string,
   };
@@ -18,7 +15,7 @@ class MockComponent extends React.Component {
 
   render() {
     return (
-      <h1>{this.props.foo} : {this.props.foobar} : { this.props.defaultProp }</h1>
+      <h1>{this.props.foobar} : { this.props.defaultProp }</h1>
     );
   }
 

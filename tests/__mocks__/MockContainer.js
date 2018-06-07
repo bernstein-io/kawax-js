@@ -13,14 +13,6 @@ class MockContainer extends React.Component {
     doSomething: MockAction.export(),
   };
 
-  static mapContext = (props, getState) => ({
-    contextProp: props.foo,
-  });
-
-  static contextTypes = {
-    contextProp: PropTypes.string,
-  };
-
   static propTypes = {
     foo: PropTypes.string,
   };

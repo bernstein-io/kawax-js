@@ -98,13 +98,14 @@ export default function wrapContainer(PureComponent) {
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps);
   const reactContext = setContext();
 
-  return withRouter(compose(
+  return compose(
     withName,
+    withRouter,
     superProps,
     superPropTypes,
     withLifecycle,
     reduxConnect,
     reactContext,
-  )(PureComponent));
+  )(PureComponent);
 }
 

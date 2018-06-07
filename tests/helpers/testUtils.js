@@ -15,6 +15,7 @@ function diveTo(shallowWrapper, identifier, options = { context: {} }) {
     throw new Error(`Failed to dive to ${identifier} - is it not in the component tree?`);
   }
   const instance = shallowWrapper.instance();
+
   if (shallowWrapper.name() === identifier) {
     return shallowWrapper; // We found it!
   }
@@ -38,7 +39,7 @@ const createRouterContext = (otherContext) => {
       match: {},
     },
   };
-  return { context: { router, ...otherContext } };
+  return { context: { ...otherContext, router } };
 };
 
 export { diveTo, createRouterContext };
