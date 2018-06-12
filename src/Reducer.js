@@ -2,13 +2,19 @@ import _ from 'lodash';
 import Smart from './Smart';
 import resolve from './helpers/resolve';
 
+const ReducerDelegate = function(instance) {
+  this.reduce = (state, action) => instance.call(state, action);
+}
+
+const ForceAssignment = function(callback) {
+  this.reduce = (current, path) => callback(current, path);
+}
+
 class Reducer extends Smart {
 
   static delegate(options) {
     const instance = new this(options);
-    return new function ReducerDelegate() {
-      this.reduce = (state, action) => instance.call(state, action);
-    }();
+    return new ReducerDelegate(instance);
   }
 
   static initialState = false;
@@ -35,10 +41,7 @@ class Reducer extends Smart {
 
   matchDone = (map) => this.onDone(this.match(map));
 
-  forceAssign = (helper) => (new function ForceAssignment(callback) {
-    this.callback = callback;
-    this.reduce = (current, path) => this.callback(current, path);
-  }(helper));
+  forceAssign = (helper) => new ForceAssignment(helper);
 
   removeItem = (predicate) => this.forceAssign((object) => {
     _.remove(object, predicate);
@@ -69,9 +72,9 @@ class Reducer extends Smart {
 
   shouldDelegate(next, path) {
     const initialState = _.get(this.constructor.initialState, path);
-    if (initialState && initialState.constructor.name === 'ReducerDelegate') {
+    if (initialState && initialState instanceof ReducerDelegate) {
       return true;
-    } else if (next && next.constructor.name === 'ReducerDelegate') {
+    } else if (next && next instanceof ReducerDelegate) {
       return true;
     }
     return false;
@@ -89,7 +92,7 @@ class Reducer extends Smart {
   }
 
   delegateState(current, next, action, path) {
-    if (next && next.constructor.name === 'ReducerDelegate') {
+    if (next && next instanceof ReducerDelegate) {
       return next.reduce(current, action);
     } else if (next === null) {
       const initialState = _.get(this.constructor.initialState, path);
@@ -108,7 +111,7 @@ class Reducer extends Smart {
       return this.assign(current, reducedState);
     } else if (next === null && path) {
       return this._getInitialState(path);
-    } else if (next && next.constructor.name === 'ForceAssignment') {
+    } else if (next && next instanceof ForceAssignment) {
       return next.reduce(current, path);
     }
   }
