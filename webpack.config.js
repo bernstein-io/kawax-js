@@ -1,17 +1,16 @@
 const path = require('path');
 const LodashModuleReplacementPlugin = require('lodash-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-const dev = process.env.NODE_ENV !== 'production';
-
-const libraryName = 'kawax-js';
+const __DEV__ = process.env.NODE_ENV !== 'production';
 
 const webpackConfig = {
   entry: './src/index.js',
-  mode: dev ? 'development' : 'production',
+  mode: __DEV__ ? 'development' : 'production',
   output: {
     path: path.resolve(__dirname, 'dist/'),
     filename: 'kawax.js',
-    library: libraryName,
+    library: 'kawax-js',
     libraryTarget: 'umd',
   },
   module: {
@@ -31,7 +30,11 @@ const webpackConfig = {
   plugins: []
 };
 
-if (!dev) {
+if (__DEV__) {
+  webpackConfig.plugins.push(new BundleAnalyzerPlugin());
+}
+
+if (!__DEV__) {
   webpackConfig.plugins.push(new LodashModuleReplacementPlugin());
 }
 
