@@ -3,6 +3,7 @@ const LodashModuleReplacementPlugin = require('lodash-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const __DEV__ = process.env.NODE_ENV !== 'production';
+const ___WEBPACK_ANALYZE__ = process.env.___WEBPACK_ANALYZE__;
 
 const webpackConfig = {
   entry: './src/index.js',
@@ -30,12 +31,12 @@ const webpackConfig = {
   plugins: []
 };
 
-if (__DEV__) {
-  webpackConfig.plugins.push(new BundleAnalyzerPlugin());
-}
-
 if (!__DEV__) {
   webpackConfig.plugins.push(new LodashModuleReplacementPlugin());
+}
+
+if (__DEV__ && ___WEBPACK_ANALYZE__) {
+  webpackConfig.plugins.push(new BundleAnalyzerPlugin());
 }
 
 module.exports = webpackConfig;

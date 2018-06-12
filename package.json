@@ -21,19 +21,22 @@
   "main": "./dist/kawax.js",
   "scripts": {
     "build": "webpack",
+    "minify": "NODE_ENV=production npm run build",
+    "analyze": "___WEBPACK_ANALYZE__=true webpack",
     "dev": "webpack --watch -d",
     "lint": "eslint src/** --fix",
     "lint:watch": "nodemon -e js -x 'npm run lint'",
     "nodemon": "nodemon --watch src -e js -x 'npm run build' --verbose",
     "test": "jest --verbose",
-    "test:watch": "jest --verbose --debug --watchAll"
+    "test:watch": "jest --verbose --debug --watchAll",
+    "postinstall": "npm run build"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.3",
     "babel-loader": "^7.1.4",
-    "babel-plugin-lodash": "^3.3.3",
+    "babel-plugin-lodash": "^3.3.4",
     "babel-plugin-transform-class-properties": "^6.23.0",
     "babel-plugin-transform-export-extensions": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
@@ -51,14 +54,12 @@
     "jest": "^23.1.0",
     "lodash-webpack-plugin": "^0.11.5",
     "nodemon": "^1.17.5",
-    "webpack": "^4.11.1",
+    "webpack": "^4.12.0",
     "webpack-bundle-analyzer": "^2.13.1",
-    "webpack-cli": "^3.0.2"
+    "webpack-cli": "^3.0.3"
   },
-  "dependencies": {
-    "aphrodite": "^2.2.1",
+  "optionalDependencies": {
     "babel-polyfill": "^6.26.0",
-    "create-react-class": "^15.6.3",
     "lodash": "^4.17.10",
     "prop-types": "^15.6.1",
     "react": "^16.4.0",
@@ -66,9 +67,11 @@
     "react-redux": "^5.0.7",
     "react-router": "^4.3.0",
     "react-router-dom": "^4.3.0",
+    "redux": "^4.0.0"
+  },
+  "dependencies": {
+    "aphrodite": "^2.2.1",
     "recompose": "^0.27.1",
-    "redux": "^4.0.0",
-    "redux-logger": "^3.0.6",
     "redux-thunk": "^2.3.0",
     "request-promise-native": "^1.0.5",
     "uuid": "^3.2.1"
