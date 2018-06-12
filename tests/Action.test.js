@@ -128,7 +128,7 @@ describe('Action class', () => {
 
 // Utility to test the format of the action object
 const testPayloadFormat = (obj) => {
-  expect(obj).toHaveProperty('uuid');
+  expect(obj).toHaveProperty('id');
   expect(obj).toHaveProperty('timestamp');
   expect(obj).toHaveProperty('type');
   expect(obj).toHaveProperty('status');

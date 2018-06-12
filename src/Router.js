@@ -18,7 +18,6 @@ class Router extends React.Component {
   static getDerivedStateFromProps(props, state) {
     const toggleHistory = props.history.listen((location, action) => {
       props.historyAction({ location, action });
-      // if (action === 'POP') props.history.push(location.pathname);
     });
     return { toggleHistory };
   }
