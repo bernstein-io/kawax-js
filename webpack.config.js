@@ -13,7 +13,6 @@ const webpackConfig = {
     filename: 'kawax.js',
     library: libraryName,
     libraryTarget: 'umd',
-    umdNamedDefine: true
   },
   module: {
     rules: [
