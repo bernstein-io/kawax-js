@@ -38,11 +38,15 @@ export default function wrapComponent(PureComponent) {
   class WrappedComponent extends React.Component {
 
     render() {
-      return (
-        <div className={getStyle()}>
-          <PureComponent {...this.props} />
-        </div>
-      );
+      const style = getStyle();
+      if (style) {
+        return (
+          <div className={style}>
+            <PureComponent {...this.props} />
+          </div>
+        );
+      }
+      return <PureComponent {...this.props} />;
     }
 
   }
