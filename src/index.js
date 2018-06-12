@@ -7,6 +7,7 @@ export Resource from './Resource';
 export Router from './Router';
 export History from './History';
 export Runtime from './Runtime';
+export Selector from './Selector';
 export Smart from './Smart';
 
 export default from './Core';

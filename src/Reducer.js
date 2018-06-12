@@ -4,7 +4,16 @@ import resolve from './helpers/resolve';
 
 class Reducer extends Smart {
 
-  static initialState = {};
+  static delegate(options) {
+    const instance = new this(options);
+    return new function ReducerDelegate() {
+      this.reduce = (state, action) => instance.call(state, action);
+    }();
+  }
+
+  static initialState = false;
+
+  unionKey = 'id';
 
   onPending = (pointer) => (state, action) =>
     this._matchWithStatus(['pending'], pointer)(state, action);
@@ -26,66 +35,116 @@ class Reducer extends Smart {
 
   matchDone = (map) => this.onDone(this.match(map));
 
+  forceAssign = (helper) => (new function ForceAssignment(callback) {
+    this.callback = callback;
+    this.reduce = (current, path) => this.callback(current, path);
+  }(helper));
+
+  removeItem = (predicate) => this.forceAssign((object) => {
+    _.remove(object, predicate);
+    return object;
+  });
+
   call(state, action) {
-    const initialState = this._getInitialState();
-    const previousState = state || initialState;
-    const resolvedState = resolve.call(this, this.state, previousState, action);
-    const nextState = (resolvedState === undefined) ? previousState : resolvedState;
-    return this.reduce(previousState, nextState, action, []);
+    const path = [];
+    const current = _.isEmpty(state) ? this._getInitialState(path) : state;
+    const resolvedState = resolve.call(this, this.state, current, action);
+    const next = (resolvedState === undefined) ? current : resolvedState;
+    const call = this.reduce(current, next, action, path);
+    // return call === null ? current : call;
+    return call;
   }
 
   match(map) {
     return (state, action) => {
-      let nextState = state;
+      let next = state;
       const { type } = action;
       _.each(map, (pointer, regex) => {
-        if (type.match(regex)) {
+        if (type && type.match(regex)) {
           const resolvedState = resolve.call(this, pointer, state, action);
-          const reducedState = this.reduce(nextState, resolvedState, action);
-          nextState = this.assign(nextState, reducedState);
+          next = this.reduce(next, resolvedState, action);
         }
       });
-      return nextState;
+      return next;
     };
   }
 
-  reduce(previousState, nextState, action, path = false) {
-    if (_.isPlainObject(nextState)) {
-      const state = {};
-      _.each(nextState, (nextItem, key) => {
-        const currentPath = path ? _.concat(path, key) : false;
-        const previousItem = _.isPlainObject(previousState) ? previousState[key] : previousState;
-        if (_.isPlainObject(nextItem)) {
-          state[key] = this.reduce(previousItem, nextItem, action, currentPath);
-        } else if (_.isFunction(nextItem)) {
-          const resolvedState = resolve.call(this, nextItem, previousItem, action);
-          const reducedState = this.reduce(previousItem, resolvedState, action, currentPath);
-          state[key] = this.assign(previousItem, reducedState);
-        } else if (nextItem === null && currentPath) {
-          const initialState = this._getInitialState();
-          state[key] = _.get(initialState, currentPath);
-        } else {
-          state[key] = nextItem;
-        }
-      });
-      return this.assign(previousState, state);
+  shouldDelegate(next, path) {
+    const initialState = _.get(this.constructor.initialState, path);
+    if (initialState && initialState.constructor.name === 'ReducerDelegate') {
+      return true;
+    } else if (next && next.constructor.name === 'ReducerDelegate') {
+      return true;
     }
-    return (nextState === undefined ? previousState : nextState);
+    return false;
   }
 
-  assign(previous, next) {
-    if (_.isPlainObject(previous) && _.isPlainObject(next)) {
-      return Object.assign({}, previous, next);
+  reduce(current, next, action, path = false) {
+    if (!_.isEqual(current, next) && !this.shouldDelegate(next, path)) {
+      if (_.isPlainObject(next)) {
+        return this.reducePlainObject(current, next, action, path);
+      } else if (_.isArray(next) && !path) {
+        return this.reduceArray(current, next, action, path);
+      } else if (_.isFunction(next)) {
+        const resolvedState = resolve.call(this, next, current, action);
+        const reducedState = this.reduce(current, resolvedState, action, path);
+        return this.assign(current, reducedState);
+      } else if (next === null && path) {
+        return this._getInitialState(path);
+      } else if (next && next.constructor.name === 'ForceAssignment') {
+        return next.reduce(current, path);
+      }
+    } else if (this.shouldDelegate(next, path)) {
+      if (next && next.constructor.name === 'ReducerDelegate') {
+        return next.reduce(current, action);
+      } else if (next === null) {
+        const initialState = _.get(this.constructor.initialState, path);
+        return initialState.reduce(next, action);
+      }
     }
-    return next;
+    return this.assign(current, next);
   }
 
-  _getInitialState() {
-    return this.reduce({}, this.constructor.initialState, { type: '@RESET' });
+  reducePlainObject(current, next, action, path) {
+    const state = {};
+    _.each(next, (nextItem, key) => {
+      const currentPath = path ? _.concat(path, key) : false;
+      const currentItem = _.isObject(current) ? current[key] : null;
+      state[key] = this.reduce(currentItem, nextItem, action, currentPath);
+    });
+    return this.assign(current, state);
   }
 
-  _getPreviousState(state, action) {
-    return state || this._getInitialState();
+  reduceArray(current, next, action, path) {
+    const union = [];
+    const unionKey = this.unionKey;
+    const nextItems = _.cloneDeep(next);
+    _.each(current, (currentItem, key) => {
+      const currentPath = path ? _.concat(path, key) : false;
+      if (currentItem) {
+        union[key] = currentItem;
+        _.each(nextItems, (nextItem, nextKey) => {
+          const matchKey = (nextItem && nextItem[unionKey]) ? nextItem[unionKey] : false;
+          if (matchKey && currentItem[unionKey] === matchKey) {
+            union[key] = this.reduce(currentItem, nextItem, action, currentPath);
+            nextItems[nextKey] = null;
+          }
+        });
+      }
+    });
+    return _.compact([...union, ...nextItems]);
+  }
+
+  assign(current, next) {
+    if (_.isPlainObject(current) && _.isPlainObject(next)) {
+      return Object.assign({}, current, next);
+    }
+    return (next === undefined ? current : next);
+  }
+
+  _getInitialState(path) {
+    const initialState = this.reduce({}, this.constructor.initialState, { type: '@@kawax/INIT' }, []);
+    return _.isEmpty(path) ? initialState : _.get(initialState, path);
   }
 
   _matchWithStatus(statuses, callback) {

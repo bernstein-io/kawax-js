@@ -132,5 +132,5 @@ class Resource extends Smart {
 
 }
 
-export { ResourceCall }; // Testing purposes
+export { ResourceCall };
 export default Resource;

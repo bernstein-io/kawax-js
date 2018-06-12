@@ -4,6 +4,7 @@ import Smart from './Smart';
 import Runtime from './Runtime';
 import resolve from './helpers/resolve';
 import log from './helpers/log';
+import select from './helpers/select';
 
 class Action extends Smart {
 
@@ -11,10 +12,10 @@ class Action extends Smart {
 
   static type = '__UNDEFINED__';
 
-  defaults(context = {}) {
+  defaults(options = {}) {
     return ({
       status: 'pending',
-      context
+      ...options
     });
   }
 
@@ -28,14 +29,22 @@ class Action extends Smart {
 
   setStatus = (status) => { this.status = status; };
 
-  export = (payload) => ({
+  export = (action) => action;
+
+  defaultOptions = (options) => options;
+
+  _defaultOptions = (options) => this.defaultOptions({
+    origin: false,
+    ...options
+  });
+
+  _export = (payload) => this.export({
     payload: this._parsePayload(payload),
     type: this.constructor.type,
     timestamp: this.timestamp,
-    options: this.options,
+    context: this.options,
     status: this.status,
-    uuid: this.uuid,
-    ...this.context
+    id: this.id,
   });
 
   _parsePayload(payload) {
@@ -43,7 +52,7 @@ class Action extends Smart {
   }
 
   _call(data, { success, error, ...options } = {}) {
-    this.uuid = uuid();
+    this.id = uuid();
     this.timestamp = Date.now();
     this._successCallback = success;
     this._errorCallback = error;
@@ -54,33 +63,33 @@ class Action extends Smart {
       new Promise(async () => { /* eslint-disable-line no-new */
         this._bindActionsCreators(dispatch, getState);
         const payload = await this._processPayload(data, options);
-        await dispatch(this.export(payload, data));
+        await dispatch(this._export(payload, data));
         await this._afterDispatch(payload, data);
       });
-      return this.uuid;
+      return this.id;
     };
   }
 
   _setGetState(getState) {
     this.getState = (...map) => {
       const state = getState();
-      const path = (map.length === 1 ? map[0] : map);
-      return _.get(state, path);
+      const path = (map.length === 1 ? _.first(map) : map);
+      return select(state, path);
     };
   }
 
   _dispatchPending(dispatch, data) {
     this.setStatus('pending');
     const pendingPayload = resolve.call(this, this.pendingPayload, data);
-    dispatch(this.export(pendingPayload, data));
+    dispatch(this._export(pendingPayload, data));
   }
 
   _bindActionsCreators(dispatch, getState) {
     const actionCreators = this.constructor.actionCreators;
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
-        this[key] = (data, context = {}) => new Promise((success, error) => {
-          action(data, { success, error, ...context })(dispatch, getState);
+        this[key] = (data, options = {}) => new Promise((success, error) => {
+          action(data, { success, error, origin: 'action', ...options })(dispatch, getState);
         });
       }
     });
@@ -89,7 +98,8 @@ class Action extends Smart {
   async _processPayload(data, options) {
     if (typeof this.call === 'function') {
       try {
-        const payload = await this.call(data, options);
+        const call = await this.call(data, options);
+        const payload = await resolve(call);
         return await this._processSuccess(payload, data);
       } catch (exception) {
         if (exception instanceof Error) log.error(exception);
@@ -129,7 +139,7 @@ class Action extends Smart {
     const action = this.export(context);
     return (data, options = {}) => new Promise((success, error) => {
       const { dispatch, getState } = Runtime('store');
-      action(data, { success, error, ...options })(dispatch, getState);
+      action(data, { success, error, origin: 'bind', ...options })(dispatch, getState);
     });
   }
 

@@ -13,7 +13,7 @@ describe('Reducer Class', () => {
   });
 
   test('The Reducer class has an empty initialState', () => {
-    expect(Reducer.initialState).toEqual({});
+    expect(Reducer.initialState).toEqual(false);
   });
 
   test('the assign method should merge the two objects if given two objects', () => {
@@ -28,20 +28,6 @@ describe('Reducer Class', () => {
     const test = 'test';
     expect(reducer.assign(test, obj)).toBe(obj);
     expect(reducer.assign(obj, test)).toEqual(test);
-  });
-
-  test('_getPreviousStates should return the state if it is defined', () => {
-    const obj = { foo: 'bar', test: { foo: 'bar' } };
-    expect(reducer._getPreviousState(obj, {})).toBe(obj);
-  });
-
-  test('_getPreviousStates should return reduced initialState state is null', () => {
-    const mock = jest.fn();
-    mock.mockReturnValue('ok');
-    reducer.reduce = mock;
-    expect(reducer._getPreviousState(false, 'someAction')).toEqual('ok');
-    expect(mock).toHaveBeenCalledTimes(1);
-    expect(mock).toHaveBeenCalledWith({}, Reducer.initialState, { type: '@RESET' });
   });
 
   test('_matchWithStatus should return a function', () => {
