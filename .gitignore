@@ -4,6 +4,7 @@
 
 .bin
 node_modules
+package-links.json
 dist/**
 
 ###################
