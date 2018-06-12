@@ -23,10 +23,10 @@
     "build": "webpack",
     "minify": "NODE_ENV=production npm run build",
     "analyze": "___WEBPACK_ANALYZE__=true webpack",
-    "dev": "webpack --watch -d",
+    "watch": "webpack --watch -d",
+    "dev": "npm run watch & npm run lint:watch",
     "lint": "eslint src/** --fix",
     "lint:watch": "nodemon -e js -x 'npm run lint'",
-    "nodemon": "nodemon --watch src -e js -x 'npm run build' --verbose",
     "test": "jest --verbose",
     "test:watch": "jest --verbose --debug --watchAll",
     "postinstall": "npm run build"
@@ -59,6 +59,11 @@
     "webpack-cli": "^3.0.3"
   },
   "optionalDependencies": {
+    "aphrodite": "^2.2.1",
+    "recompose": "^0.27.1",
+    "redux-thunk": "^2.3.0",
+    "request-promise-native": "^1.0.5",
+    "uuid": "^3.2.1",
     "babel-polyfill": "^6.26.0",
     "lodash": "^4.17.10",
     "prop-types": "^15.6.1",
@@ -68,12 +73,5 @@
     "react-router": "^4.3.0",
     "react-router-dom": "^4.3.0",
     "redux": "^4.0.0"
-  },
-  "dependencies": {
-    "aphrodite": "^2.2.1",
-    "recompose": "^0.27.1",
-    "redux-thunk": "^2.3.0",
-    "request-promise-native": "^1.0.5",
-    "uuid": "^3.2.1"
   }
 }

@@ -34,7 +34,7 @@ class Action extends Smart {
   defaultOptions = (options) => options;
 
   _defaultOptions = (options) => this.defaultOptions({
-    origin: false,
+    delegate: false,
     ...options
   });
 
@@ -42,7 +42,7 @@ class Action extends Smart {
     payload: this._parsePayload(payload),
     type: this.constructor.type,
     timestamp: this.timestamp,
-    context: this.options,
+    options: this.options,
     status: this.status,
     id: this.id,
   });
@@ -51,7 +51,8 @@ class Action extends Smart {
     return resolve.call(this, this.parsePayload, payload);
   }
 
-  _call(data, { success, error, ...options } = {}) {
+  _call(data, _options) {
+    const { success, error, ...options } = _.isPlainObject(_options) ? _options : {};
     this.id = uuid();
     this.timestamp = Date.now();
     this._successCallback = success;
@@ -89,7 +90,7 @@ class Action extends Smart {
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
         this[key] = (data, options = {}) => new Promise((success, error) => {
-          action(data, { success, error, origin: 'action', ...options })(dispatch, getState);
+          action(data, { success, error, delegate: true, ...options })(dispatch, getState);
         });
       }
     });
@@ -139,7 +140,7 @@ class Action extends Smart {
     const action = this.export(context);
     return (data, options = {}) => new Promise((success, error) => {
       const { dispatch, getState } = Runtime('store');
-      action(data, { success, error, origin: 'bind', ...options })(dispatch, getState);
+      action(data, { success, error, delegate: true, ...options })(dispatch, getState);
     });
   }
 

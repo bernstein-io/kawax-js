@@ -16,7 +16,10 @@ module.exports = __ENV__ => {
       library: 'kawax-js',
       libraryTarget: 'umd',
     },
-    module: {
+  performance: {
+    hints: false
+  },
+  module: {
       rules: [
         {
           test: /\.js$/,
