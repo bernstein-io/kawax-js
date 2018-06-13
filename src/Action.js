@@ -72,9 +72,9 @@ class Action extends Smart {
   }
 
   _setGetState(getState) {
-    this.getState = (...map) => {
+    this.getState = (...args) => {
+      const path = (args.length > 1 ? args : args[0]);
       const state = getState();
-      const path = (map.length === 1 ? _.first(map) : map);
       return select(state, path);
     };
   }

@@ -1,16 +1,16 @@
 {
   "name": "kawax-js",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "React/Redux based framework",
   "author": "Paul Reboh",
   "license": "MIT",
-  "homepage": "https://github.com/nakwa/kawax-js",
+  "homepage": "https://github.com/bernstein-io/kawax-js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nakwa/kawax-js.git"
+    "url": "git+https://github.com/bernstein-io/kawax-js.git"
   },
   "bugs": {
-    "url": "https://github.com/nakwa/kawax-js/issues"
+    "url": "https://github.com/bernstein-io/kawax-js/issues"
   },
   "jest": {
     "transformIgnorePatterns": [
