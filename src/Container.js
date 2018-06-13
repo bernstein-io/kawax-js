@@ -3,19 +3,17 @@ import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router';
-import { compose, withProps, setPropTypes, withContext, lifecycle,
-  renderComponent, getDisplayName, setDisplayName } from 'recompose';
+import { compose, withContext, lifecycle, setStatic, getContext,
+  getDisplayName, setDisplayName } from 'recompose';
 
 export default function wrapContainer(PureComponent) {
 
   const displayName = getDisplayName(PureComponent);
-  const stateToProps = PureComponent.mapStateToProps || {};
-  const dispatchToProps = PureComponent.mapDispatchToProps || {};
   const hookedActions = [];
 
   function getStateHelper(state) {
-    return function stateHelper(...map) {
-      const path = (map.length === 1 ? map[0] : map);
+    return function stateHelper(...args) {
+      const path = (args.length > 1 ? args : args[0]);
       return _.get(state, path);
     };
   }
@@ -29,11 +27,15 @@ export default function wrapContainer(PureComponent) {
   }
 
   function mapStateToProps(state, ownProps) {
-    if (typeof stateToProps !== 'function') return {};
-    const mappedState = stateToProps(state, ownProps, { select: getStateHelper(state) });
+    const stateToProps = PureComponent.mapStateToProps;
+    const select = getStateHelper(state);
+    if (typeof stateToProps !== 'function') return { select };
+    const mappedProps = stateToProps(state, ownProps, { select });
+    const actions = filterHookedActions(state.actions);
     return {
-      actions: filterHookedActions(state.actions),
-      ...mappedState
+      select,
+      actions,
+      ...mappedProps
     };
   }
 
@@ -57,9 +59,9 @@ export default function wrapContainer(PureComponent) {
   }
 
   function mapDispatchToProps(dispatch, ownProps) {
+    const dispatchToProps = PureComponent.mapDispatchToProps || {};
     const actionCreators = _.isFunction(dispatchToProps)
-      ? dispatchToProps(dispatch, ownProps)
-      : dispatchToProps;
+      ? dispatchToProps(dispatch, ownProps) : dispatchToProps;
     const boundActionCreators = bindActionCreators(actionCreators, dispatch);
     const hookedActionsCreators = hookActionCreators(boundActionCreators);
     return {
@@ -68,27 +70,39 @@ export default function wrapContainer(PureComponent) {
     };
   }
 
-  function setContext() {
-    const mapContext = PureComponent.mapContext;
-    const contextTypes = PureComponent.contextTypes;
+  function defineContext() {
+    const mapPropsToContext = PureComponent.mapPropsToContext;
+    const contextTypes = PureComponent.__contextTypes || {};
     const defaultProps = PureComponent.defaultProps;
-    if (mapContext) {
-      return withContext(
-        contextTypes,
-        (props) => {
-          const { getState } = props;
-          const contextMap = mapContext(props, getState);
-          _.each(contextMap, (item, key) => {
-            if (item === undefined) contextMap[key] = defaultProps[key];
-          });
-          return contextMap;
-        }
-      );
-    }
-    return renderComponent(PureComponent);
+    return withContext(
+      { context: PropTypes.shape(contextTypes), actions: PropTypes.array.isRequired },
+      (props) => {
+        const { select } = props;
+        const allActions = select('actions');
+        const ownActions = filterHookedActions(allActions);
+        const hocActions = _.cloneDeep(props.actions) || [];
+        const hocContext = props.context || {};
+        const context = mapPropsToContext ? mapPropsToContext(props) : {};
+        _.each(context, (item, key) => {
+          if (item === undefined) context[key] = defaultProps[key];
+        });
+        return {
+          actions: [...hocActions, ...ownActions],
+          context: { ...hocContext, ...context }
+        };
+      }
+    );
   }
 
-  function wrapLifecycle() {
+  function setName() {
+    return setDisplayName(`${displayName}Container`);
+  }
+
+  function getRouter() {
+    return withRouter;
+  }
+
+  function setLifecycle() {
     return lifecycle({
       componentWillUnmount() {
         /* clean-up actions log */
@@ -96,19 +110,48 @@ export default function wrapContainer(PureComponent) {
     });
   }
 
-  const withName = setDisplayName(`${displayName}Container`);
-  const withLifecycle = wrapLifecycle();
-  const superPropTypes = setPropTypes({ actions: PropTypes.array });
-  const reduxConnect = connect(mapStateToProps, mapDispatchToProps);
-  const reactContext = setContext();
+  function connectRedux() {
+    return connect(mapStateToProps, mapDispatchToProps);
+  }
+
+  function getActions() {
+    return getContext({ actions: PropTypes.array, context: PropTypes.object });
+  }
+
+  function setState() {
+    return setStatic('getDerivedStateFromProps', (props, state = {}) => {
+      const actions = {};
+      const keys = Object.keys(PureComponent.mapDispatchToProps);
+      _.each(keys, (actionName) => {
+        actions[actionName] = _.filter(props.actions, (action) => {
+          const actionId = action.id;
+          return (_.includes(hookedActions, actionId) ? action : false);
+        });
+      });
+      return { ...state, actions };
+    });
+  }
+
+  function setContext() {
+    const contextTypes = PureComponent.__contextTypes || {};
+    return getContext({ context: PropTypes.shape(contextTypes), actions: PropTypes.array });
+  }
+
+  class WrappedContainer extends PureComponent {
+
+    state = {};
+
+  }
 
   return compose(
-    withName,
-    withRouter,
-    superPropTypes,
-    withLifecycle,
-    reduxConnect,
-    reactContext,
-  )(PureComponent);
+    setName(),
+    getActions(),
+    getRouter(),
+    setLifecycle(),
+    connectRedux(),
+    defineContext(),
+    setContext(),
+    setState(),
+  )(WrappedContainer);
 }
 

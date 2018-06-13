@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import React from 'react';
+import PropTypes from 'prop-types';
 import { withRouter } from 'react-router';
-import { compose, getDisplayName, setDisplayName } from 'recompose';
+import { compose, getDisplayName, setDisplayName, getContext } from 'recompose';
 import { StyleSheet, css } from './helpers/aphrodite';
 
 export default function wrapComponent(PureComponent) {
@@ -35,6 +36,11 @@ export default function wrapComponent(PureComponent) {
     return withRouter;
   }
 
+  function setContext() {
+    const contextTypes = PureComponent.__contextTypes || {};
+    return getContext({ context: PropTypes.shape(contextTypes) });
+  }
+
   class WrappedComponent extends React.Component {
 
     render() {
@@ -51,11 +57,12 @@ export default function wrapComponent(PureComponent) {
 
   }
 
-  const withName = setDisplayName(`${displayName}Component`);
-  const reactRouter = wrapRouter();
+  const withName = () => setDisplayName(`${displayName}Component`);
+  const reactRouter = () => wrapRouter();
 
   return compose(
-    withName,
-    reactRouter,
+    withName(),
+    reactRouter(),
+    setContext()
   )(WrappedComponent);
 }
