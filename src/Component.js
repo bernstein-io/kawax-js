@@ -1,15 +1,44 @@
 import _ from 'lodash';
 import React from 'react';
-import PropTypes from 'prop-types';
-import { withRouter } from 'react-router';
-import { compose, getDisplayName, setDisplayName, getContext } from 'recompose';
 import { StyleSheet, css } from './helpers/aphrodite';
+import Runtime from './Runtime';
 
-export default function wrapComponent(PureComponent) {
+export default (Pure) => class ComponentWrapper extends React.Component {
 
-  const displayName = getDisplayName(PureComponent);
+  static displayName = `${Pure.name}Component`;
 
-  function mapNestedStyle(stylesheet) {
+  render() {
+    const wrapper = this.composeHOC();
+    const withContext = this.wrapContext(wrapper);
+    return this.wrapStyle(withContext);
+  }
+
+  wrapContext(wrapper) {
+    const Context = Runtime('context');
+    return (
+      <Context.Consumer>
+        {(context) => wrapper({ ...context, ...this.props })}
+      </Context.Consumer>
+    );
+  }
+
+  composeHOC() {
+    return React.createFactory(Pure);
+  }
+
+  wrapStyle(component) {
+    const style = this.getStyle();
+    if (style) {
+      return (
+        <span className={style}>
+          {component}
+        </span>
+      );
+    }
+    return component;
+  }
+
+  mapNestedStyle(stylesheet) {
     _.each(stylesheet, (item, selectorKey) => {
       const selectors = item._definition;
       _.each(selectors, (selector, key) => {
@@ -22,47 +51,14 @@ export default function wrapComponent(PureComponent) {
     return stylesheet;
   }
 
-  function getStyle() {
-    const componentStyle = PureComponent.cssStyle;
+  getStyle() {
+    const componentStyle = Pure.cssStyle;
     if (componentStyle) {
       const stylesheet = StyleSheet.create({ component: componentStyle });
-      const styleWithNesting = mapNestedStyle(stylesheet);
+      const styleWithNesting = this.mapNestedStyle(stylesheet);
       const classNames = css(styleWithNesting.component);
       return classNames;
     }
   }
 
-  function wrapRouter() {
-    return withRouter;
-  }
-
-  function setContext() {
-    const contextTypes = PureComponent.__contextTypes || {};
-    return getContext({ context: PropTypes.shape(contextTypes) });
-  }
-
-  class WrappedComponent extends React.Component {
-
-    render() {
-      const style = getStyle();
-      if (style) {
-        return (
-          <div className={style}>
-            <PureComponent {...this.props} />
-          </div>
-        );
-      }
-      return <PureComponent {...this.props} />;
-    }
-
-  }
-
-  const withName = () => setDisplayName(`${displayName}Component`);
-  const reactRouter = () => wrapRouter();
-
-  return compose(
-    withName(),
-    reactRouter(),
-    setContext()
-  )(WrappedComponent);
-}
+};

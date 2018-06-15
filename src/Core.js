@@ -17,28 +17,54 @@ class Core extends Smart {
       ...options,
       htmlRoot: options.htmlRoot || false,
       router: options.router || Router,
+      wrapRouter: options.wrapRouter !== false,
       history: options.history || undefined,
       historyAction: options.historyAction || undefined,
       reducer: options.reducer || ((state) => state),
       container: options.container || (() => <div>It works!</div>),
+      context: options.context || React.createContext({}),
       store: new Store({ reducer: options.reducer })
     });
   }
 
   initialize(env) {
     const htmlRoot = document.getElementById(this.htmlRoot) || document.body;
-    const ReactRouter = this.router;
-    const Container = this.container;
-    const ReactContext = this._contextRenderer(Container, ReactRouter);
+    const ReactContext = this._contextRenderer();
     render(ReactContext, htmlRoot);
   }
 
-  _contextRenderer(Container, ReactRouter) {
+  _wrapContext(children) {
+    const Context = this.context;
+    return (
+      <Context.Provider>
+        {children()}
+      </Context.Provider>
+    );
+  }
+
+  _wrapRouter(children) {
+    const ReactRouter = this.router;
+    if (this.wrapRouter === true) {
+      return (
+        <ReactRouter history={this.history} historyAction={this.historyAction}>
+          {children()}
+        </ReactRouter>
+      );
+    }
+    return children();
+  }
+
+  _renderContainer() {
+    const Container = this.container;
+    return <Container />;
+  }
+
+  _contextRenderer() {
     return (
       <Provider store={this.store}>
-        <ReactRouter history={this.history} historyAction={this.historyAction}>
-          <Container />
-        </ReactRouter>
+        {
+          this._wrapContext(() => this._wrapRouter(() => this._renderContainer()))
+        }
       </Provider>
     );
   }

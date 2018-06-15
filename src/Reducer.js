@@ -2,13 +2,13 @@ import _ from 'lodash';
 import Smart from './Smart';
 import resolve from './helpers/resolve';
 
-const ReducerDelegate = function (instance) {
+function ReducerDelegate(instance) {
   this.reduce = (state, action) => instance.call(state, action);
-};
+}
 
-const ForceAssignment = function (callback) {
+function ForceAssignment(callback) {
   this.reduce = (current, path) => callback(current, path);
-};
+}
 
 class Reducer extends Smart {
 

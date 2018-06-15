@@ -1,157 +1,133 @@
 import _ from 'lodash';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { withRouter } from 'react-router';
-import { compose, withContext, lifecycle, setStatic, getContext,
-  getDisplayName, setDisplayName } from 'recompose';
+import Runtime from './Runtime';
+import resolve from './helpers/resolve';
 
-export default function wrapContainer(PureComponent) {
+export default (Pure) => {
 
-  const displayName = getDisplayName(PureComponent);
-  const hookedActions = [];
+  let hookedActions = {};
 
-  function getStateHelper(state) {
-    return function stateHelper(...args) {
+  function getActions(state) {
+    const actions = _.cloneDeep(state.actions);
+    return _.mapValues(
+      hookedActions,
+      (actionIds) => _.map(actionIds, (id) =>
+        _.cloneDeep(_.find(actions, (action) => (action.id === id))))
+    );
+  }
+
+  function getSelect(state) {
+    return function select(...args) {
       const path = (args.length > 1 ? args : args[0]);
       return _.get(state, path);
     };
   }
 
-  function filterHookedActions(allActions) {
-    const actions = _.map(allActions, (action) => {
-      const actionId = action.id;
-      return (_.includes(hookedActions, actionId) ? action : false);
-    });
-    return Object.assign([], _.compact(actions));
-  }
-
-  function mapStateToProps(state, ownProps) {
-    const stateToProps = PureComponent.mapStateToProps;
-    const select = getStateHelper(state);
-    if (typeof stateToProps !== 'function') return { select };
-    const mappedProps = stateToProps(state, ownProps, { select });
-    const actions = filterHookedActions(state.actions);
-    return {
-      select,
-      actions,
-      ...mappedProps
+  function wrapStateToProps() {
+    const stateToProps = Pure.stateToProps || {};
+    return (state, ownProps) => {
+      const actions = getActions(state);
+      const select = getSelect(state);
+      const props = resolve(stateToProps, { state, ownProps, select });
+      return { actions, select, ...props };
     };
   }
 
-  function hookActionCreators(actionCreators) {
-    const hookedActionCreators = {};
-    const keys = Object.keys(actionCreators);
-    for (const index in keys) {
-      if (actionCreators.hasOwnProperty(keys[index])) {
-        const key = keys[index];
-        hookedActionCreators[key] = (data, options) => {
-          const actionId = actionCreators[key](data, {
-            delegate: false,
-            ...options
-          });
-          hookedActions.unshift(actionId);
-          return actionId;
-        };
-      }
+  function wrapActions(actions) {
+    return _.mapValues(actions, (action, key) => (data, options) => {
+      const id = action(data, { delegate: false, ...options });
+      const idStack = hookedActions[key] || [];
+      hookedActions[key] = [...idStack, id];
+    });
+  }
+
+  function wrapDispatchToProps() {
+    const dispatchToProps = Pure.dispatchToProps || {};
+    return (dispatch, ownProps) => {
+      const actionCreators = resolve(dispatchToProps, { dispatch, ownProps });
+      const boundActions = bindActionCreators(actionCreators, dispatch);
+      const actions = wrapActions(boundActions);
+      return { dispatch, ...actions };
+    };
+  }
+
+  function mergeConnectProps() {
+    return Pure.mergeConnectProps;
+  }
+
+  function getConnectOptions() {
+    return Pure.connectOptions;
+  }
+
+  class Container extends React.Component {
+
+    static displayName = `${Pure.name}Container`;
+
+    static propTypes = Pure.propTypes;
+
+    static defaultProps = Pure.defaultProps;
+
+    static contextTypes = {
+      store: PropTypes.shape({
+        getState: PropTypes.func.isRequired,
+        subscribe: PropTypes.func.isRequired,
+      }),
+      location: PropTypes.oneOfType([
+        PropTypes.object,
+        PropTypes.string,
+      ]),
+      history: PropTypes.shape({
+        listen: PropTypes.func.isRequired,
+        location: PropTypes.object.isRequired,
+        push: PropTypes.func.isRequired,
+      })
+    };
+
+    render() {
+      const withHOC = this.composeHOC();
+      return this.wrapContext(withHOC);
     }
-    return hookedActionCreators;
-  }
 
-  function mapDispatchToProps(dispatch, ownProps) {
-    const dispatchToProps = PureComponent.mapDispatchToProps || {};
-    const actionCreators = _.isFunction(dispatchToProps)
-      ? dispatchToProps(dispatch, ownProps) : dispatchToProps;
-    const boundActionCreators = bindActionCreators(actionCreators, dispatch);
-    const hookedActionsCreators = hookActionCreators(boundActionCreators);
-    return {
-      dispatch,
-      ...hookedActionsCreators
+    wrapContext = (factory) => {
+      const ownProps = this.props;
+      const Context = Runtime('context');
+      const state = this.context.store.getState();
+      const select = getSelect(state);
+      const propsToContext = resolve(Pure.propsToContext, { ownProps, select });
+      return (
+        <Context.Consumer>
+          {(context) => {
+            if (propsToContext) {
+              return (
+                <Context.Provider value={{ ...context, ...propsToContext }}>
+                  {factory({ ...context, ...ownProps })}
+                </Context.Provider>
+              );
+            }
+            return factory({ ...context, ...ownProps });
+          }}
+        </Context.Consumer>
+      );
     };
-  }
 
-  function defineContext() {
-    const mapPropsToContext = PureComponent.mapPropsToContext;
-    const contextTypes = PureComponent.__contextTypes || {};
-    const defaultProps = PureComponent.defaultProps;
-    return withContext(
-      { context: PropTypes.shape(contextTypes), actions: PropTypes.array.isRequired },
-      (props) => {
-        const { select } = props;
-        const allActions = select('actions');
-        const ownActions = filterHookedActions(allActions);
-        const hocActions = _.cloneDeep(props.actions) || [];
-        const hocContext = props.context || {};
-        const context = mapPropsToContext ? mapPropsToContext(props) : {};
-        _.each(context, (item, key) => {
-          if (item === undefined) context[key] = defaultProps[key];
-        });
-        return {
-          actions: [...hocActions, ...ownActions],
-          context: { ...hocContext, ...context }
-        };
-      }
-    );
-  }
+    componentWillUnmount() {
+      hookedActions = {};
+    }
 
-  function setName() {
-    return setDisplayName(`${displayName}Container`);
-  }
-
-  function getRouter() {
-    return withRouter;
-  }
-
-  function setLifecycle() {
-    return lifecycle({
-      componentWillUnmount() {
-        /* clean-up actions log */
-      }
-    });
-  }
-
-  function connectRedux() {
-    return connect(mapStateToProps, mapDispatchToProps);
-  }
-
-  function getActions() {
-    return getContext({ actions: PropTypes.array, context: PropTypes.object });
-  }
-
-  function setState() {
-    return setStatic('getDerivedStateFromProps', (props, state = {}) => {
-      const actions = {};
-      const keys = Object.keys(PureComponent.mapDispatchToProps);
-      _.each(keys, (actionName) => {
-        actions[actionName] = _.filter(props.actions, (action) => {
-          const actionId = action.id;
-          return (_.includes(hookedActions, actionId) ? action : false);
-        });
-      });
-      return { ...state, actions };
-    });
-  }
-
-  function setContext() {
-    const contextTypes = PureComponent.__contextTypes || {};
-    return getContext({ context: PropTypes.shape(contextTypes), actions: PropTypes.array });
-  }
-
-  class WrappedContainer extends PureComponent {
-
-    state = {};
+    composeHOC() {
+      return React.createFactory(Pure);
+    }
 
   }
 
-  return compose(
-    setName(),
-    getActions(),
-    getRouter(),
-    setLifecycle(),
-    connectRedux(),
-    defineContext(),
-    setContext(),
-    setState(),
-  )(WrappedContainer);
-}
+  const mapStateToProps = wrapStateToProps();
+  const mapDispatchToProps = wrapDispatchToProps();
+  const mergeProps = mergeConnectProps();
+  const options = getConnectOptions();
+
+  return connect(mapStateToProps, mapDispatchToProps, mergeProps, options)(Container);
+};
 
