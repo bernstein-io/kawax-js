@@ -1,10 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Router as ReactRouter } from 'react-router-dom';
-import { connect } from 'react-redux';
+import Container from './Container';
 import History from './History';
 
 class Router extends React.Component {
+
+  static displayName = 'ConnectedRouter';
+
+  static dispatchToProps = ({ ownProps }) => ({
+    historyAction: ownProps.historyAction ||
+      (({ location, action }) => ({ type: 'ROUTER.EVENT', payload: { location, action } }))
+  });
 
   static propTypes = {
     history: PropTypes.object,
@@ -15,30 +22,26 @@ class Router extends React.Component {
     history: History
   };
 
-  static getDerivedStateFromProps(props, state) {
-    const toggleHistory = props.history.listen((location, action) => {
+  static propsToContext = ({ ownProps }) => ({
+    location: ownProps.history.location,
+    history: ownProps.history
+  });
+
+  constructor(props, state) {
+    super(props, state);
+    this.toggleHistory = props.history.listen((location, action) => {
       props.historyAction({ location, action });
     });
-    return { toggleHistory };
   }
 
-  state = {
-    toggleHistory: false
-  };
-
   componentWillUnmount() {
-    this.state.toggleHistory();
+    this.toggleHistory();
   }
 
   render() {
-    const history = this.props.history;
-    const props = { ...this.props, history };
-    return <ReactRouter {...props} />;
+    return <ReactRouter {...this.props} />;
   }
 
 }
 
-export default connect(null, (dispatch, props) => ({
-  historyAction: props.historyAction ||
-      (({ location, action }) => ({ type: 'ROUTER.EVENT', payload: { location, action } }))
-}))(Router);
+export default Container(Router, { wrapRouter: false });
