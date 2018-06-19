@@ -60,11 +60,8 @@
   },
   "optionalDependencies": {
     "aphrodite": "^2.2.1",
-    "recompose": "^0.27.1",
-    "redux-thunk": "^2.3.0",
-    "request-promise-native": "^1.0.5",
-    "uuid": "^3.2.1",
     "babel-polyfill": "^6.26.0",
+    "classnames": "^2.2.6",
     "lodash": "^4.17.10",
     "prop-types": "^15.6.1",
     "react": "^16.4.0",
@@ -72,7 +69,11 @@
     "react-redux": "^5.0.7",
     "react-router": "^4.3.0",
     "react-router-dom": "^4.3.0",
-    "redux": "^4.0.0"
+    "recompose": "^0.27.1",
+    "redux": "^4.0.0",
+    "redux-thunk": "^2.3.0",
+    "request-promise-native": "^1.0.5",
+    "uuid": "^3.2.1"
   },
   "dependencies": {
     "hoist-non-react-statics": "^2.5.4"

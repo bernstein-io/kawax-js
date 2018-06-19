@@ -1,15 +1,7 @@
 import _ from 'lodash';
 
 function match(object, selector) {
-  return _.filter(object, (item) => {
-    let isMatch = true;
-    _.each(selector, (value, key) => {
-      if (object[key] && object[key] === value) {
-        isMatch = !!isMatch;
-      }
-    });
-    return isMatch;
-  });
+  return _.filter(object, (item) => _.isMatch(item, selector));
 }
 
 export default function select(object, path, { indexKey = 'id' } = {}) {
