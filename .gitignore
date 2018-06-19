@@ -6,6 +6,8 @@
 node_modules
 package-links.json
 dist/**
+lib/**
+es/**
 
 ###################
 #    Logs & Tmp   #
