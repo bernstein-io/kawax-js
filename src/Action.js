@@ -21,7 +21,7 @@ class Action extends Smart {
 
   parsePayload = (payload) => payload;
 
-  pendingPayload = (data) => data;
+  pendingPayload = (data) => {};
 
   payload = (payload, data) => payload;
 
@@ -38,8 +38,8 @@ class Action extends Smart {
     ...options
   });
 
-  _export = (payload) => this.export({
-    payload: this._parsePayload(payload),
+  _export = (payload, data) => this.export({
+    payload: this._parsePayload(payload, data),
     type: this.constructor.type,
     timestamp: this.timestamp,
     options: this.options,
