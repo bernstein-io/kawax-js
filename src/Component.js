@@ -1,11 +1,21 @@
 import _ from 'lodash';
 import React from 'react';
+import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import { StyleSheet, css } from './helpers/aphrodite';
 import Runtime from './Runtime';
 
 export default (Pure) => class ComponentWrapper extends React.Component {
 
   static displayName = `${Pure.name}Component`;
+
+  static propTypes = {
+    className: PropTypes.oneOfType([PropTypes.string, PropTypes.bool])
+  };
+
+  static defaultProps = {
+    className: false
+  };
 
   render() {
     const wrapper = this.composeHOC();
@@ -26,13 +36,17 @@ export default (Pure) => class ComponentWrapper extends React.Component {
     return React.createFactory(Pure);
   }
 
+  classNames = () => classNames(
+    this.getStyle(),
+    this.props.className
+  );
+
   wrapStyle(component) {
-    const style = this.getStyle();
-    if (style) {
+    if (Pure.cssStyle || classNames) {
       return (
-        <span className={style}>
+        <div className={this.classNames()}>
           {component}
-        </span>
+        </div>
       );
     }
     return component;
@@ -56,8 +70,7 @@ export default (Pure) => class ComponentWrapper extends React.Component {
     if (componentStyle) {
       const stylesheet = StyleSheet.create({ component: componentStyle });
       const styleWithNesting = this.mapNestedStyle(stylesheet);
-      const classNames = css(styleWithNesting.component);
-      return classNames;
+      return css(styleWithNesting.component);
     }
   }
 
