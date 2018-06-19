@@ -6,7 +6,7 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const __DEV__ = process.env.NODE_ENV !== 'production';
 const ___WEBPACK_ANALYZE__ = process.env.___WEBPACK_ANALYZE__;
 
-module.exports = __ENV__ => {
+module.exports = (__ENV__) => {
   const webpackConfig = {
     entry: './src/index.js',
     mode: __DEV__ ? 'development' : 'production',
@@ -16,10 +16,11 @@ module.exports = __ENV__ => {
       library: 'kawax-js',
       libraryTarget: 'umd',
     },
-  performance: {
-    hints: false
-  },
-  module: {
+    performance: {
+      hints: false
+    },
+    externals: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+    module: {
       rules: [
         {
           test: /\.js$/,
