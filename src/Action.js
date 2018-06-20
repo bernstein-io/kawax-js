@@ -39,7 +39,7 @@ class Action extends Smart {
   });
 
   _export = (payload, data) => this.export({
-    payload: this._parsePayload(payload, data),
+    payload: this._parsePayload(payload, data) || false,
     type: this.constructor.type,
     timestamp: this.timestamp,
     options: this.options,
