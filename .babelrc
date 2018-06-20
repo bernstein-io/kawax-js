@@ -1,19 +1,15 @@
 
 {
-  "presets": ["react"],
-
+  "presets": [["env", { "modules": false, "loose": true }], "react"],
+  "plugins": [
+    "lodash",
+    "transform-object-rest-spread",
+    "transform-export-extensions",
+    "transform-class-properties"
+  ],
   "env": {
-    "es": {
-      "presets": [["env", { "modules": false }]],
-      "plugins": [
-        "lodash",
-        "transform-object-rest-spread",
-        "transform-export-extensions",
-        "transform-class-properties"
-      ]
-    },
     "commonjs": {
-      "presets": [["env", { "modules": "commonjs"}]],
+      "presets": [["env", { "loose": true }]],
       "plugins": [
         "lodash",
         "transform-object-rest-spread",
