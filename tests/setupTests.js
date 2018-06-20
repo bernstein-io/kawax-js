@@ -1,5 +1,4 @@
 /*eslint-disable */
-
 import './tempPolyfills'; // Hack to not have "Warning: React depends on requestAnimationFrame" spammed all over the tests
 
 import { configure } from 'enzyme';
