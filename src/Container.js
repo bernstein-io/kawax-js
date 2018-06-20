@@ -8,9 +8,26 @@ import resolve from './helpers/resolve';
 
 export default (Pure) => {
 
+  const displayName = Pure.name || 'KawaxContainer';
+  const defaultKey = `${displayName}-${_.uniqueId()}`;
   let hookedActions = {};
+  let prevProps = {};
 
-  function getActions(state) {
+  function omitProps(props) {
+    const omitted = Pure.omitProps || ['staticContext'];
+    return _.omit(props, omitted);
+  }
+
+  function resetHookedActions(props) {
+    const { containerKey: prevKey = defaultKey } = prevProps;
+    const { containerKey: nextKey = defaultKey } = props;
+    if (!_.isEqual(prevKey, nextKey)) {
+      hookedActions = {};
+    }
+  }
+
+  function getActions(props, state) {
+    resetHookedActions(props);
     const actions = _.cloneDeep(state.actions);
     return _.mapValues(
       hookedActions,
@@ -28,11 +45,13 @@ export default (Pure) => {
 
   function wrapStateToProps() {
     const stateToProps = Pure.stateToProps || {};
-    return (state, ownProps) => {
-      const actions = getActions(state);
+    return (state, props) => {
       const select = getSelect(state);
-      const props = resolve(stateToProps, { state, ownProps, select });
-      return { actions, select, ...props };
+      const ownProps = omitProps(props);
+      const boundProps = resolve(stateToProps, { state, ownProps, select });
+      const containerKey = boundProps.key || defaultKey;
+      const actions = getActions({ containerKey, ...boundProps }, state);
+      return { actions, select, containerKey, ...boundProps };
     };
   }
 
@@ -64,7 +83,7 @@ export default (Pure) => {
 
   class Container extends React.Component {
 
-    static displayName = `${Pure.name}Container`;
+    static displayName = `${displayName}Container`;
 
     static propTypes = Pure.propTypes;
 
@@ -86,13 +105,20 @@ export default (Pure) => {
       })
     };
 
+    static getDerivedStateFromProps(props, state) {
+      prevProps = props;
+      return state;
+    }
+
+    state = {};
+
     render() {
       const withHOC = this.composeHOC();
       return this.wrapContext(withHOC);
     }
 
     wrapContext = (factory) => {
-      const ownProps = this.props;
+      const ownProps = omitProps(this.props);
       const Context = Runtime('context');
       const state = this.context.store.getState();
       const select = getSelect(state);
