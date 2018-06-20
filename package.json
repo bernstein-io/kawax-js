@@ -38,7 +38,7 @@
     "build:watch": "npm run build:commonjs:watch & npm run build:es:watch",
     "lint": "eslint src tests",
     "lint:watch": "nodemon -e js -x 'npm run lint'",
-    "prepare": "npm run clean && npm run lint && npm run test && npm run build",
+    "prepare": "npm run clean && npm run lint && npm run build",
     "test": "BABEL_ENV=commonjs jest",
     "test:watch": "npm run test -- --watch"
   },
@@ -102,6 +102,7 @@
   "dependencies": {
     "aphrodite": "^2.2.1",
     "babel-runtime": "^6.26.0",
+    "classnames": "^2.2.6",
     "hoist-non-react-statics": "^2.5.4",
     "lodash": "^4.17.10",
     "prop-types": "^15.6.1",
