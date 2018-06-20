@@ -1,5 +1,5 @@
-import Reducer from '../src//Reducer';
 import { createStore } from 'redux';
+import Reducer from '../src/Reducer';
 import MockReducer from './__mocks__/MockReducers';
 
 describe('Reducer Class', () => {
