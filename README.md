@@ -6,8 +6,5 @@ Kawax: Redux on Rails
 ## Experimental package
 Use at your own risk.
 
-## TODOs
-* More tests
-
 ## License
 [MIT](LICENSE.md)
