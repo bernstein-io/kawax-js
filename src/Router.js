@@ -4,18 +4,25 @@ import { Router as ReactRouter } from 'react-router-dom';
 import Container from './Container';
 import History from './History';
 
+const historyHook = ({ location, action }) => ({
+  type: 'ROUTER.EVENT',
+  payload: {
+    location,
+    action
+  }
+});
+
 class Router extends React.Component {
 
   static displayName = 'ConnectedRouter';
 
   static dispatchToProps = ({ ownProps }) => ({
-    historyAction: ownProps.historyAction ||
-      (({ location, action }) => ({ type: 'ROUTER.EVENT', payload: { location, action } }))
+    historyHook: ownProps.historyHook || historyHook
   });
 
   static propTypes = {
     history: PropTypes.object,
-    historyAction: PropTypes.func.isRequired
+    historyHook: PropTypes.func.isRequired
   };
 
   static defaultProps = {
@@ -30,7 +37,7 @@ class Router extends React.Component {
   constructor(props, state) {
     super(props, state);
     this.toggleHistory = props.history.listen((location, action) => {
-      props.historyAction({ location, action });
+      props.historyHook({ location, action });
     });
   }
 

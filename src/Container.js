@@ -8,7 +8,7 @@ import resolve from './helpers/resolve';
 
 export default (Pure) => {
 
-  const displayName = Pure.name || 'KawaxContainer';
+  const displayName = Pure.name || 'Unnamed';
   const defaultKey = `${displayName}-${_.uniqueId()}`;
   let hookedActions = {};
   let prevProps = {};
