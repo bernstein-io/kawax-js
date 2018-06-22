@@ -19,7 +19,7 @@ class Core extends Smart {
       router: options.router || Router,
       wrapRouter: options.wrapRouter !== false,
       history: options.history || undefined,
-      historyAction: options.historyAction || undefined,
+      historyHook: options.historyHook || undefined,
       reducer: options.reducer || ((state) => state),
       container: options.container || (() => <div>It works!</div>),
       context: options.context || React.createContext({}),
@@ -46,7 +46,7 @@ class Core extends Smart {
     const ReactRouter = this.router;
     if (this.wrapRouter === true) {
       return (
-        <ReactRouter history={this.history} historyAction={this.historyAction}>
+        <ReactRouter history={this.history} historyHook={this.historyHook}>
           {children()}
         </ReactRouter>
       );
