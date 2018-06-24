@@ -39,7 +39,7 @@ export default (Pure) => {
 
   return class Component extends React.Component {
 
-    static displayName = `${displayName}Component`;
+    static displayName = `Component(${displayName})`;
 
     render() {
       const factory = React.createFactory(Pure);

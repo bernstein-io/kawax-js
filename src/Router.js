@@ -14,7 +14,7 @@ const historyHook = ({ location, action }) => ({
 
 class Router extends React.Component {
 
-  static displayName = 'ConnectedRouter';
+  // static displayName = 'ConnectedRouter';
 
   static dispatchToProps = ({ ownProps }) => ({
     historyHook: ownProps.historyHook || historyHook
@@ -31,8 +31,7 @@ class Router extends React.Component {
 
   static propsToContext = ({ ownProps }) => ({
     location: ownProps.history.location,
-    history: ownProps.history,
-    match: ownProps.match
+    history: ownProps.history
   });
 
   constructor(props, state) {
@@ -47,9 +46,10 @@ class Router extends React.Component {
   }
 
   render() {
+    ReactRouter.displayName = 'ReactRouter';
     return <ReactRouter {...this.props} />;
   }
 
 }
 
-export default Container(Router, { wrapRouter: false });
+export default Container(Router);
