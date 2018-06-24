@@ -3,8 +3,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
+import { compose } from 'recompose';
 import Runtime from './Runtime';
 import resolve from './helpers/resolve';
+
 
 export default (Pure) => {
 
@@ -81,6 +83,11 @@ export default (Pure) => {
     return Pure.connectOptions;
   }
 
+  const mapStateToProps = wrapStateToProps();
+  const mapDispatchToProps = wrapDispatchToProps();
+  const mergeProps = mergeConnectProps();
+  const options = getConnectOptions();
+
   class Container extends React.Component {
 
     static displayName = `${displayName}Container`;
@@ -112,8 +119,12 @@ export default (Pure) => {
 
     state = {};
 
+    componentWillUnmount() {
+      hookedActions = {};
+    }
+
     render() {
-      const withHOC = this.composeHOC();
+      const withHOC = React.createFactory(Pure);
       return this.wrapContext(withHOC);
     }
 
@@ -139,21 +150,22 @@ export default (Pure) => {
       );
     };
 
-    componentWillUnmount() {
-      hookedActions = {};
-    }
-
-    composeHOC() {
-      return React.createFactory(Pure);
-    }
-
   }
 
-  const mapStateToProps = wrapStateToProps();
-  const mapDispatchToProps = wrapDispatchToProps();
-  const mergeProps = mergeConnectProps();
-  const options = getConnectOptions();
+  const withContext = (component) => class WithContext extends React.Component {
 
-  return connect(mapStateToProps, mapDispatchToProps, mergeProps, options)(Container);
+    render() {
+      const Context = Runtime('context');
+      const Consumer = Context.Consumer;
+      const factory = React.createFactory(component);
+      const props = this.props;
+      return React.createElement(Consumer, props, (context) => factory({ ...context, ...props }));
+    }
+
+  };
+
+  const withRedux = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
+
+  return compose(withContext, withRedux)(Container);
 };
 
