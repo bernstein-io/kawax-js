@@ -9,8 +9,11 @@ class Selector extends Smart {
   select = (...args) => {
     const path = (args.length > 1 ? args : args[0]);
     const { getState } = Runtime('store');
-    const state = getState();
-    return select(state, path);
+    if (getState) {
+      const state = getState();
+      return select(state, path);
+    }
+    return false;
   };
 
 }

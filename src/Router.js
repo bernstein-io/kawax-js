@@ -31,7 +31,8 @@ class Router extends React.Component {
 
   static propsToContext = ({ ownProps }) => ({
     location: ownProps.history.location,
-    history: ownProps.history
+    history: ownProps.history,
+    match: ownProps.match
   });
 
   constructor(props, state) {

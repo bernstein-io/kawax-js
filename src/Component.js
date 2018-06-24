@@ -37,7 +37,7 @@ export default (Pure) => {
   const displayName = Pure.name || 'Unnamed';
   const inlineCssClasses = getCssClasses();
 
-  class Component extends React.Component {
+  return class Component extends React.Component {
 
     static displayName = `${displayName}Component`;
 
@@ -83,7 +83,5 @@ export default (Pure) => {
       );
     }
 
-  }
-
-  return Component;
+  };
 };
