@@ -1,9 +1,8 @@
 import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { bindActionCreators } from 'redux';
+import { compose, bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { compose } from 'recompose';
 import Runtime from './Runtime';
 import resolve from './helpers/resolve';
 
