@@ -13,6 +13,7 @@ export default (Pure) => {
   const displayName = Pure.name || 'Unnamed';
   const defaultKey = `${displayName}-${_.uniqueId()}`;
   let hookedActions = {};
+  let prevContext = {};
   let prevProps = {};
 
   function omitProps(props) {
@@ -90,7 +91,7 @@ export default (Pure) => {
 
   class Container extends React.Component {
 
-    static displayName = `${displayName}Container`;
+    static displayName = `Container(${displayName})`;
 
     static propTypes = Pure.propTypes;
 
@@ -101,10 +102,6 @@ export default (Pure) => {
         getState: PropTypes.func.isRequired,
         subscribe: PropTypes.func.isRequired,
       }),
-      location: PropTypes.oneOfType([
-        PropTypes.object,
-        PropTypes.string,
-      ]),
       history: PropTypes.shape({
         listen: PropTypes.func.isRequired,
         location: PropTypes.object.isRequired,
@@ -124,48 +121,57 @@ export default (Pure) => {
     }
 
     render() {
-      const withHOC = React.createFactory(Pure);
-      return this.wrapContext(withHOC);
+      const factory = React.createFactory(Pure);
+      return this.contextProvider(factory);
     }
 
-    wrapContext = (factory) => {
-      const ownProps = omitProps(this.props);
-      const Context = Runtime('context');
+    computeContext(ownProps) {
+      const withRouter = Runtime('wrapRouter');
       const state = this.context.store.getState();
       const select = getSelect(state);
       const propsToContext = resolve(Pure.propsToContext, { ownProps, select });
-      return (
-        <Context.Consumer>
-          {(context) => {
-            if (propsToContext) {
-              return (
-                <Context.Provider value={{ ...context, ...propsToContext }}>
-                  {factory({ ...context, ...ownProps })}
-                </Context.Provider>
-              );
-            }
-            return factory({ ...context, ...ownProps });
-          }}
-        </Context.Consumer>
-      );
+      if (withRouter && ownProps.match) {
+        const match = ownProps.match;
+        return { match, ...(propsToContext || {}) };
+      }
+      return propsToContext;
+    }
+
+    contextProvider = (factory) => {
+      const Context = Runtime('context');
+      const ownProps = omitProps(this.props);
+      const propsToContext = this.computeContext(ownProps);
+      if (propsToContext) {
+        return (
+          <Context.Provider value={{ ...prevContext, ...propsToContext }}>
+            {factory(ownProps)}
+          </Context.Provider>
+        );
+      }
+      return factory(ownProps);
     };
 
   }
 
-  const withContext = (component) => class WithContext extends React.Component {
+  /* eslint-disable react/no-multi-comp */
+  const contextConsumer = (component) => class WithContext extends React.Component {
+
+    static displayName = `WithContext(${displayName})`;
 
     render() {
       const Context = Runtime('context');
       const Consumer = Context.Consumer;
       const factory = React.createFactory(component);
       const props = this.props;
-      return React.createElement(Consumer, props, (context) => factory({ ...context, ...props }));
+      return React.createElement(Consumer, null, (context) => {
+        prevContext = context;
+        return factory({ ...context, ...props });
+      });
     }
 
   };
 
-  const withRedux = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
-
-  return compose(withContext, withRedux)(Container);
+  const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
+  return compose(contextConsumer, reduxConnect)(Container);
 };
 
