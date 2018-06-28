@@ -4,14 +4,14 @@ import PropTypes from 'prop-types';
 import { compose, bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import Runtime from './Runtime';
+import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
-
 
 export default (Pure) => {
 
   const displayName = Pure.name || 'Unnamed';
   const defaultKey = `${displayName}-${_.uniqueId()}`;
-  let hookedActions = {};
+  const actionStack = new ActionStack();
   let prevContext = {};
   let prevProps = {};
 
@@ -20,22 +20,11 @@ export default (Pure) => {
     return _.omit(props, omitted);
   }
 
-  function resetHookedActions(props) {
-    const { containerKey: prevKey = defaultKey } = prevProps;
-    const { containerKey: nextKey = defaultKey } = props;
-    if (!_.isEqual(prevKey, nextKey)) {
-      hookedActions = {};
-    }
-  }
-
   function getActions(props, state) {
-    resetHookedActions(props);
-    const actions = _.cloneDeep(state.actions);
-    return _.mapValues(
-      hookedActions,
-      (actionIds) => _.map(actionIds, (id) =>
-        _.cloneDeep(_.find(actions, (action) => (action.id === id))))
-    );
+    const { idKey: prevKey = defaultKey } = prevProps;
+    const { idKey: nextKey = defaultKey } = props;
+    if (!_.isEqual(prevKey, nextKey)) actionStack.clear();
+    return actionStack;
   }
 
   function getSelect(state) {
@@ -50,18 +39,17 @@ export default (Pure) => {
     return (state, props) => {
       const select = getSelect(state);
       const ownProps = omitProps(props);
-      const boundProps = resolve(stateToProps, { state, ownProps, select });
-      const containerKey = boundProps.key || defaultKey;
-      const actions = getActions({ containerKey, ...boundProps }, state);
-      return { actions, select, containerKey, ...boundProps };
+      const nextProps = resolve(stateToProps, { state, ownProps, select });
+      const idKey = nextProps.key || defaultKey;
+      const actions = getActions({ idKey, ...nextProps }, state);
+      return { actions, select, idKey, ...nextProps };
     };
   }
 
-  function wrapActions(actions) {
+  function hookActions(actions) {
     return _.mapValues(actions, (action, key) => (data, options) => {
       const id = action(data, { delegate: false, ...options });
-      const idStack = hookedActions[key] || [];
-      hookedActions[key] = [...idStack, id];
+      actionStack.push({ id, key });
     });
   }
 
@@ -70,7 +58,7 @@ export default (Pure) => {
     return (dispatch, ownProps) => {
       const actionCreators = resolve(dispatchToProps, { dispatch, ownProps });
       const boundActions = bindActionCreators(actionCreators, dispatch);
-      const actions = wrapActions(boundActions);
+      const actions = hookActions(boundActions);
       return { dispatch, ...actions };
     };
   }
@@ -116,7 +104,7 @@ export default (Pure) => {
     state = {};
 
     componentWillUnmount() {
-      hookedActions = {};
+      actionStack.clear();
     }
 
     render() {
@@ -125,7 +113,7 @@ export default (Pure) => {
     }
 
     computeContext(ownProps) {
-      const withRouter = Runtime('wrapRouter');
+      const withRouter = Runtime('withRouter');
       const state = this.context.store.getState();
       const select = getSelect(state);
       const propsToContext = resolve(Pure.propsToContext, { ownProps, select });

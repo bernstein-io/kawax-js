@@ -1,0 +1,88 @@
+import _ from 'lodash';
+import Request from 'request-promise-native';
+import Smart from '../Smart';
+import resolve from '../helpers/resolve';
+
+class ResourceCall extends Smart {
+
+  defaults(context) { return { context }; }
+
+  _exceptionParser(exception) {
+    if (exception.statusCode && exception.response) {
+      return {
+        message: exception.response.body.message || exception.name,
+        code: exception.response.body.code || exception.statusCode,
+        status: exception.response.body.status || _.snakeCase(exception.response.statusMessage)
+      };
+    }
+    return exception;
+  }
+
+  async _entityParser(entity) {
+    const { collection, entityParser } = this.context;
+    if (collection === true) {
+      const parsedEntities = entity;
+      for (const key in entity) { /* eslint-disable no-await-in-loop */
+        parsedEntities[key] = await entityParser(entity[key]);
+      }
+      return parsedEntities;
+    }
+    return entityParser(entity, this.context);
+  }
+
+  async _collectionParser(response) {
+    return response.body.collection;
+  }
+
+  async _responseParser(rawResponse) {
+    const { responseParser, collection, responseTransform, entityParser } = this.context;
+    const response = resolve.call(this, responseParser, rawResponse) || rawResponse;
+    let body = collection ? await this._collectionParser(response) : response.body;
+    body = responseTransform ? this._transform(body, responseTransform) : body;
+    body = entityParser ? await this._entityParser(body) : body;
+    return body;
+  }
+
+  _requestParser(payload) {
+    const { requestParser, requestTransform } = this.context;
+    let parsedPayload = resolve.call(this, requestParser, payload) || payload;
+    if (requestTransform) parsedPayload = this._transform(parsedPayload, requestTransform);
+    return parsedPayload;
+  }
+
+  _transform(payload, transform) {
+    const parsedPayload = _.isArray(payload) ? [] : {};
+    for (const key in payload) {
+      const nextKey = transform(key);
+      if (_.isPlainObject(payload[key])) {
+        parsedPayload[nextKey] = this._transform(payload[key], transform);
+      } else {
+        parsedPayload[nextKey] = payload[key];
+      }
+    }
+    return parsedPayload;
+  }
+
+  _request(payload) {
+    return Request({
+      form: this._requestParser(payload),
+      uri: `${this.context.baseUri}${this.context.path}`,
+      method: this.context.method,
+      headers: this.context.headers,
+      resolveWithFullResponse: true,
+      json: true
+    });
+  }
+
+  call = async (payload) => {
+    try {
+      const response = await this._request(payload);
+      return await this._responseParser(response);
+    } catch (exception) {
+      throw this._exceptionParser(exception);
+    }
+  };
+
+}
+
+export default ResourceCall;
