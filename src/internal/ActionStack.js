@@ -5,40 +5,23 @@ import Runtime from '../Runtime';
 class ActionStack extends Smart {
 
   stack = [];
+  persisted = [];
 
-  push = ({ id, key }) => {
+  push({ id, key }) {
     this.stack.push({ id, key });
-  };
+  }
 
-  clear = () => {
-    this.stack = [];
-  };
+  clear() {
+    this.stack = _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
+  }
 
-  groups = () => {
-    const store = Runtime('store');
-    const state = store.getState();
-    const actions = _.cloneDeep(state.actions);
-    const groups = _.groupBy(this.stack, 'key');
-    return _.mapValues(groups, (stack) => _.map(stack, (item) => {
-      const stackId = item.id;
-      return _.find(actions, (action) => (stackId === action.id));
-    }));
-  };
-
+  persist(...keys) {
+    this.persisted.push(...keys);
+  }
 
   find(key) {
     const map = this.groups();
     return map[key] || [];
-  }
-
-  all() {
-    const store = Runtime('store');
-    const state = store.getState();
-    const actions = _.cloneDeep(state.actions);
-    return _.map(this.stack, (item) => {
-      const stackId = item.id;
-      return _.find(actions, (action) => (stackId === action.id));
-    });
   }
 
   findLast(key = false) {
@@ -57,10 +40,25 @@ class ActionStack extends Smart {
   }
 
   isDone(...keys) {
-    let done = false;
+    let done;
     _.each(keys, (key) => {
-      const action = this.findLast(key);
-      done = done || !(!action || action.status === 'pending');
+      const actions = this.find(key);
+      _.each(actions, (action) => {
+        done = done === false ? done : !(!action || action.status === 'pending');
+      });
+    });
+    return done;
+  }
+
+  wasDoneOnce(...keys) {
+    let done;
+    _.each(keys, (key) => {
+      const actions = this.find(key);
+      let keyDone;
+      _.each(actions, (action) => {
+        keyDone = keyDone || !(!action || action.status === 'pending');
+      });
+      done = done === false ? done : keyDone;
     });
     return done;
   }
@@ -68,10 +66,33 @@ class ActionStack extends Smart {
   isPending(...keys) {
     let pending = false;
     _.each(keys, (key) => {
-      const action = this.findLast(key);
-      pending = pending || !!(action && action.status === 'pending');
+      const actions = this.find(key);
+      _.each(actions, (action) => {
+        pending = pending || !!(action && action.status === 'pending');
+      });
     });
     return pending;
+  }
+
+  groups() {
+    const store = Runtime('store');
+    const state = store.getState();
+    const actions = _.cloneDeep(state.actions);
+    const groups = _.groupBy(this.stack, 'key');
+    return _.mapValues(groups, (stack) => _.map(stack, (item) => {
+      const stackId = item.id;
+      return _.find(actions, (action) => (stackId === action.id));
+    }));
+  }
+
+  all() {
+    const store = Runtime('store');
+    const state = store.getState();
+    const actions = _.cloneDeep(state.actions);
+    return _.map(this.stack, (item) => {
+      const stackId = item.id;
+      return _.find(actions, (action) => (stackId === action.id));
+    });
   }
 
 }
