@@ -104,7 +104,7 @@ export default (Pure) => {
     state = {};
 
     componentWillUnmount() {
-      actionStack.clear();
+      actionStack.clear(true);
     }
 
     render() {
