@@ -14,8 +14,6 @@ const historyHook = ({ location, action }) => ({
 
 class Router extends React.Component {
 
-  // static displayName = 'ConnectedRouter';
-
   static dispatchToProps = ({ ownProps }) => ({
     historyHook: ownProps.historyHook || historyHook
   });

@@ -25,7 +25,7 @@ export default (Pure) => {
     return stylesheet;
   }
 
-  function getCssClasses() {
+  function getCssClass() {
     const componentStyle = Pure.css;
     if (componentStyle) {
       const stylesheet = StyleSheet.create({ component: componentStyle });
@@ -35,7 +35,7 @@ export default (Pure) => {
   }
 
   const displayName = Pure.name || 'Unnamed';
-  const inlineCssClasses = getCssClasses();
+  const cssClass = getCssClass();
 
   return class Component extends React.Component {
 
@@ -47,16 +47,17 @@ export default (Pure) => {
     }
 
     classNames = (current) => { /* eslint-disable react/prop-types */
-      const propClasses = this.props.className || false;
-      const inlineClasses = inlineCssClasses || false;
+      const inlineClass = cssClass || false;
       const currentClasses = current ? current.split(' ') : false;
-      return classNames(propClasses, inlineClasses, _.uniq(currentClasses));
+      const propClasses = this.props.className ? this.props.className.split(' ') : false;
+      const uniq = _.uniq([...currentClasses, inlineClass, propClasses]);
+      return classNames(...uniq);
     };
 
     computeCssClasses() { /* eslint-disable react/no-find-dom-node */
       const shallow = shallowRenderer.render(wrappedComponent);
       const node = ReactDOM.findDOMNode(this);
-      if (node && (this.props.className || inlineCssClasses)) {
+      if (node && (this.props.className || cssClass)) {
         if (isElement(shallow) && !isFragment(shallow)) {
           node.className = this.classNames(node.className);
         } else {
