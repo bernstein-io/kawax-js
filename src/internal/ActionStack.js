@@ -11,8 +11,8 @@ class ActionStack extends Smart {
     this.stack.push({ id, key });
   }
 
-  clear() {
-    this.stack = _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
+  clear(force = false) {
+    this.stack = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
   }
 
   persist(...keys) {
