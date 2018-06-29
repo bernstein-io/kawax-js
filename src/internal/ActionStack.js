@@ -4,6 +4,7 @@ import Runtime from '../Runtime';
 
 class ActionStack extends Smart {
 
+  keys = {};
   stack = [];
   persisted = [];
 
@@ -13,6 +14,15 @@ class ActionStack extends Smart {
 
   clear(force = false) {
     this.stack = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
+  }
+
+  clearOnChange(keys = {}) {
+    _.each(this.keys, (value, key) => {
+      if (!_.isEmpty(this.keys) && value !== keys[key]) {
+        this.clear(true);
+      }
+    });
+    this.keys = keys;
   }
 
   persist(...keys) {

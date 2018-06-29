@@ -20,7 +20,7 @@ export default (Pure) => {
     return _.omit(props, omitted);
   }
 
-  function getActions(props, state) {
+  function getActionStack(props, state) {
     const { idKey: prevKey = defaultKey } = prevProps;
     const { idKey: nextKey = defaultKey } = props;
     if (!_.isEqual(prevKey, nextKey)) actionStack.clear();
@@ -41,7 +41,7 @@ export default (Pure) => {
       const ownProps = omitProps(props);
       const nextProps = resolve(stateToProps, { state, ownProps, select });
       const idKey = nextProps.key || defaultKey;
-      const actions = getActions({ idKey, ...nextProps }, state);
+      const actions = getActionStack({ idKey, ...nextProps }, state);
       return { actions, select, idKey, ...nextProps };
     };
   }
@@ -104,7 +104,7 @@ export default (Pure) => {
     state = {};
 
     componentWillUnmount() {
-      actionStack.clear(true);
+      actionStack.clear();
     }
 
     render() {
