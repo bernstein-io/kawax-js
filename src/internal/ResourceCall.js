@@ -110,7 +110,8 @@ class ResourceCall extends Smart {
 
   _request(payload) {
     const { baseUri, path } = this.context;
-    const url = baseUri ? `${baseUri.replace(/\/$/, '')}${path}` : path;
+    let url = baseUri ? `${baseUri.replace(/\/$/, '')}${path}` : path;
+    url = url !== '/' ? url.replace(/\/$/, '') : url;
     const options = this._requestOptions(payload);
     return fetch(url, options);
   }
