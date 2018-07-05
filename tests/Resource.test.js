@@ -81,7 +81,7 @@ describe('Ressource Call Class', () => {
   test('_transform should parse correctly the payload object using the transform function given', () => {
     const obj = { fooProperty: 'some',
       barProp: {
-        otherProp: 'bar'
+        otherProp: 'bar',
       } };
     expect(resourceCall._transform(obj, _.snakeCase)).toEqual({ foo_property: 'some', bar_prop: { other_prop: 'bar' } });
   });

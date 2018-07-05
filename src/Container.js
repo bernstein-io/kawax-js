@@ -93,7 +93,7 @@ export default (Pure) => {
         listen: PropTypes.func.isRequired,
         location: PropTypes.object.isRequired,
         push: PropTypes.func.isRequired,
-      })
+      }),
     };
 
     static getDerivedStateFromProps(props, state) {

@@ -13,7 +13,7 @@ const { StyleSheet, css } = Aphrodite.extend([{
       }
     });
     return _.isEmpty(nestedTags) ? null : _.flattenDeep(nestedTags);
-  }
+  },
 }]);
 
 export { StyleSheet, css };
