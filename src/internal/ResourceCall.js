@@ -85,17 +85,9 @@ class ResourceCall extends Smart {
     return parsedPayload;
   }
 
-  _request(payload) {
-    const { baseUri, path } = this.context;
-    const url = baseUri ? `${baseUri}${path}` : path;
-    const options = this._requestOptions(payload);
-    return fetch(url, options);
-  }
-
-
   _requestOptions(payload) {
     const { method, headers, cors } = this.context;
-    const parsedPayload = this._requestParser(payload);
+
     const options = {
       method,
       credentials: 'same-origin',
@@ -104,6 +96,7 @@ class ResourceCall extends Smart {
     };
 
     if (method !== 'GET' && method !== 'HEAD') {
+      const parsedPayload = this._requestParser(payload);
       if (_.isPlainObject(parsedPayload)) {
         options.body = JSON.stringify(parsedPayload);
         options.headers.append('Content-Type', 'application/json');
@@ -113,6 +106,13 @@ class ResourceCall extends Smart {
     }
 
     return options;
+  }
+
+  _request(payload) {
+    const { baseUri, path } = this.context;
+    const url = baseUri ? `${baseUri}${path}` : path;
+    const options = this._requestOptions(payload);
+    return fetch(url, options);
   }
 
   call = async (payload) => {
