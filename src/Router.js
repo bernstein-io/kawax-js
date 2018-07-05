@@ -8,28 +8,28 @@ const historyHook = ({ location, action }) => ({
   type: 'ROUTER.EVENT',
   payload: {
     location,
-    action
-  }
+    action,
+  },
 });
 
 class Router extends React.Component {
 
   static dispatchToProps = ({ ownProps }) => ({
-    historyHook: ownProps.historyHook || historyHook
+    historyHook: ownProps.historyHook || historyHook,
   });
 
   static propTypes = {
     history: PropTypes.object,
-    historyHook: PropTypes.func.isRequired
+    historyHook: PropTypes.func.isRequired,
   };
 
   static defaultProps = {
-    history: History
+    history: History,
   };
 
   static propsToContext = ({ ownProps }) => ({
     location: ownProps.history.location,
-    history: ownProps.history
+    history: ownProps.history,
   });
 
   constructor(props, state) {

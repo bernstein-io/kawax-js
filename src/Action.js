@@ -15,7 +15,7 @@ class Action extends Smart {
   defaults(options = {}) {
     return ({
       status: 'pending',
-      ...options
+      ...options,
     });
   }
 
@@ -35,7 +35,7 @@ class Action extends Smart {
 
   _defaultOptions = (options) => this.defaultOptions({
     delegate: false,
-    ...options
+    ...options,
   });
 
   _export = (payload, data) => this.export({

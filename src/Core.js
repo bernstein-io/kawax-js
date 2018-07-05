@@ -23,7 +23,7 @@ class Core extends Smart {
       reducer: options.reducer || ((state) => state),
       container: options.container || (() => <div>It works!</div>),
       context: options.context || React.createContext({}),
-      store: new Store({ reducer: options.reducer })
+      store: new Store({ reducer: options.reducer }),
     });
   }
 

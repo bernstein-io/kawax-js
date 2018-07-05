@@ -19,7 +19,7 @@ class Store extends Smart {
     if (__DEV__ && global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) {
       return global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
         latency: 1000,
-        maxAge: 25
+        maxAge: 25,
       });
     }
     return compose;
@@ -63,7 +63,7 @@ class Store extends Smart {
       `%c${header} ${time} ${status}`,
       'color: #2A2F3A; font-weight: bold;',
       '\n | Action: ', action,
-      '\n | State:  ', state
+      '\n | State:  ', state,
     ];
   }
 

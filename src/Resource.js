@@ -16,6 +16,8 @@ class Resource extends Smart {
       method: resolver('method') || log.error('Resource method is undefined'),
       baseUri: resolver('baseUri') || '/',
       headers: resolver('headers') || {},
+      cors: resolver('cors') || false,
+      responseType: resolver('responseType') || 'json',
       collection: resolver('collection') || false,
       requestParser: resolver('requestParser', false) || ((payload) => payload),
       responseParser: resolver('responseParser', false) || ((response) => response),
@@ -23,7 +25,7 @@ class Resource extends Smart {
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
       options: resolver('options') || {},
-      ...this.context() || {}
+      ...this.context() || {},
     };
   }
 

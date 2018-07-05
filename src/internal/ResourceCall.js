@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import Request from 'request-promise-native';
 import Smart from '../Smart';
 import resolve from '../helpers/resolve';
 
@@ -8,14 +7,37 @@ class ResourceCall extends Smart {
   defaults(context) { return { context }; }
 
   _exceptionParser(exception) {
-    if (exception.statusCode && exception.response) {
+    if (exception.response) {
       return {
-        message: exception.response.body.message || exception.name,
-        code: exception.response.body.code || exception.statusCode,
-        status: exception.response.body.status || _.snakeCase(exception.response.statusMessage)
+        message: exception.message,
+        code: exception.response.status,
+        status: exception.response.statusText,
       };
     }
     return exception;
+  }
+
+  _fetchResponseParser(response) {
+    const { responseType } = this.context;
+    switch (responseType.toLowerCase()) {
+      case 'json':
+        return response.json();
+
+      case 'text':
+        return response.text();
+
+      case 'formdata':
+        return response.formData();
+
+      case 'arraybuffer':
+        return response.arrayBuffer();
+
+      case 'blob':
+        return response.blob();
+
+      default:
+        throw new Error('Unsupported response type');
+    }
   }
 
   async _entityParser(entity) {
@@ -31,13 +53,13 @@ class ResourceCall extends Smart {
   }
 
   async _collectionParser(response) {
-    return response.body.collection;
+    return response.collection;
   }
 
   async _responseParser(rawResponse) {
     const { responseParser, collection, responseTransform, entityParser } = this.context;
     const response = resolve.call(this, responseParser, rawResponse) || rawResponse;
-    let body = collection ? await this._collectionParser(response) : response.body;
+    let body = collection ? await this._collectionParser(response) : response;
     body = responseTransform ? this._transform(body, responseTransform) : body;
     body = entityParser ? await this._entityParser(body) : body;
     return body;
@@ -64,20 +86,45 @@ class ResourceCall extends Smart {
   }
 
   _request(payload) {
-    return Request({
-      form: this._requestParser(payload),
-      uri: `${this.context.baseUri}${this.context.path}`,
-      method: this.context.method,
-      headers: this.context.headers,
-      resolveWithFullResponse: true,
-      json: true
-    });
+    const { baseUri, path } = this.context;
+    const url = baseUri ? `${baseUri}${path}` : path;
+    const options = this._requestOptions(payload);
+    return fetch(url, options);
+  }
+
+
+  _requestOptions(payload) {
+    const { method, headers, cors } = this.context;
+    const parsedPayload = this._requestParser(payload);
+    const options = {
+      method,
+      credentials: 'same-origin',
+      cors: cors ? 'cors' : 'no-cors',
+      headers: new Headers(headers),
+    };
+
+    if (method !== 'GET' && method !== 'HEAD') {
+      if (_.isPlainObject(parsedPayload)) {
+        options.body = JSON.stringify(parsedPayload);
+        options.headers.append('Content-Type', 'application/json');
+      } else {
+        options.body = parsedPayload;
+      }
+    }
+
+    return options;
   }
 
   call = async (payload) => {
     try {
       const response = await this._request(payload);
-      return await this._responseParser(response);
+      if (!response.ok) {
+        const error = Error(`Error fetching ${response.url}`);
+        error.response = response;
+        throw this._exceptionParser(error);
+      }
+      const rawResponse = await this._fetchResponseParser(response);
+      return this._responseParser(rawResponse);
     } catch (exception) {
       throw this._exceptionParser(exception);
     }
