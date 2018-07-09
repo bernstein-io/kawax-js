@@ -47,15 +47,15 @@ export default (Pure) => {
   }
 
   function hookActions(actions) {
-    return _.mapValues(actions, (action, key) => (data, options) => {
-      const id = action(data, { delegate: false, ...options });
+    return _.mapValues(actions, (action, key) => (...data) => {
+      const id = action(...data);
       actionStack.push({ id, key });
     });
   }
 
-  function createActionsInstances(actions) {
+  function createActionsInstances(actions, options) {
     return _.mapValues(actions, (action) => {
-      const actionInstance = action();
+      const actionInstance = action(options);
       return (...args) => actionInstance._call(...args);
     });
   }
@@ -64,7 +64,7 @@ export default (Pure) => {
     const dispatchToProps = Pure.dispatchToProps || {};
     return (dispatch, ownProps) => {
       const actionCreators = resolve(dispatchToProps, { dispatch, ownProps });
-      const actionsInstances = createActionsInstances(actionCreators);
+      const actionsInstances = createActionsInstances(actionCreators, { delegate: false });
       const boundActions = bindActionCreators(actionsInstances, dispatch);
       const actions = hookActions(boundActions);
       return { dispatch, ...actions };
