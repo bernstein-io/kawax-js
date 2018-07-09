@@ -84,7 +84,6 @@ describe('Action class', () => {
     action.call = () => {
       throw new Error('test');
     };
-    global.__DEV__ = false; // do no want log.error to spam test results
     const mockProcessError = jest.fn(async () => 'foo');
     action._processError = mockProcessError;
     const returnedValue = await action._processPayload('foo', 'bar');
