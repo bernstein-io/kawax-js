@@ -18,8 +18,9 @@ describe('Action class', () => {
     expect(action.status).toEqual('error');
   });
 
-  test('export correctly generates the dispatch', () => {
+  test('export correctly returns a wrapper to the action constructor', () => {
     expect(Action.export()).toBeInstanceOf(Function);
+    expect(Action.export()()).toBeInstanceOf(Action);
   });
 
   test('_dispatchPending works correctly', () => {
@@ -39,7 +40,7 @@ describe('Action class', () => {
   test('_processSuccess sets success status, call the onSuccess method and correcly returns', async () => {
     const onSuccess = jest.fn();
     const payload = { foo: 'bar' };
-    action.onSuccess = onSuccess;
+    action._successCallback = onSuccess;
     const returnedSuccess = await action._processSuccess(payload, 'data');
     expect(action.status).toEqual('success');
     expect(onSuccess).toHaveBeenCalledTimes(1);
@@ -50,7 +51,7 @@ describe('Action class', () => {
   test('_processError sets error status, call the onError method and correcly returns', async () => {
     const onError = jest.fn();
     const payload = { foo: 'bar' };
-    action.onError = onError;
+    action._errorCallback = onError;
     const returnedError = await action._processError(payload);
     expect(action.status).toEqual('error');
     expect(onError).toHaveBeenCalledTimes(1);
@@ -140,13 +141,13 @@ describe('the Action flow is correct', () => {
   let firstCall;
   let secondCall;
   beforeAll(async () => {
-    const action = MockAction.export();
+    const action = MockAction.export()();
     mockFunc = jest.fn();
     const tester = (data) => {
       mockFunc(data);
       testPayloadFormat(_.last(mockFunc.mock.calls)[0]);
     };
-    action()(tester);
+    action._call()(tester);
     await new Promise((res) => process.nextTick(res));
     [firstCall, secondCall] = _.flatten(mockFunc.mock.calls);
   });

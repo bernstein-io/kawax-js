@@ -53,11 +53,19 @@ export default (Pure) => {
     });
   }
 
+  function createActionsInstances(actions) {
+    return _.mapValues(actions, (action) => {
+      const actionInstance = action();
+      return (...args) => actionInstance._call(...args);
+    });
+  }
+
   function wrapDispatchToProps() {
     const dispatchToProps = Pure.dispatchToProps || {};
     return (dispatch, ownProps) => {
       const actionCreators = resolve(dispatchToProps, { dispatch, ownProps });
-      const boundActions = bindActionCreators(actionCreators, dispatch);
+      const actionsInstances = createActionsInstances(actionCreators);
+      const boundActions = bindActionCreators(actionsInstances, dispatch);
       const actions = hookActions(boundActions);
       return { dispatch, ...actions };
     };
@@ -77,6 +85,8 @@ export default (Pure) => {
   const options = getConnectOptions();
 
   class Container extends React.Component {
+
+    state = {};
 
     static displayName = `Container(${displayName})`;
 
@@ -100,8 +110,6 @@ export default (Pure) => {
       prevProps = props;
       return state;
     }
-
-    state = {};
 
     componentWillUnmount() {
       actionStack.clear();
