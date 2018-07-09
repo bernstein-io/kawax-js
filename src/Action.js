@@ -12,6 +12,10 @@ class Action extends Smart {
 
   static type = '__UNDEFINED__';
 
+  static export(...options) {
+    return () => new this(...options);
+  }
+
   defaults(options = {}) {
     return ({
       status: 'pending',
@@ -90,7 +94,11 @@ class Action extends Smart {
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
         this[key] = (data, options = {}) => new Promise((success, error) => {
-          action(data, { success, error, delegate: true, ...options })(dispatch, getState);
+          const actionInstance = action();
+          actionInstance._call(
+            data,
+            { success, error, delegate: true, ...options },
+          )(dispatch, getState);
         });
       }
     });
@@ -110,7 +118,7 @@ class Action extends Smart {
     } else if (this.call !== undefined) {
       return this.call;
     }
-    return this._processSuccess(data);
+    return this._processSuccess(data, null);
   }
 
   async _afterDispatch(payload, data) {
@@ -125,14 +133,14 @@ class Action extends Smart {
   async _processSuccess(payload, data) {
     this.setStatus('success');
     const success = resolve.call(this, this.payload, payload, data);
-    await resolve.call(this, this.onSuccess, payload, data);
+    await resolve.call(this, this._successCallback, payload, data);
     return success;
   }
 
   async _processError(payload, data) {
     this.setStatus('error');
     const error = resolve.call(this, this.error, payload, data);
-    await resolve.call(this, this.onError, error, data);
+    await resolve.call(this, this._errorCallback, error, data);
     return error;
   }
 
@@ -140,7 +148,11 @@ class Action extends Smart {
     const action = this.export(context);
     return (data, options = {}) => new Promise((success, error) => {
       const { dispatch, getState } = Runtime('store');
-      action(data, { success, error, delegate: true, ...options })(dispatch, getState);
+      const actionInstance = action();
+      actionInstance._call(
+        data,
+        { success, error, delegate: true, ...options },
+      )(dispatch, getState);
     });
   }
 
