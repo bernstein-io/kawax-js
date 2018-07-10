@@ -40,14 +40,22 @@ class ResourceCall extends Smart {
     }
   }
 
-  _entityParser(entity) {
+  _promiseAllObject(obj) {
+    const keys = Object.keys(obj);
+    return Promise.all(Object.values(obj)).then((resolvedValues) => {
+      const resolvedObject = {};
+      keys.forEach((key, index) => {
+        resolvedObject[key] = resolvedValues[index];
+      });
+      return resolvedObject;
+    });
+  }
+
+  async _entityParser(entity) {
     const { collection, entityParser } = this.context;
     if (collection === true) {
-      const parsedEntities = entity;
-      for (const key in entity) {
-        parsedEntities[key] = entityParser(entity[key]);
-      }
-      return Promise.all(Object.values(parsedEntities));
+      const parsedEntities = entity.map((value) => entityParser(value, this.context));
+      return Promise.all(parsedEntities);
     }
     return entityParser(entity, this.context);
   }

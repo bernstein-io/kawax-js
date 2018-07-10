@@ -13,7 +13,7 @@ class Action extends Smart {
   static type = '__UNDEFINED__';
 
   static export(customOptions, ...args) {
-    return (options) => new this(Object.assign({}, options, customOptions), ...args);
+    return (options) => new this({ ...options, ...customOptions }, ...args);
   }
 
   initialize(_options) {
