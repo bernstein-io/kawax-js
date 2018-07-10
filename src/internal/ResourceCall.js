@@ -40,14 +40,14 @@ class ResourceCall extends Smart {
     }
   }
 
-  async _entityParser(entity) {
+  _entityParser(entity) {
     const { collection, entityParser } = this.context;
     if (collection === true) {
       const parsedEntities = entity;
-      for (const key in entity) { /* eslint-disable no-await-in-loop */
-        parsedEntities[key] = await entityParser(entity[key]);
+      for (const key in entity) {
+        parsedEntities[key] = entityParser(entity[key]);
       }
-      return parsedEntities;
+      return Promise.all(Object.values(parsedEntities));
     }
     return entityParser(entity, this.context);
   }
