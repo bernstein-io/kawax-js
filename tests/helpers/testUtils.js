@@ -24,7 +24,7 @@ function diveTo(shallowWrapper, identifier, options = { context: {} }) {
   // it's necessary to manually pass down child context like this
   const context = _.extend(
     {}, instance && instance.getChildContext ? instance.getChildContext() : {},
-    options.context
+    options.context,
   );
 
   return diveTo(shallowWrapper.dive({ context }), identifier, { context });

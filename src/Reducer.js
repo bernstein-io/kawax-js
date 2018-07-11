@@ -60,7 +60,8 @@ class Reducer extends Smart {
     return (state, action) => {
       let next = state;
       const { type } = action;
-      _.each(map, (pointer, regex) => {
+      _.each(map, (pointer, match) => {
+        const regex = new RegExp(`(^[^.]?|[.])${match}`, 'g');
         if (type && type.match(regex)) {
           const resolvedState = resolve.call(this, pointer, state, action);
           next = this.reduce(next, resolvedState, action);

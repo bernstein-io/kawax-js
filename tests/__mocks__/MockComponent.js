@@ -10,7 +10,7 @@ class MockComponent extends React.Component {
   };
 
   static defaultProps = {
-    defaultProp: 'autoset'
+    defaultProp: 'autoset',
   };
 
   render() {

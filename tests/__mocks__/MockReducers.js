@@ -9,7 +9,7 @@ class PlainObjectReducer extends Reducer {
   });
 
   state = this.match({
-    ADDTOOBJECT: this.addToObject
+    ADDTOOBJECT: this.addToObject,
   });
 
 }

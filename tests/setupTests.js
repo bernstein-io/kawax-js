@@ -7,4 +7,5 @@ import Adapter from 'enzyme-adapter-react-16';
 
 configure({ adapter: new Adapter() });
 global.__DEV__ = false;
+global.console.error = () => {};
 

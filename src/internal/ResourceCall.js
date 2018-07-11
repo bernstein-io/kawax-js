@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import Request from 'request-promise-native';
 import Smart from '../Smart';
 import resolve from '../helpers/resolve';
 
@@ -8,36 +7,51 @@ class ResourceCall extends Smart {
   defaults(context) { return { context }; }
 
   _exceptionParser(exception) {
-    if (exception.statusCode && exception.response) {
+    if (exception.response) {
       return {
-        message: exception.response.body.message || exception.name,
-        code: exception.response.body.code || exception.statusCode,
-        status: exception.response.body.status || _.snakeCase(exception.response.statusMessage)
+        message: exception.message,
+        code: exception.response.status,
+        status: exception.response.statusText,
       };
     }
     return exception;
   }
 
+  _fetchResponseParser(response) {
+    const { responseType } = this.context;
+    switch (responseType.toLowerCase()) {
+      case 'json':
+        return response.json();
+      case 'text':
+        return response.text();
+      case 'formdata':
+        return response.formData();
+      case 'arraybuffer':
+        return response.arrayBuffer();
+      case 'blob':
+        return response.blob();
+      default:
+        throw new Error('Unsupported response type');
+    }
+  }
+
   async _entityParser(entity) {
     const { collection, entityParser } = this.context;
     if (collection === true) {
-      const parsedEntities = entity;
-      for (const key in entity) { /* eslint-disable no-await-in-loop */
-        parsedEntities[key] = await entityParser(entity[key]);
-      }
-      return parsedEntities;
+      const parsedEntities = entity.map((value) => entityParser(value, this.context));
+      return Promise.all(parsedEntities);
     }
     return entityParser(entity, this.context);
   }
 
   async _collectionParser(response) {
-    return response.body.collection;
+    return response.collection;
   }
 
   async _responseParser(rawResponse) {
     const { responseParser, collection, responseTransform, entityParser } = this.context;
     const response = resolve.call(this, responseParser, rawResponse) || rawResponse;
-    let body = collection ? await this._collectionParser(response) : response.body;
+    let body = collection ? await this._collectionParser(response) : response;
     body = responseTransform ? this._transform(body, responseTransform) : body;
     body = entityParser ? await this._entityParser(body) : body;
     return body;
@@ -63,21 +77,48 @@ class ResourceCall extends Smart {
     return parsedPayload;
   }
 
+  _requestOptions(payload) {
+    const { method, headers, allowCors } = this.context;
+    const options = {
+      method,
+      credentials: 'same-origin',
+      cors: allowCors ? 'cors' : 'no-cors',
+      headers: new Headers(headers),
+    };
+    if (method !== 'GET' && method !== 'HEAD') {
+      const parsedPayload = this._requestParser(payload);
+      if (_.isPlainObject(parsedPayload)) {
+        options.body = JSON.stringify(parsedPayload);
+        options.headers.append('Content-Type', 'application/json');
+      } else {
+        options.body = parsedPayload;
+      }
+    }
+    return options;
+  }
+
+  _requestUrl(baseUri, path) {
+    const url = baseUri ? `${baseUri.replace(/\/$/, '')}${path}` : path;
+    return url !== '/' ? url.replace(/\/$/, '') : url;
+  }
+
   _request(payload) {
-    return Request({
-      form: this._requestParser(payload),
-      uri: `${this.context.baseUri}${this.context.path}`,
-      method: this.context.method,
-      headers: this.context.headers,
-      resolveWithFullResponse: true,
-      json: true
-    });
+    const { baseUri, path } = this.context;
+    const url = this._requestUrl(baseUri, path);
+    const options = this._requestOptions(payload);
+    return fetch(url, options);
   }
 
   call = async (payload) => {
     try {
       const response = await this._request(payload);
-      return await this._responseParser(response);
+      if (!response.ok) {
+        const error = Error(`Error fetching ${response.url}`);
+        error.response = response;
+        throw this._exceptionParser(error);
+      }
+      const rawResponse = await this._fetchResponseParser(response);
+      return this._responseParser(rawResponse);
     } catch (exception) {
       throw this._exceptionParser(exception);
     }

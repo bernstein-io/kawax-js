@@ -1,4 +1,5 @@
 import { createStore, applyMiddleware, compose } from 'redux';
+import _ from 'lodash';
 import Thunk from 'redux-thunk';
 import Smart from './Smart';
 import log from './helpers/log';
@@ -8,6 +9,9 @@ class Store extends Smart {
   initialize({ reducer }) {
     const reduxStore = this._createStore(reducer);
     this.extend(reduxStore);
+    if (__DEV__) {
+      this.extend({ pendingActions: [] });
+    }
   }
 
   _createStore(reducer = this.reducer) {
@@ -19,7 +23,7 @@ class Store extends Smart {
     if (__DEV__ && global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) {
       return global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
         latency: 1000,
-        maxAge: 25
+        maxAge: 25,
       });
     }
     return compose;
@@ -41,10 +45,19 @@ class Store extends Smart {
 
   _logger({ getState }) {
     return (next) => (action) => {
-      const state = getState();
-      const timeStarted = Date.now();
+      let state;
+      let duration = null;
+      if (action.status === 'pending') {
+        state = getState();
+        this.pendingActions.push({ id: action.id, startTime: performance.now() });
+      }
       const payload = next(action);
-      const duration = (Date.now() - timeStarted);
+      if (action.status !== 'pending') {
+        state = getState();
+        const [initialAction] = _.remove(this.pendingActions, (pendingAction) =>
+          pendingAction.id === action.id);
+        duration = performance.now() - initialAction.startTime;
+      }
       const output = this._formatLog(state, action, duration);
       if (action.status === 'error') {
         log.warning(...output);
@@ -58,12 +71,15 @@ class Store extends Smart {
   _formatLog(state, action, duration) {
     const header = `dispatched ${String(action.type)}`;
     const status = (action.status ? `[${action.status}]` : '[no-status]');
-    const time = `(in ${duration.toFixed(2)} ms)`;
+    let time = ' ';
+    if (duration) {
+      time = ` (completed in ${duration >= 1000 ? `${(duration / 1000).toFixed(2)} s` : `${duration.toFixed(0)} ms`}) `;
+    }
     return [
-      `%c${header} ${time} ${status}`,
+      `%c${header}${time}${status}`,
       'color: #2A2F3A; font-weight: bold;',
       '\n | Action: ', action,
-      '\n | State:  ', state
+      '\n | State:  ', state,
     ];
   }
 
