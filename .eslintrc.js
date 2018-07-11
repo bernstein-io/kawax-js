@@ -41,7 +41,6 @@ module.exports = {
     "react/sort-comp": "off",
     "arrow-parens": ["error", "always"],
     "no-restricted-syntax": ["off", "ForInStatement"],
-    "comma-dangle": ["warn", "only-multiline"],
     "react/prop-types": ["error", {
       ignore: ["actions"]
     }],

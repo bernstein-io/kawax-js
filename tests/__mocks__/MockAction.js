@@ -3,7 +3,7 @@ import Action from '../../src/Action';
 class MockAction extends Action {
 
   static type = 'TEST';
-  call = (data, options) => data;
+  call = (data) => data;
   payload = (payload, data) => ({
     foo: 'bar',
   });

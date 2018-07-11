@@ -74,14 +74,14 @@ describe('Ressource Call Class', () => {
   });
 
   test('_collection parser should return the correct attribute', async () => {
-    const collection = await resourceCall._collectionParser({ body: { collection: 'foo' } });
+    const collection = await resourceCall._collectionParser({ collection: 'foo' });
     expect(collection).toEqual('foo');
   });
 
   test('_transform should parse correctly the payload object using the transform function given', () => {
     const obj = { fooProperty: 'some',
       barProp: {
-        otherProp: 'bar'
+        otherProp: 'bar',
       } };
     expect(resourceCall._transform(obj, _.snakeCase)).toEqual({ foo_property: 'some', bar_prop: { other_prop: 'bar' } });
   });
@@ -112,7 +112,7 @@ describe('Ressource Call Class', () => {
     resourceCall.context = {
       responseParser: jest.fn((val) => val),
     };
-    const response = await resourceCall._responseParser({ body: { foo: 'bar' } });
+    const response = await resourceCall._responseParser({ foo: 'bar' });
     expect(response).toBeDefined();
     expect(response).toEqual({ foo: 'bar' });
     expect(resourceCall.context.responseParser).toHaveBeenCalledTimes(1);
@@ -122,8 +122,8 @@ describe('Ressource Call Class', () => {
     resourceCall.context = {
       collection: true,
     };
-    resourceCall._collectionParser = jest.fn((val) => val.body);
-    const response = await resourceCall._responseParser({ body: { foo: 'bar' } });
+    resourceCall._collectionParser = jest.fn((val) => val);
+    const response = await resourceCall._responseParser({ foo: 'bar' });
     expect(response).toBeDefined();
     expect(response).toEqual({ foo: 'bar' });
     expect(resourceCall._collectionParser).toHaveBeenCalledTimes(1);
@@ -134,7 +134,7 @@ describe('Ressource Call Class', () => {
       responseTransform: true,
     };
     resourceCall._transform = jest.fn((val) => val);
-    const response = await resourceCall._responseParser({ body: { foo: 'bar' } });
+    const response = await resourceCall._responseParser({ foo: 'bar' });
     expect(response).toBeDefined();
     expect(response).toEqual({ foo: 'bar' });
     expect(resourceCall._transform).toHaveBeenCalledTimes(1);
@@ -145,7 +145,7 @@ describe('Ressource Call Class', () => {
       entityParser: true,
     };
     resourceCall._entityParser = jest.fn((val) => val);
-    const response = await resourceCall._responseParser({ body: { foo: 'bar' } });
+    const response = await resourceCall._responseParser({ foo: 'bar' });
     expect(response).toBeDefined();
     expect(response).toEqual({ foo: 'bar' });
     expect(resourceCall._entityParser).toHaveBeenCalledTimes(1);

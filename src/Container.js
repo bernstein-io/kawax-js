@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { compose, bindActionCreators } from 'redux';
+import { compose } from 'redux';
 import { connect } from 'react-redux';
 import Runtime from './Runtime';
 import ActionStack from './internal/ActionStack';
@@ -46,19 +46,21 @@ export default (Pure) => {
     };
   }
 
-  function hookActions(actions) {
-    return _.mapValues(actions, (action, key) => (data, options) => {
-      const id = action(data, { delegate: false, ...options });
-      actionStack.push({ id, key });
-    });
+  function createActions(actionConstructors, dispatch) {
+    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) =>
+      new Promise((success, error) => {
+        const { getState } = Runtime('store');
+        const actionInstance = actionConstructor();
+        const id = actionInstance._call(...data)(dispatch, getState);
+        actionStack.push({ id, key });
+      }));
   }
 
   function wrapDispatchToProps() {
     const dispatchToProps = Pure.dispatchToProps || {};
     return (dispatch, ownProps) => {
-      const actionCreators = resolve(dispatchToProps, { dispatch, ownProps });
-      const boundActions = bindActionCreators(actionCreators, dispatch);
-      const actions = hookActions(boundActions);
+      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps });
+      const actions = createActions(actionConstructors, dispatch);
       return { dispatch, ...actions };
     };
   }
@@ -78,6 +80,8 @@ export default (Pure) => {
 
   class Container extends React.Component {
 
+    state = {};
+
     static displayName = `Container(${displayName})`;
 
     static propTypes = Pure.propTypes;
@@ -93,15 +97,13 @@ export default (Pure) => {
         listen: PropTypes.func.isRequired,
         location: PropTypes.object.isRequired,
         push: PropTypes.func.isRequired,
-      })
+      }),
     };
 
     static getDerivedStateFromProps(props, state) {
       prevProps = props;
       return state;
     }
-
-    state = {};
 
     componentWillUnmount() {
       actionStack.clear();
