@@ -16,7 +16,7 @@ class Resource extends Smart {
       method: resolver('method') || log.error('Resource method is undefined'),
       baseUri: resolver('baseUri') || '/',
       headers: resolver('headers') || {},
-      cors: resolver('cors') || false,
+      allowCors: resolver('allowCors') || false,
       responseType: resolver('responseType') || 'json',
       collection: resolver('collection') || false,
       requestParser: resolver('requestParser', false) || ((payload) => payload),

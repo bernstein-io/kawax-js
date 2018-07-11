@@ -12,22 +12,16 @@ class Action extends Smart {
 
   static type = '__UNDEFINED__';
 
-  static export(customOptions, ...args) {
-    return (options) => new this({ ...options, ...customOptions }, ...args);
+  static export(options, ...args) {
+    return (context) => new this({ ...options, ...context }, ...args);
   }
 
-  initialize(_options) {
-    const { success, error, ...options } = _.isPlainObject(_options) ? _options : {};
-    this._successCallback = success;
-    this._errorCallback = error;
-    this.extend({ options });
-  }
-
-  defaults(options = {}) {
-    return ({
-      status: 'pending',
-      ...options,
-    });
+  defaults({ success, error, ...options }) {
+    return {
+      _successCallback: success,
+      _errorCallback: error,
+      options,
+    };
   }
 
   parsePayload = (payload) => payload;

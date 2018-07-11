@@ -133,6 +133,9 @@ const testPayloadFormat = (obj) => {
   expect(obj).toHaveProperty('type');
   expect(obj).toHaveProperty('status');
   expect(obj).toHaveProperty('payload');
+  expect(obj).toHaveProperty('options');
+  expect(obj.options).toHaveProperty('delegate');
+  expect(obj.options).toBeInstanceOf(Boolean);
 };
 
 describe('the Action flow is correct', () => {
