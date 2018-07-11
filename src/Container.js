@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { compose, bindActionCreators } from 'redux';
+import { compose } from 'redux';
 import { connect } from 'react-redux';
 import Runtime from './Runtime';
 import ActionStack from './internal/ActionStack';
@@ -46,27 +46,21 @@ export default (Pure) => {
     };
   }
 
-  function hookActions(actions) {
-    return _.mapValues(actions, (action, key) => (...data) => {
-      const id = action(...data);
-      actionStack.push({ id, key });
-    });
-  }
-
-  function createActionsInstances(actions, options) {
-    return _.mapValues(actions, (action) => {
-      const actionInstance = action(options);
-      return (...args) => actionInstance._call(...args);
-    });
+  function createActions(actionConstructors, dispatch) {
+    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) =>
+      new Promise((success, error) => {
+        const { getState } = Runtime('store');
+        const actionInstance = actionConstructor();
+        const id = actionInstance._call(...data)(dispatch, getState);
+        actionStack.push({ id, key });
+      }));
   }
 
   function wrapDispatchToProps() {
     const dispatchToProps = Pure.dispatchToProps || {};
     return (dispatch, ownProps) => {
-      const actionCreators = resolve(dispatchToProps, { dispatch, ownProps });
-      const actionsInstances = createActionsInstances(actionCreators, { delegate: false });
-      const boundActions = bindActionCreators(actionsInstances, dispatch);
-      const actions = hookActions(boundActions);
+      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps });
+      const actions = createActions(actionConstructors, dispatch);
       return { dispatch, ...actions };
     };
   }

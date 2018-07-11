@@ -22,33 +22,17 @@ class ResourceCall extends Smart {
     switch (responseType.toLowerCase()) {
       case 'json':
         return response.json();
-
       case 'text':
         return response.text();
-
       case 'formdata':
         return response.formData();
-
       case 'arraybuffer':
         return response.arrayBuffer();
-
       case 'blob':
         return response.blob();
-
       default:
         throw new Error('Unsupported response type');
     }
-  }
-
-  _promiseAllObject(obj) {
-    const keys = Object.keys(obj);
-    return Promise.all(Object.values(obj)).then((resolvedValues) => {
-      const resolvedObject = {};
-      keys.forEach((key, index) => {
-        resolvedObject[key] = resolvedValues[index];
-      });
-      return resolvedObject;
-    });
   }
 
   async _entityParser(entity) {
@@ -94,15 +78,13 @@ class ResourceCall extends Smart {
   }
 
   _requestOptions(payload) {
-    const { method, headers, cors } = this.context;
-
+    const { method, headers, allowCors } = this.context;
     const options = {
       method,
       credentials: 'same-origin',
-      cors: cors ? 'cors' : 'no-cors',
+      cors: allowCors ? 'cors' : 'no-cors',
       headers: new Headers(headers),
     };
-
     if (method !== 'GET' && method !== 'HEAD') {
       const parsedPayload = this._requestParser(payload);
       if (_.isPlainObject(parsedPayload)) {
@@ -112,14 +94,17 @@ class ResourceCall extends Smart {
         options.body = parsedPayload;
       }
     }
-
     return options;
+  }
+
+  _requestUrl(baseUri, path) {
+    const url = baseUri ? `${baseUri.replace(/\/$/, '')}${path}` : path;
+    return url !== '/' ? url.replace(/\/$/, '') : url;
   }
 
   _request(payload) {
     const { baseUri, path } = this.context;
-    let url = baseUri ? `${baseUri.replace(/\/$/, '')}${path}` : path;
-    url = url !== '/' ? url.replace(/\/$/, '') : url;
+    const url = this._requestUrl(baseUri, path);
     const options = this._requestOptions(payload);
     return fetch(url, options);
   }
