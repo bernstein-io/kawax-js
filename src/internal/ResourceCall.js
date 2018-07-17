@@ -6,18 +6,47 @@ class ResourceCall extends Smart {
 
   defaults(context) { return { context }; }
 
-  _exceptionParser(exception) {
-    if (exception.response) {
-      return {
-        message: exception.message,
-        code: exception.response.status,
-        status: exception.response.statusText,
-      };
+  async _entityParser(entity) {
+    const { collection, entityParser } = this.context;
+    if (collection === true) {
+      const parsedEntities = entity.map((value) => entityParser(value, this.context));
+      return Promise.all(parsedEntities);
     }
-    return exception;
+    return entityParser(entity, this.context);
   }
 
-  _fetchResponseParser(response) {
+  async _collectionParser(response) {
+    return response.collection;
+  }
+
+  async _responseBodyParser(body) {
+    const { responseParser, collection, responseTransform, entityParser } = this.context;
+    const response = resolve.call(this, responseParser, body) || body;
+    let payload = collection ? await this._collectionParser(response) : response;
+    payload = responseTransform ? this._transform(payload, responseTransform) : payload;
+    payload = entityParser ? await this._entityParser(payload) : payload;
+    return payload;
+  }
+
+  _exceptionParser(exception) {
+    return {
+      code: 100,
+      status: 'ClientError',
+      message: exception.message,
+      details: exception,
+    };
+  }
+
+  _errorParser(response, body) {
+    return {
+      code: error.status,
+      message: error.message,
+      status: _.snakeCase(error.statusText),
+      details: body,
+    };
+  }
+
+  _bodyTypeParser(response) {
     const { responseType } = this.context;
     switch (responseType.toLowerCase()) {
       case 'json':
@@ -35,29 +64,15 @@ class ResourceCall extends Smart {
     }
   }
 
-  async _entityParser(entity) {
-    const { collection, entityParser } = this.context;
-    if (collection === true) {
-      const parsedEntities = entity.map((value) => entityParser(value, this.context));
-      return Promise.all(parsedEntities);
-    }
-    return entityParser(entity, this.context);
+  _responseParser(response) {
+    return {
+      body: this._bodyTypeParser(response),
+      status: _.snakeCase(response.statusText),
+      code: response.status,
+    };
   }
 
-  async _collectionParser(response) {
-    return response.collection;
-  }
-
-  async _responseParser(rawResponse) {
-    const { responseParser, collection, responseTransform, entityParser } = this.context;
-    const response = resolve.call(this, responseParser, rawResponse) || rawResponse;
-    let body = collection ? await this._collectionParser(response) : response;
-    body = responseTransform ? this._transform(body, responseTransform) : body;
-    body = entityParser ? await this._entityParser(body) : body;
-    return body;
-  }
-
-  _requestParser(payload) {
+  _requestPayloadParser(payload) {
     const { requestParser, requestTransform } = this.context;
     let parsedPayload = resolve.call(this, requestParser, payload) || payload;
     if (requestTransform) parsedPayload = this._transform(parsedPayload, requestTransform);
@@ -86,7 +101,7 @@ class ResourceCall extends Smart {
       headers: new Headers(headers),
     };
     if (method !== 'GET' && method !== 'HEAD') {
-      const parsedPayload = this._requestParser(payload);
+      const parsedPayload = this._requestPayloadParser(payload);
       if (_.isPlainObject(parsedPayload)) {
         options.body = JSON.stringify(parsedPayload);
         options.headers.append('Content-Type', 'application/json');
@@ -111,14 +126,10 @@ class ResourceCall extends Smart {
 
   call = async (payload) => {
     try {
-      const response = await this._request(payload);
-      if (!response.ok) {
-        const error = Error(`Error fetching ${response.url}`);
-        error.response = response;
-        throw this._exceptionParser(error);
-      }
-      const rawResponse = await this._fetchResponseParser(response);
-      return this._responseParser(rawResponse);
+      const reponse = await this._request(payload);
+      const body = this._bodyTypeParser(response);
+      if (!reponse.ok) throw this._errorParser(response, body);
+      return this._responseBodyParser(body);
     } catch (exception) {
       throw this._exceptionParser(exception);
     }
