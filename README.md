@@ -6,5 +6,9 @@ Kawax: (React + Redux) on steroids 🚀
 ## Experimental package
 Use at your own risk.
 
+## Install
+
+`npm install kawax-js`
+
 ## License
 [MIT](LICENSE.md)

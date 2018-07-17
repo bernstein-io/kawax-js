@@ -14,8 +14,15 @@ class MockComponent extends React.Component {
   };
 
   render() {
+    const { foobar, defaultProp } = this.props;
     return (
-      <h1>{this.props.foobar} : { this.props.defaultProp }</h1>
+      <h1>
+        {foobar}
+        {' '}
+:
+        {' '}
+        {defaultProp}
+      </h1>
     );
   }
 

@@ -22,7 +22,12 @@ class MockContainer extends React.Component {
   };
 
   render() {
-    return <div>{this.props.foo}</div>;
+    const { foo } = this.props;
+    return (
+      <div>
+        {foo}
+      </div>
+    );
   }
 
 }

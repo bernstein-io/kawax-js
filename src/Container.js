@@ -47,13 +47,13 @@ export default (Pure) => {
   }
 
   function createActions(actionConstructors, dispatch) {
-    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) =>
-      new Promise((success, error) => {
+    return _.mapValues(actionConstructors, (actionConstructor, key) => (
+      (...data) => new Promise((success, error) => {
         const { getState } = Runtime('store');
         const actionInstance = actionConstructor();
         const id = actionInstance._call(...data)(dispatch, getState);
         actionStack.push({ id, key });
-      }));
+      })));
   }
 
   function wrapDispatchToProps() {
@@ -84,6 +84,7 @@ export default (Pure) => {
 
     static displayName = `Container(${displayName})`;
 
+    // eslint-disable-next-line react/forbid-foreign-prop-types
     static propTypes = Pure.propTypes;
 
     static defaultProps = Pure.defaultProps;
@@ -116,7 +117,8 @@ export default (Pure) => {
 
     computeContext(ownProps) {
       const withRouter = Runtime('withRouter');
-      const state = this.context.store.getState();
+      const { store } = this.context;
+      const state = store.getState();
       const select = getSelect(state);
       const propsToContext = resolve(Pure.propsToContext, { ownProps, select });
       if (withRouter && ownProps.match) {
@@ -163,4 +165,3 @@ export default (Pure) => {
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
   return compose(contextConsumer, reduxConnect)(Container);
 };
-
