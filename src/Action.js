@@ -18,9 +18,13 @@ class Action extends Smart {
 
   defaults({ success, error, ...options }) {
     return {
-      _successCallback: success,
-      _errorCallback: error,
-      options,
+      id: uuid(),
+      successCallback: success,
+      errorCallback: error,
+      options: {
+        ...options,
+        delegate: options.delegate === true,
+      },
     };
   }
 
@@ -36,18 +40,13 @@ class Action extends Smart {
 
   export = (action) => action;
 
-  defaultOptions = (options) => options;
-
-  _defaultOptions = (options) => this.defaultOptions({
-    delegate: false,
-    ...options,
-  });
+  parseOptions = (options) => options;
 
   _export = (payload) => this.export({
     payload: this._parsePayload(payload) || false,
+    options: this.parseOptions(this.options),
     type: this.constructor.type,
     timestamp: this.timestamp,
-    options: this.options,
     status: this.status,
     id: this.id,
   });
@@ -56,8 +55,7 @@ class Action extends Smart {
     return resolve.call(this, this.parsePayload, payload);
   }
 
-  _call(...data) {
-    this.id = uuid();
+  run(...data) {
     this.timestamp = Date.now();
     return (dispatch, getState) => {
       this._setGetState(getState);
@@ -92,7 +90,7 @@ class Action extends Smart {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise((success, error) => {
           const actionInstance = action({ success, error, delegate: true });
-          actionInstance._call(...data)(dispatch, getState);
+          actionInstance.run(...data)(dispatch, getState);
         });
       }
     });
@@ -117,33 +115,32 @@ class Action extends Smart {
 
   async _afterDispatch(payload, ...data) {
     if (this.status === 'success') {
-      await resolve.call(this, this._successCallback, payload);
+      await resolve.call(this, this.successCallback, payload);
       resolve.call(this, this.afterDispatch, payload, ...data);
     } else {
-      resolve.call(this, this._errorCallback, payload);
+      resolve.call(this, this.errorCallback, payload);
     }
   }
 
   async _processSuccess(payload, ...data) {
     this.setStatus('success');
     const success = resolve.call(this, this.payload, payload, ...data);
-    await resolve.call(this, this._successCallback, payload, ...data);
+    await resolve.call(this, this.successCallback, payload, ...data);
     return success;
   }
 
   async _processError(payload, ...data) {
     this.setStatus('error');
     const error = resolve.call(this, this.error, payload, ...data);
-    await resolve.call(this, this._errorCallback, error, ...data);
+    await resolve.call(this, this.errorCallback, error, ...data);
     return error;
   }
 
   static bind(context) {
     return (...data) => new Promise((success, error) => {
       const { dispatch, getState } = Runtime('store');
-      const action = this.export({ success, error, delegate: true, ...context });
-      const actionInstance = action();
-      actionInstance._call(...data)(dispatch, getState);
+      const action = new this({ success, error, delegate: true, ...context });
+      action.run(...data)(dispatch, getState);
     });
   }
 
