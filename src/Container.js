@@ -47,13 +47,13 @@ export default (Pure) => {
   }
 
   function createActions(actionConstructors, dispatch) {
-    return _.mapValues(actionConstructors, (actionConstructor, key) => (
-      (...data) => new Promise((success, error) => {
-        const { getState } = Runtime('store');
-        const actionInstance = actionConstructor();
-        const id = actionInstance._call(...data)(dispatch, getState);
-        actionStack.push({ id, key });
-      })));
+    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
+      const { getState } = Runtime('store');
+      const instance = actionConstructor({ delegate: false });
+      const id = instance.run(...data)(dispatch, getState);
+      actionStack.push({ id, key });
+      return id;
+    });
   }
 
   function wrapDispatchToProps() {

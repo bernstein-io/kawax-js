@@ -23,6 +23,7 @@ class Resource extends Smart {
       requestParser: resolver('requestParser', false) || ((payload) => payload),
       responseParser: resolver('responseParser', false) || ((response) => response),
       entityParser: resolver('entityParser', false) || false,
+      errorParser: resolver('errorParser', false) || ((payload) => payload),
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
       options: resolver('options') || {},
