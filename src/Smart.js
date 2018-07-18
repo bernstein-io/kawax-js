@@ -13,7 +13,7 @@ class Smart {
   initialize() { return this; }
 
   _call(...args) {
-    return this.call ? this.call(...args) : this;
+    return this.call ? this.call(...args) : false;
   }
 
   extend(object) {

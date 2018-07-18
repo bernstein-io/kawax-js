@@ -69,8 +69,7 @@ describe('Resource Class', () => {
 describe('Ressource Call Class', () => {
   let resourceCall;
   beforeEach(() => {
-    resourceCall = new ResourceCall();
-
+    resourceCall = new ResourceCall({ responseType: 'json' });
   });
 
   test('_collection parser should return the correct attribute', async () => {
@@ -92,7 +91,7 @@ describe('Ressource Call Class', () => {
   });
 
   test('call should throw without payload', async () => {
-    await expect(resourceCall.call()).rejects.toBeInstanceOf(Error);
+    await expect(resourceCall.call()).rejects.toBeInstanceOf(Object);
   });
 
   test('defaults should return an object wrapping the context in the context property', () => {
@@ -102,53 +101,10 @@ describe('Ressource Call Class', () => {
   test('_entityParser should use the context entityParser and return', async () => {
     const mockParser = jest.fn();
     mockParser.mockReturnValue('foo');
-    resourceCall.context = { entityParser: mockParser };
+    resourceCall.context.entityParser = mockParser;
     const obj = { foo: 'bar' };
     expect(await resourceCall._entityParser(obj)).toEqual('foo');
     expect(mockParser).toHaveBeenCalledWith(obj, resourceCall.context);
-  });
-
-  test('responseParser should parse the response with responseParser', async () => {
-    resourceCall.context = {
-      responseParser: jest.fn((val) => val),
-    };
-    const response = await resourceCall._responseParser({ foo: 'bar' });
-    expect(response).toBeDefined();
-    expect(response).toEqual({ foo: 'bar' });
-    expect(resourceCall.context.responseParser).toHaveBeenCalledTimes(1);
-  });
-
-  test('responseParser should parse the response with collection parser if collection is true', async () => {
-    resourceCall.context = {
-      collection: true,
-    };
-    resourceCall._collectionParser = jest.fn((val) => val);
-    const response = await resourceCall._responseParser({ foo: 'bar' });
-    expect(response).toBeDefined();
-    expect(response).toEqual({ foo: 'bar' });
-    expect(resourceCall._collectionParser).toHaveBeenCalledTimes(1);
-  });
-
-  test('responseParser should transform the response if responseTransform is set to true', async () => {
-    resourceCall.context = {
-      responseTransform: true,
-    };
-    resourceCall._transform = jest.fn((val) => val);
-    const response = await resourceCall._responseParser({ foo: 'bar' });
-    expect(response).toBeDefined();
-    expect(response).toEqual({ foo: 'bar' });
-    expect(resourceCall._transform).toHaveBeenCalledTimes(1);
-  });
-
-  test('responseParser should parse entities from the response if entityParser is set to true', async () => {
-    resourceCall.context = {
-      entityParser: true,
-    };
-    resourceCall._entityParser = jest.fn((val) => val);
-    const response = await resourceCall._responseParser({ foo: 'bar' });
-    expect(response).toBeDefined();
-    expect(response).toEqual({ foo: 'bar' });
-    expect(resourceCall._entityParser).toHaveBeenCalledTimes(1);
   });
 
 });
