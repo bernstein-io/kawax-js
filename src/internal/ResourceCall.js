@@ -30,20 +30,21 @@ class ResourceCall extends Smart {
 
   _exceptionParser(exception) {
     return {
-      code: 100,
-      status: 'ClientError',
-      message: exception.message,
-      details: exception,
+      code: exception.code || 0,
+      status: exception.status || 'javascript_error',
+      message: exception.message || 'Oops, something went wrong',
+      ...exception,
     };
   }
 
-  _errorParser(response, body) {
-    return {
-      code: error.status,
-      message: error.message,
-      status: _.snakeCase(error.statusText),
-      details: body,
-    };
+  _fetchErrorParser(response, body) {
+    const { responseTransform } = this.context;
+    return this.context.errorParser({
+      ...(responseTransform ? this._transform(body, responseTransform) : body),
+      code: response.status,
+      message: response.statusText,
+      status: _.snakeCase(response.statusText),
+    });
   }
 
   _bodyTypeParser(response) {
@@ -126,9 +127,9 @@ class ResourceCall extends Smart {
 
   call = async (payload) => {
     try {
-      const reponse = await this._request(payload);
-      const body = this._bodyTypeParser(response);
-      if (!reponse.ok) throw this._errorParser(response, body);
+      const response = await this._request(payload);
+      const body = await this._bodyTypeParser(response);
+      if (!response.ok) throw this._fetchErrorParser(response, body);
       return this._responseBodyParser(body);
     } catch (exception) {
       throw this._exceptionParser(exception);
