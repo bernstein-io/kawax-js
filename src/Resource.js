@@ -17,6 +17,7 @@ class Resource extends Smart {
       baseUri: resolver('baseUri') || '/',
       headers: resolver('headers') || {},
       allowCors: resolver('allowCors') || false,
+      credentials: resolver('credentials') || 'same-origin',
       responseType: resolver('responseType') || 'json',
       collection: resolver('collection') || false,
       requestParser: resolver('requestParser', false) || ((payload) => payload),

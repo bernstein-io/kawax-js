@@ -93,10 +93,10 @@ class ResourceCall extends Smart {
   }
 
   _requestOptions(payload) {
-    const { method, headers, allowCors } = this.context;
+    const { method, headers, allowCors, credentials } = this.context;
     const options = {
       method,
-      credentials: 'same-origin',
+      credentials,
       cors: allowCors ? 'cors' : 'no-cors',
       headers: new Headers(headers),
     };

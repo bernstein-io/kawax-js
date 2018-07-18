@@ -54,8 +54,8 @@ class Store extends Smart {
       const payload = next(action);
       if (action.status !== 'pending') {
         state = getState();
-        const [initialAction] = _.remove(this.pendingActions, (pendingAction) =>
-          pendingAction.id === action.id);
+        const [initialAction] = _.remove(this.pendingActions,
+          (pendingAction) => pendingAction.id === action.id);
         duration = performance.now() - initialAction.startTime;
       }
       const output = this._formatLog(state, action, duration);

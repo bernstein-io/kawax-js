@@ -4,9 +4,13 @@ import MockAction from './__mocks__/MockAction';
 
 describe('Action class', () => {
   let action;
+  let onSuccess;
+  let onError;
 
   beforeEach(() => {
-    action = new Action();
+    onSuccess = jest.fn();
+    onError = jest.fn();
+    action = new Action({ success: onSuccess, error: onError });
   });
 
   test('type is undefined by default', () => {
@@ -38,9 +42,7 @@ describe('Action class', () => {
   });
 
   test('_processSuccess sets success status, call the onSuccess method and correcly returns', async () => {
-    const onSuccess = jest.fn();
     const payload = { foo: 'bar' };
-    action._successCallback = onSuccess;
     const returnedSuccess = await action._processSuccess(payload, 'data');
     expect(action.status).toEqual('success');
     expect(onSuccess).toHaveBeenCalledTimes(1);
@@ -49,9 +51,7 @@ describe('Action class', () => {
   });
 
   test('_processError sets error status, call the onError method and correcly returns', async () => {
-    const onError = jest.fn();
     const payload = { foo: 'bar' };
-    action._errorCallback = onError;
     const returnedError = await action._processError(payload);
     expect(action.status).toEqual('error');
     expect(onError).toHaveBeenCalledTimes(1);
@@ -135,41 +135,50 @@ const testPayloadFormat = (obj) => {
   expect(obj).toHaveProperty('payload');
   expect(obj).toHaveProperty('options');
   expect(obj.options).toHaveProperty('delegate');
-  expect(obj.options).toBeInstanceOf(Boolean);
+  expect(obj.options.delegate.constructor.name).toBe('Boolean');
 };
 
 describe('the Action flow is correct', () => {
-  let mockFunc;
-  let firstCall;
-  let secondCall;
+
+  let mockDispatch;
+  let firstDispatch;
+  let secondDispatch;
+
   beforeAll(async () => {
-    const action = MockAction.export()();
-    mockFunc = jest.fn();
-    const tester = (data) => {
-      mockFunc(data);
-      testPayloadFormat(_.last(mockFunc.mock.calls)[0]);
-    };
-    action._call()(tester);
+    mockDispatch = jest.fn();
+    const actionConstructor = MockAction.export({
+      success: false,
+      error: false,
+      delegate: false,
+    });
+    const action = actionConstructor();
+    action._call()(mockDispatch);
+    // the action is dispatched in a promise so we wait
     await new Promise((res) => process.nextTick(res));
-    [firstCall, secondCall] = _.flatten(mockFunc.mock.calls);
+    [firstDispatch, secondDispatch] = _.flatten(mockDispatch.mock.calls);
   });
 
   test('the action is correctly dispatched 2 times', () => {
-    expect(mockFunc).toHaveBeenCalledTimes(2);
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
+  });
+
+  test('the action should have the right format at each dispatch', () => {
+    testPayloadFormat(firstDispatch);
+    testPayloadFormat(secondDispatch);
   });
 
   test('the action has the right status at each dispatch', () => {
-    expect(firstCall).toHaveProperty('status', 'pending');
-    expect(secondCall).toHaveProperty('status', 'success');
+    expect(firstDispatch).toHaveProperty('status', 'pending');
+    expect(secondDispatch).toHaveProperty('status', 'success');
   });
 
   test('the action has the right payload at each dispatch', () => {
-    expect(firstCall.payload).toHaveProperty('bar', 'foo');
-    expect(secondCall.payload).toHaveProperty('foo', 'bar');
+    expect(firstDispatch.payload).toHaveProperty('bar', 'foo');
+    expect(secondDispatch.payload).toHaveProperty('foo', 'bar');
   });
 
   test('the action has the right type at each dispatch', () => {
-    expect(firstCall).toHaveProperty('type', 'TEST');
-    expect(secondCall).toHaveProperty('type', 'TEST');
+    expect(firstDispatch).toHaveProperty('type', 'TEST');
+    expect(secondDispatch).toHaveProperty('type', 'TEST');
   });
 });

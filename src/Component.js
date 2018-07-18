@@ -49,7 +49,8 @@ export default (Pure) => {
     classNames = (current) => { /* eslint-disable react/prop-types */
       const inlineClass = cssClass || false;
       const currentClasses = current ? current.split(' ') : false;
-      const propClasses = this.props.className ? this.props.className.split(' ') : false;
+      const { className } = this.props;
+      const propClasses = className ? className.split(' ') : false;
       const uniq = _.uniq([...currentClasses, inlineClass, propClasses]);
       return classNames(...uniq);
     };
@@ -57,7 +58,8 @@ export default (Pure) => {
     computeCssClasses() { /* eslint-disable react/no-find-dom-node */
       const shallow = shallowRenderer.render(wrappedComponent);
       const node = ReactDOM.findDOMNode(this);
-      if (node && (this.props.className || cssClass)) {
+      const { className } = this.props;
+      if (node && (className || cssClass)) {
         if (isElement(shallow) && !isFragment(shallow)) {
           node.className = this.classNames(node.className);
         } else {
