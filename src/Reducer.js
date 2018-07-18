@@ -21,17 +21,13 @@ class Reducer extends Smart {
 
   unionKey = 'id';
 
-  onPending = (pointer) => (state, action) =>
-    this._matchWithStatus(['pending'], pointer)(state, action);
+  onPending = (pointer) => (state, action) => this._matchWithStatus(['pending'], pointer)(state, action);
 
-  onSuccess = (pointer) => (state, action) =>
-    this._matchWithStatus(['success'], pointer)(state, action);
+  onSuccess = (pointer) => (state, action) => this._matchWithStatus(['success'], pointer)(state, action);
 
-  onError = (pointer) => (state, action) =>
-    this._matchWithStatus(['error'], pointer)(state, action);
+  onError = (pointer) => (state, action) => this._matchWithStatus(['error'], pointer)(state, action);
 
-  onDone = (pointer) => (state, action) =>
-    this._matchWithStatus(['success', 'error'], pointer)(state, action);
+  onDone = (pointer) => (state, action) => this._matchWithStatus(['success', 'error'], pointer)(state, action);
 
   matchPending = (map) => this.onPending(this.match(map));
 
@@ -75,7 +71,7 @@ class Reducer extends Smart {
     const initialState = _.get(this.constructor.initialState, path);
     if (initialState && initialState instanceof ReducerDelegate) {
       return true;
-    } else if (next && next instanceof ReducerDelegate) {
+    } if (next && next instanceof ReducerDelegate) {
       return true;
     }
     return false;
@@ -95,7 +91,7 @@ class Reducer extends Smart {
   delegateState(current, next, action, path) {
     if (next && next instanceof ReducerDelegate) {
       return next.reduce(current, action);
-    } else if (next === null) {
+    } if (next === null) {
       const initialState = _.get(this.constructor.initialState, path);
       return initialState.reduce(next, action);
     }
@@ -104,15 +100,15 @@ class Reducer extends Smart {
   parseState(current, next, action, path) {
     if (_.isPlainObject(next)) {
       return this.parsePlainObject(current, next, action, path);
-    } else if (_.isArray(next) && !path) {
+    } if (_.isArray(next) && !path) {
       return this.parseArray(current, next, action, path);
-    } else if (_.isFunction(next)) {
+    } if (_.isFunction(next)) {
       const resolvedState = resolve.call(this, next, current, action);
       const reducedState = this.reduce(current, resolvedState, action, path);
       return this.assign(current, reducedState);
-    } else if (next === null && path) {
+    } if (next === null && path) {
       return this._getInitialState(path);
-    } else if (next && next instanceof ForceAssignment) {
+    } if (next && next instanceof ForceAssignment) {
       return next.reduce(current, path);
     }
   }
@@ -160,8 +156,9 @@ class Reducer extends Smart {
   }
 
   _matchWithStatus(statuses, callback) {
-    return (state, action) =>
-      (_.includes(statuses, action.status) ? resolve.call(this, callback, state, action) : state);
+    return (state, action) => (
+      _.includes(statuses, action.status) ? resolve.call(this, callback, state, action) : state
+    );
   }
 
 }

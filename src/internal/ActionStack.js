@@ -5,7 +5,9 @@ import Runtime from '../Runtime';
 class ActionStack extends Smart {
 
   keys = {};
+
   stack = [];
+
   persisted = [];
 
   push({ id, key }) {
