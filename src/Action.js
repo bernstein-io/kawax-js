@@ -12,6 +12,8 @@ class Action extends Smart {
 
   static type = '__UNDEFINED__';
 
+  static warnOnClose = false;
+
   static export(options, ...args) {
     return (context) => new this({ ...options, ...context }, ...args);
   }
@@ -56,6 +58,7 @@ class Action extends Smart {
   }
 
   run(...data) {
+    this._setWindowUnloadListener();
     this.timestamp = Date.now();
     return (dispatch, getState) => {
       this._setGetState(getState);
@@ -65,6 +68,7 @@ class Action extends Smart {
         const payload = await this._processPayload(...data);
         await dispatch(this._export(payload));
         await this._afterDispatch(payload, ...data);
+        this._removeWindowUnloadListener();
       });
       return this.id;
     };
@@ -120,6 +124,7 @@ class Action extends Smart {
     } else {
       resolve.call(this, this.errorCallback, payload);
     }
+    this._removeWindowUnloadListener(true);
   }
 
   async _processSuccess(payload, ...data) {
@@ -134,6 +139,25 @@ class Action extends Smart {
     const error = resolve.call(this, this.error, payload, ...data);
     await resolve.call(this, this.errorCallback, error, ...data);
     return error;
+  }
+
+  _setWindowUnloadListener() {
+    if (this.constructor.warnOnClose) {
+      window.addEventListener('beforeunload', this._handleWindowUnloadEvent);
+    }
+  }
+
+  _removeWindowUnloadListener() {
+    if (this.constructor.warnOnClose) {
+      window.removeEventListener('beforeunload', this._handleWindowUnloadEvent);
+    }
+  }
+
+  _handleWindowUnloadEvent(event) {
+    // dialog text will only be shown on older browsers, modern browsers have default messages.
+    const dialogText = 'Warning ! Changes you have made may not be saved if you leave this page.';
+    event.returnValue = dialogText;
+    return dialogText;
   }
 
   static bind(context) {
