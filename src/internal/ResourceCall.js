@@ -19,10 +19,10 @@ class ResourceCall extends Smart {
     return response.collection;
   }
 
-  async _responseBodyParser(body) {
+  async _responseParser(response, body) {
     const { responseParser, collection, responseTransform, entityParser } = this.context;
-    const response = resolve.call(this, responseParser, body) || body;
-    let payload = collection ? await this._collectionParser(response) : response;
+    let payload = resolve.call(this, responseParser, response, body) || body;
+    payload = collection ? await this._collectionParser(response) : payload;
     payload = responseTransform ? this._transform(payload, responseTransform) : payload;
     payload = entityParser ? await this._entityParser(payload) : payload;
     return payload;
@@ -63,14 +63,6 @@ class ResourceCall extends Smart {
       default:
         throw new Error('Unsupported response type');
     }
-  }
-
-  _responseParser(response) {
-    return {
-      body: this._bodyTypeParser(response),
-      status: _.snakeCase(response.statusText),
-      code: response.status,
-    };
   }
 
   _requestPayloadParser(payload) {
@@ -130,7 +122,7 @@ class ResourceCall extends Smart {
       const response = await this._request(payload);
       const body = await this._bodyTypeParser(response);
       if (!response.ok) throw this._fetchErrorParser(response, body);
-      return this._responseBodyParser(body);
+      return this._responseParser(response, body);
     } catch (exception) {
       throw this._exceptionParser(exception);
     }
