@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import Smart from '../Smart';
 import resolve from '../helpers/resolve';
+import log from '../helpers/log';
 
 class ResourceCall extends Smart {
 
@@ -124,6 +125,7 @@ class ResourceCall extends Smart {
       if (!response.ok) throw this._fetchErrorParser(response, body);
       return this._responseParser(response, body);
     } catch (exception) {
+      if (exception instanceof Error) log.error(exception);
       throw this._exceptionParser(exception);
     }
   };
