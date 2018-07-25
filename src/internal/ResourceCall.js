@@ -23,7 +23,7 @@ class ResourceCall extends Smart {
   async _responseParser(response, body) {
     const { responseParser, collection, responseTransform, entityParser } = this.context;
     let payload = resolve.call(this, responseParser, response, body) || body;
-    payload = collection ? await this._collectionParser(response) : payload;
+    payload = collection ? await this._collectionParser(payload) : payload;
     payload = responseTransform ? this._transform(payload, responseTransform) : payload;
     payload = entityParser ? await this._entityParser(payload) : payload;
     return payload;
