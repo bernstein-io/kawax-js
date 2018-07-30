@@ -44,6 +44,15 @@ class Reducer extends Smart {
     return object;
   });
 
+  shallow = (next, depth = 1) => this.forceAssign(
+    (current, action, path) => {
+      if (!path) {
+        return this.reduce(current, next, action, path, depth);
+      }
+      return next;
+    },
+  );
+
   call(state, action) {
     const path = [];
     const current = _.isEmpty(state) ? this._getInitialState(path) : state;
@@ -77,11 +86,11 @@ class Reducer extends Smart {
     return false;
   }
 
-  reduce(current, next, action, path = false) {
+  reduce(current, next, action, path = false, depth = -1) {
     let state;
     const shouldDelegate = this.shouldDelegate(next, path);
     if (!_.isEqual(current, next) && !shouldDelegate) {
-      state = this.parseState(current, next, action, path);
+      state = this.parseState(current, next, action, path, depth);
     } else if (shouldDelegate === true) {
       state = this.delegateState(current, next, action, path);
     }
@@ -97,11 +106,11 @@ class Reducer extends Smart {
     }
   }
 
-  parseState(current, next, action, path) {
+  parseState(current, next, action, path, depth = -1) {
     if (_.isPlainObject(next)) {
-      return this.parsePlainObject(current, next, action, path);
+      return this.parsePlainObject(current, next, action, path, depth);
     } if (_.isArray(next) && !path) {
-      return this.parseArray(current, next, action, path);
+      return this.parseArray(current, next, action, path, depth);
     } if (_.isFunction(next)) {
       const resolvedState = resolve.call(this, next, current, action);
       const reducedState = this.reduce(current, resolvedState, action, path);
@@ -113,28 +122,34 @@ class Reducer extends Smart {
     }
   }
 
-  parsePlainObject(current, next, action, path) {
+  parsePlainObject(current, next, action, path, depth = -1) {
     const state = {};
     _.each(next, (nextItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
       const currentItem = _.isObject(current) ? current[key] : null;
-      state[key] = this.reduce(currentItem, nextItem, action, currentPath);
+      const nextDepth = (depth < 0 || depth > 1) ? _.clone(depth) - 1 : false;
+      state[key] = nextDepth ? this.reduce(
+        currentItem, nextItem, action, currentPath, nextDepth,
+      ) : nextItem;
     });
     return this.assign(current, state);
   }
 
-  parseArray(current, next, action, path) {
+  parseArray(current, next, action, path, depth = -1) {
     const union = [];
     const unionKey = this.unionKey;
     const nextItems = _.cloneDeep(next);
     _.each(current, (currentItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
+      const nextDepth = (depth < 0 || depth > 1) ? _.clone(depth) - 1 : false;
       if (currentItem) {
         union[key] = currentItem;
         _.each(nextItems, (nextItem, nextKey) => {
           const matchKey = (nextItem && nextItem[unionKey]) ? nextItem[unionKey] : false;
           if (matchKey && currentItem[unionKey] === matchKey) {
-            union[key] = this.reduce(currentItem, nextItem, action, currentPath);
+            union[key] = nextDepth ? this.reduce(
+              currentItem, nextItem, action, currentPath, nextDepth,
+            ) : nextItem;
             nextItems[nextKey] = null;
           }
         });
