@@ -61,6 +61,28 @@ class Reducer extends Smart {
     return this.reduce(current, next, action, path);
   }
 
+  matchOn = (statuses) => (state, action) => {
+    let next = state;
+    _.each(statuses, (map, status) => {
+      // eslint-disable-next-line default-case
+      switch (status) {
+        case 'success':
+          next = this.matchSuccess(map);
+          break;
+        case 'error':
+          next = this.matchError(map);
+          break;
+        case 'pending':
+          next = this.matchPending(map);
+          break;
+        case 'done':
+          next = this.matchDone(map);
+          break;
+      }
+    });
+    return next;
+  };
+
   match(map) {
     return (state, action) => {
       let next = state;
