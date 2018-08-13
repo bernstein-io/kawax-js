@@ -67,16 +67,16 @@ class Reducer extends Smart {
       // eslint-disable-next-line default-case
       switch (status) {
         case 'success':
-          next = this.matchSuccess(map);
+          next = this.matchSuccess(map)(next, action);
           break;
         case 'error':
-          next = this.matchError(map);
+          next = this.matchError(map)(next, action);
           break;
         case 'pending':
-          next = this.matchPending(map);
+          next = this.matchPending(map)(next, action);
           break;
         case 'done':
-          next = this.matchDone(map);
+          next = this.matchDone(map)(next, action);
           break;
       }
     });
