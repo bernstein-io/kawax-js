@@ -5,12 +5,15 @@ import classNames from 'classnames';
 import ShallowRenderer from 'react-test-renderer/shallow';
 import { isElement, isFragment } from 'react-is';
 import { StyleSheet, css } from './helpers/aphrodite';
+import resolve from './helpers/resolve';
 import Runtime from './Runtime';
 
 export default (Pure) => {
 
   const shallowRenderer = new ShallowRenderer();
+  const displayName = Pure.name || 'Unnamed';
   let wrappedComponent = false;
+  let cssMap = false;
 
   function mapNestedStyle(stylesheet) {
     _.each(stylesheet, (item, selectorKey) => {
@@ -25,17 +28,19 @@ export default (Pure) => {
     return stylesheet;
   }
 
-  function getCssClass() {
-    const componentStyle = Pure.css;
-    if (componentStyle) {
-      const stylesheet = StyleSheet.create({ component: componentStyle });
-      const styleWithNesting = mapNestedStyle(stylesheet);
-      return css(styleWithNesting.component);
+  function getCssClass(props, state) {
+    if (_.isFunction(Pure.css) || cssMap === false) {
+      const componentStyle = resolve(Pure.css, props, state);
+      if (componentStyle) {
+        const stylesheet = StyleSheet.create({ component: componentStyle });
+        const styleWithNesting = mapNestedStyle(stylesheet);
+        cssMap = css(styleWithNesting.component);
+        return cssMap;
+      }
+    } else {
+      return cssMap;
     }
   }
-
-  const displayName = Pure.name || 'Unnamed';
-  const cssClass = getCssClass();
 
   return class Component extends React.Component {
 
@@ -47,6 +52,7 @@ export default (Pure) => {
     }
 
     classNames = (current) => { /* eslint-disable react/prop-types */
+      const cssClass = getCssClass(this.props, this.state);
       const inlineClass = cssClass || false;
       const currentClasses = current ? current.split(' ') : false;
       const { className } = this.props;
@@ -59,6 +65,7 @@ export default (Pure) => {
       const shallow = shallowRenderer.render(wrappedComponent);
       const node = ReactDOM.findDOMNode(this);
       const { className } = this.props;
+      const cssClass = getCssClass(this.props, this.state);
       if (node && (className || cssClass)) {
         if (isElement(shallow) && !isFragment(shallow)) {
           node.className = this.classNames(node.className);
