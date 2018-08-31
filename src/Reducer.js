@@ -53,10 +53,19 @@ class Reducer extends Smart {
     },
   );
 
+  l = (...args) => {
+    if (this.constructor.name === 'User') {
+      console.log(...args);
+    }
+  };
+
   call(state, action) {
     const path = [];
+    this.l('1');
     const current = _.isEmpty(state) ? this._getInitialState(path) : state;
+    this.l('2');
     const resolvedState = resolve.call(this, this.state, current, action);
+    this.l('3');
     const next = (resolvedState === undefined) ? current : resolvedState;
     return this.reduce(current, next, action, path);
   }
@@ -109,6 +118,7 @@ class Reducer extends Smart {
   }
 
   reduce(current, next, action, path = false, depth = -1) {
+    this.l('reduce');
     let state;
     const shouldDelegate = this.shouldDelegate(next, path);
     if (!_.isEqual(current, next) && !shouldDelegate) {
@@ -129,6 +139,7 @@ class Reducer extends Smart {
   }
 
   parseState(current, next, action, path, depth = -1) {
+    this.l('parseState');
     if (_.isPlainObject(next)) {
       return this.parsePlainObject(current, next, action, path, depth);
     } if (_.isArray(next) && !path) {
@@ -146,11 +157,12 @@ class Reducer extends Smart {
 
   parsePlainObject(current, next, action, path, depth = -1) {
     const state = {};
+    this.l('parsePlainObject', next);
     _.each(next, (nextItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
       const currentItem = _.isObject(current) ? current[key] : null;
       const nextDepth = (depth < 0 || depth > 1) ? _.clone(depth) - 1 : false;
-      state[key] = nextDepth ? this.reduce(
+      state[key] = nextDepth && nextItem ? this.reduce(
         currentItem, nextItem, action, currentPath, nextDepth,
       ) : nextItem;
     });
