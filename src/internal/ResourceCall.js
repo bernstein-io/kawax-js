@@ -5,7 +5,9 @@ import log from '../helpers/log';
 
 class ResourceCall extends Smart {
 
-  defaults(context) { return { context }; }
+  constructor(context) {
+    super({context});
+  }
 
   async _entityParser(entity) {
     const { collection, entityParser } = this.context;

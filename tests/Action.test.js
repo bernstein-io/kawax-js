@@ -152,7 +152,7 @@ describe('the Action flow is correct', () => {
       delegate: false,
     });
     const action = actionConstructor();
-    action._call()(mockDispatch);
+    action._call(mockDispatch)();
     // the action is dispatched in a promise so we wait
     await new Promise((res) => process.nextTick(res));
     [firstDispatch, secondDispatch] = _.flatten(mockDispatch.mock.calls);

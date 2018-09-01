@@ -18,8 +18,8 @@ class Action extends Smart {
     return (context) => new this({ ...options, ...context }, ...args);
   }
 
-  defaults({ success, error, ...options }) {
-    return {
+  constructor({ success, error, ...options }) {
+    super({
       id: uuid(),
       successCallback: success,
       errorCallback: error,
@@ -27,7 +27,7 @@ class Action extends Smart {
         ...options,
         delegate: options.delegate === true,
       },
-    };
+    });
   }
 
   parsePayload = (payload) => payload;

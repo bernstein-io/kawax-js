@@ -12,8 +12,8 @@ class Core extends Smart {
     return new this(options);
   }
 
-  defaults(options) {
-    return setRuntime({
+  constructor(options) {
+    super(setRuntime({
       ...options,
       htmlRoot: options.htmlRoot || false,
       router: options.router || Router,
@@ -23,15 +23,13 @@ class Core extends Smart {
       reducer: options.reducer || ((state) => state),
       container: options.container || (() => (
         <div>
-It works!
+          It works!
         </div>
       )),
       context: options.context || React.createContext({}),
       store: new Store({ reducer: options.reducer }),
-    });
-  }
-
-  initialize(env) {
+    }));
+    
     const htmlRoot = document.getElementById(this.htmlRoot) || document.body;
     const ReactContext = this._contextRenderer();
     render(ReactContext, htmlRoot);

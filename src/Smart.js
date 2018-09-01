@@ -5,23 +5,19 @@ class Smart {
     return (...args) => instance._call(...args);
   }
 
-  constructor(options, ...args) {
-    this.extend(this.defaults(options));
-    return this.initialize(options, ...args);
+  constructor(options = {}) {
+    this.extend({...options});
   }
 
-  initialize() { return this; }
-
   _call(...args) {
-    return this.call ? this.call(...args) : false;
+    if (this.call) 
+      return this.call(...args); 
+    
+    throw Error('call function is not defined for this object.');
   }
 
   extend(object) {
     return Object.assign(this, object);
-  }
-
-  defaults() {
-    return false;
   }
 
 }

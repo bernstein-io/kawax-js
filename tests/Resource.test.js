@@ -13,11 +13,11 @@ describe('Resource Class', () => {
     expect(resource).toBeInstanceOf(Resource);
   });
 
-  test('default returns the options', () => {
+  test('object has the default options', () => {
     const options = { someOption: 'foo' };
     const instance = Resource.export(options);
-    expect(instance.defaults(options)).toEqual(options);
     expect(instance.someOption).toBeDefined();
+    expect(instance.someOption).toBe('foo');
   });
 
   test('_getResolver should returns a function', () => {
@@ -94,9 +94,6 @@ describe('Ressource Call Class', () => {
     await expect(resourceCall.call()).rejects.toBeInstanceOf(Object);
   });
 
-  test('defaults should return an object wrapping the context in the context property', () => {
-    expect(resourceCall.defaults({ foo: 'bar' })).toEqual({ context: { foo: 'bar' } });
-  });
 
   test('_entityParser should use the context entityParser and return', async () => {
     const mockParser = jest.fn();

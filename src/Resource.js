@@ -6,7 +6,9 @@ import log from './helpers/log';
 
 class Resource extends Smart {
 
-  defaults(options) { return options; }
+  constructor(options) {
+    super(options);
+  }
 
   context = () => {};
 

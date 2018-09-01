@@ -6,7 +6,8 @@ import log from './helpers/log';
 
 class Store extends Smart {
 
-  initialize({ reducer }) {
+  constructor({ reducer }) {
+    super();
     const reduxStore = this._createStore(reducer);
     this.extend(reduxStore);
     if (__DEV__) {
