@@ -78,8 +78,7 @@ class Store extends Smart {
     return [
       `%c${header}${time}${status}`,
       'color: #2A2F3A; font-weight: bold;',
-      '\n | Action: ', action,
-      '\n | State:  ', state,
+      '\n', _.cloneDeep(action),
     ];
   }
 

@@ -18,43 +18,67 @@ class Action extends Smart {
     return (context) => new this({ ...options, ...context }, ...args);
   }
 
-  defaults({ success, error, ...options }) {
+  defaults({ success, error, ...context }) {
     return {
       id: uuid(),
-      successCallback: success,
-      errorCallback: error,
-      options: {
-        ...options,
-        delegate: options.delegate === true,
-      },
+      onSuccess: success,
+      onError: error,
+      context: context,
     };
   }
 
-  parsePayload = (payload) => payload;
+  payload = (payload) => payload;
 
   pendingPayload = (data) => {};
 
-  payload = (payload, data) => payload;
+  successPayload = (success, data) => success;
 
-  error = (error, data) => ({ message: 'Oops, something went wrong', ...error });
+  errorPayload = (error, data) => error;
+
+  notice = (payload) => false;
+
+  pendingNotice = (data) => false;
+
+  successNotice = (success, data) => false;
+
+  errorNotice = (error, data) => false;
+
+  options = (options) => options;
 
   setStatus = (status) => { this.status = status; };
 
   export = (action) => action;
 
-  parseOptions = (options) => options;
-
   _export = (payload) => this.export({
-    payload: this._parsePayload(payload) || false,
-    options: this.parseOptions(this.options),
-    type: this.constructor.type,
-    timestamp: this.timestamp,
-    status: this.status,
     id: this.id,
+    status: this.status,
+    timestamp: this.timestamp,
+    type: this.constructor.type,
+    options: this._parseOptions(this.context),
+    notice: this._parseNotice(payload) || false,
+    payload: this._parsePayload(payload) || false,
   });
 
+  _parseOptions(options) {
+    return resolve.call(this, this.options, options);
+  }
+
   _parsePayload(payload) {
-    return resolve.call(this, this.parsePayload, payload);
+    return resolve.call(this, this.payload, payload);
+  }
+
+  _parseNotice(payload) {
+    let notice;
+    if (this.status === 'pending') notice = resolve.call(this, this.pendingNotice, payload);
+    else if (this.status === 'error') notice = resolve.call(this, this.errorNotice, payload);
+    else if (this.status === 'success') notice = resolve.call(this, this.successNotice, payload);
+    notice = resolve.call(this, this.notice, notice) || notice;
+    const message = (this.status === 'error' && payload.message)
+      ? 'Action successfully processed' : 'An error has occured';
+    return !notice ? false : {
+      message,
+      ...notice,
+    };
   }
 
   run(...data) {
@@ -93,7 +117,11 @@ class Action extends Smart {
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise((success, error) => {
-          const actionInstance = action({ success, error, delegate: true });
+          const actionInstance = action({
+            success: success,
+            error: error,
+            delegate: true,
+          });
           actionInstance.run(...data)(dispatch, getState);
         });
       }
@@ -117,28 +145,24 @@ class Action extends Smart {
     return this._processSuccess(...data);
   }
 
-  async _afterDispatch(payload, ...data) {
-    if (this.status === 'success') {
-      await resolve.call(this, this.successCallback, payload);
-      resolve.call(this, this.afterDispatch, payload, ...data);
-    } else {
-      resolve.call(this, this.errorCallback, payload);
-    }
-    this._removeWindowUnloadListener(true);
-  }
-
   async _processSuccess(payload, ...data) {
     this.setStatus('success');
-    const success = resolve.call(this, this.payload, payload, ...data);
-    await resolve.call(this, this.successCallback, payload, ...data);
+    const success = resolve.call(this, this.successPayload, payload, ...data);
+    await resolve.call(this, this.onSuccess, payload, ...data);
     return success;
   }
 
   async _processError(payload, ...data) {
     this.setStatus('error');
-    const error = resolve.call(this, this.error, payload, ...data);
-    await resolve.call(this, this.errorCallback, error, ...data);
+    const error = resolve.call(this, this.errorPayload, payload, ...data);
+    await resolve.call(this, this.onError, error, ...data);
     return error;
+  }
+
+  async _afterDispatch(payload, ...data) {
+    if (this.status === 'success') {
+      resolve.call(this, this.afterDispatch, payload, ...data);
+    }
   }
 
   _setWindowUnloadListener() {
@@ -154,7 +178,6 @@ class Action extends Smart {
   }
 
   _handleWindowUnloadEvent(event) {
-    // dialog text will only be shown on older browsers, modern browsers have default messages.
     const dialogText = 'Warning ! Changes you have made may not be saved if you leave this page.';
     event.returnValue = dialogText;
     return dialogText;
@@ -163,7 +186,12 @@ class Action extends Smart {
   static bind(context) {
     return (...data) => new Promise((success, error) => {
       const { dispatch, getState } = Runtime('store');
-      const action = new this({ success, error, delegate: true, ...context });
+      const action = new this({
+        success: success,
+        error: error,
+        delegate: true,
+        ...context,
+      });
       action.run(...data)(dispatch, getState);
     });
   }

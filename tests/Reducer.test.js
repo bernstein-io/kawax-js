@@ -180,5 +180,4 @@ describe('Reducer Updates test', () => {
     expect(resetedState).toEqual(state);
   });
 
-
 });
