@@ -51,18 +51,18 @@ class ResourceCall extends Smart {
   _bodyTypeParser(response) {
     const { responseType } = this.context;
     switch (responseType.toLowerCase()) {
-      case 'json':
-        return response.json();
-      case 'text':
-        return response.text();
-      case 'formdata':
-        return response.formData();
-      case 'arraybuffer':
-        return response.arrayBuffer();
-      case 'blob':
-        return response.blob();
-      default:
-        throw new Error('Unsupported response type');
+    case 'json':
+      return response.json();
+    case 'text':
+      return response.text();
+    case 'formdata':
+      return response.formData();
+    case 'arraybuffer':
+      return response.arrayBuffer();
+    case 'blob':
+      return response.blob();
+    default:
+      throw new Error('Unsupported response type');
     }
   }
 
@@ -89,10 +89,10 @@ class ResourceCall extends Smart {
   _requestOptions(payload) {
     const { method, headers, allowCors, credentials } = this.context;
     const options = {
-      method,
-      credentials,
-      cors: allowCors ? 'cors' : 'no-cors',
+      method: method,
+      credentials: credentials,
       headers: new Headers(headers),
+      cors: allowCors ? 'cors' : 'no-cors',
     };
     if (method !== 'GET' && method !== 'HEAD') {
       const parsedPayload = this._requestPayloadParser(payload);

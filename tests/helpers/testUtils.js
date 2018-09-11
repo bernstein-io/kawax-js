@@ -30,7 +30,6 @@ function diveTo(shallowWrapper, identifier, options = { context: {} }) {
   return diveTo(shallowWrapper.dive({ context }), identifier, { context });
 }
 
-
 const createRouterContext = (otherContext) => {
   const router = {
     history: new BrowserRouter().history,

@@ -1,21 +1,22 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Router as ReactRouter } from 'react-router-dom';
+import Action from './Action';
 import Container from './Container';
 import History from './History';
 
-const historyHook = ({ location, action }) => ({
-  type: 'ROUTER.EVENT',
-  payload: {
-    location,
-    action,
-  },
-});
+class DefaultHistoryHook extends Action {
+
+  static type = 'ROUTER.EVENT';
+
+  call = async (payload) => payload;
+
+}
 
 class Router extends React.Component {
 
   static dispatchToProps = ({ ownProps }) => ({
-    historyHook: ownProps.historyHook || historyHook,
+    historyHook: ownProps.historyHook || DefaultHistoryHook.export(),
   });
 
   static propTypes = {
