@@ -41,10 +41,10 @@ class ResourceCall extends Smart {
   _fetchErrorParser(response, body) {
     const { responseTransform } = this.context;
     return this.context.errorParser({
-      ...(responseTransform ? this._transform(body, responseTransform) : body),
       code: response.status,
       message: response.statusText,
       status: _.snakeCase(response.statusText),
+      ...(responseTransform ? this._transform(body, responseTransform) : body),
     });
   }
 
