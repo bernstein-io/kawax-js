@@ -38,12 +38,12 @@ class ResourceCall extends Smart {
     };
   }
 
-  _fetchErrorParser(response, body) {
+  _fetchErrorParser(response, body = {}) {
     const { responseTransform } = this.context;
     return this.context.errorParser({
       code: response.status,
-      message: response.statusText,
       status: _.snakeCase(response.statusText),
+      message: response.statusText || _.isArray(body.errors) ? body.errors.join(' ') : null,
       ...(responseTransform ? this._transform(body, responseTransform) : body),
     });
   }

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { StyleSheet as Aphrodite } from 'aphrodite/no-important';
+import { StyleSheet as Aphrodite } from 'aphrodite';
 
 const { StyleSheet, css } = Aphrodite.extend([{
   selectorHandler: (selector, baseSelector, generateSubtreeStyles) => {
