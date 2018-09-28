@@ -73,10 +73,10 @@ class Store extends Smart {
     const status = (action.status ? `[${action.status}]` : '[no-status]');
     let time = ' ';
     if (duration) {
-      time = ` (completed in ${duration >= 1000 ? `${(duration / 1000).toFixed(2)} s` : `${duration.toFixed(0)} ms`}) `;
+      time = `(completed in ${duration >= 1000 ? `${(duration / 1000).toFixed(2)} s` : `${duration.toFixed(0)} ms`}) `;
     }
     return [
-      `%c${header}${time}${status}`,
+      `%c${header} ${status} ${time}`,
       'color: #2A2F3A; font-weight: bold;',
       '\n', _.cloneDeep(action),
     ];

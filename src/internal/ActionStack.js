@@ -51,6 +51,17 @@ class ActionStack extends Smart {
     return action && action.status === 'error' ? action.payload : false;
   }
 
+  isSuccess(...keys) {
+    let success;
+    _.each(keys, (key) => {
+      const actions = this.find(key);
+      _.each(actions, (action) => {
+        success = success === false ? success : action.status === 'success';
+      });
+    });
+    return success;
+  }
+
   isDone(...keys) {
     let done;
     _.each(keys, (key) => {

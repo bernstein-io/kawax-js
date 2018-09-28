@@ -4,7 +4,7 @@ function match(object, selector) {
   return _.filter(object, (item) => _.isMatch(item, selector));
 }
 
-export default function select(object, path, { indexKey = 'id' } = {}) {
+export default function select(object, path, { primaryKey = 'id' } = {}) {
   let value = object;
   const currentPath = [];
   const pathArray = _.isString(path) ? path.split('.') : path;
@@ -12,7 +12,7 @@ export default function select(object, path, { indexKey = 'id' } = {}) {
     currentPath.push(selector);
     if (_.isArray(value)) {
       if (_.isString(selector)) {
-        value = _.find(value, (item) => (item[indexKey] === selector));
+        value = _.find(value, (item) => (item[primaryKey] === selector));
       } else if (_.isPlainObject(selector)) {
         value = match(value, selector);
       }
