@@ -67,17 +67,19 @@ class Action extends Smart {
     return resolve.call(this, this.payload, payload);
   }
 
-  _parseNotice(payload) {
+  _parseNotice(payload = {}) {
+    if (this.notice === false) return false;
     let notice;
     if (this.status === 'pending') notice = resolve.call(this, this.pendingNotice, payload);
     else if (this.status === 'error') notice = resolve.call(this, this.errorNotice, payload);
     else if (this.status === 'success') notice = resolve.call(this, this.successNotice, payload);
-    notice = resolve.call(this, this.notice, notice) || notice;
-    const message = (this.status === 'error' && payload.message)
-      ? 'Action successfully processed' : 'An error has occured';
-    return !notice ? false : {
-      message,
+    const finalNotice = resolve.call(this, this.notice, _.isPlainObject(notice) ? notice : payload);
+    const defaultMessage = (this.status === 'error')
+      ? 'An error has occured' : 'Action successfully processed';
+    return !finalNotice && !notice ? false : {
+      message: payload.message || defaultMessage,
       ...notice,
+      ...finalNotice,
     };
   }
 
@@ -161,7 +163,7 @@ class Action extends Smart {
 
   async _afterDispatch(payload, ...data) {
     if (this.status === 'success') {
-      resolve.call(this, this.afterDispatch, payload, ...data);
+      await resolve.call(this, this.afterDispatch, payload, ...data);
     }
   }
 

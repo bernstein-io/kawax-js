@@ -53,22 +53,22 @@ class ResourceCall extends Smart {
     switch (responseType.toLowerCase()) {
     case 'json':
       return response.json();
-    case 'text':
-      return response.text();
     case 'formdata':
       return response.formData();
     case 'arraybuffer':
       return response.arrayBuffer();
     case 'blob':
       return response.blob();
+    case 'text':
+      return response.text();
     default:
-      throw new Error('Unsupported response type');
+      return response.text();
     }
   }
 
-  _requestPayloadParser(payload) {
+  async _requestPayloadParser(payload) {
     const { requestParser, requestTransform } = this.context;
-    let parsedPayload = resolve.call(this, requestParser, payload) || payload;
+    let parsedPayload = await resolve.call(this, requestParser, payload) || payload;
     if (requestTransform) parsedPayload = this._transform(parsedPayload, requestTransform);
     return parsedPayload;
   }
@@ -86,7 +86,7 @@ class ResourceCall extends Smart {
     return parsedPayload;
   }
 
-  _requestOptions(payload) {
+  async _buildRequest(payload) {
     const { method, headers, allowCors, credentials } = this.context;
     const options = {
       method: method,
@@ -95,7 +95,7 @@ class ResourceCall extends Smart {
       cors: allowCors ? 'cors' : 'no-cors',
     };
     if (method !== 'GET' && method !== 'HEAD') {
-      const parsedPayload = this._requestPayloadParser(payload);
+      const parsedPayload = await this._requestPayloadParser(payload);
       if (_.isPlainObject(parsedPayload)) {
         options.body = JSON.stringify(parsedPayload);
         options.headers.append('Content-Type', 'application/json');
@@ -111,10 +111,10 @@ class ResourceCall extends Smart {
     return url !== '/' ? url.replace(/\/$/, '') : url;
   }
 
-  _request(payload) {
+  async _request(payload) {
     const { baseUri, path } = this.context;
     const url = this._requestUrl(baseUri, path);
-    const options = this._requestOptions(payload);
+    const options = await this._buildRequest(payload);
     return fetch(url, options);
   }
 
