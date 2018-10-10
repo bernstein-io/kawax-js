@@ -92,7 +92,13 @@ class Action extends Smart {
       new Promise(async () => { /* eslint-disable-line no-new */
         this._bindActionsCreators(dispatch, getState);
         const payload = await this._processPayload(...data);
-        await dispatch(this._export(payload));
+        const action = this._export(payload);
+        await dispatch(action);
+        if (this.status === 'success') {
+          await resolve.call(this, this.onSuccess, payload, ...data);
+        } else {
+          await resolve.call(this, this.onError, payload, ...data);
+        }
         await this._afterDispatch(payload, ...data);
         this._removeWindowUnloadListener();
       });
@@ -135,11 +141,13 @@ class Action extends Smart {
       try {
         const call = await this.call(...data);
         const payload = await resolve(call);
-        return await this._processSuccess(payload, ...data);
+        this.setStatus('success');
+        return resolve.call(this, this.successPayload, payload, ...data);
       } catch (exception) {
         if (exception instanceof Error) log.error(exception);
-        const error = (exception instanceof Error) ? {} : exception;
-        return this._processError(error, ...data);
+        const payload = (exception instanceof Error) ? {} : exception;
+        this.setStatus('error');
+        return resolve.call(this, this.errorPayload, payload, ...data);
       }
     } else if (this.call !== undefined) {
       return this.call;
@@ -149,16 +157,12 @@ class Action extends Smart {
 
   async _processSuccess(payload, ...data) {
     this.setStatus('success');
-    const success = resolve.call(this, this.successPayload, payload, ...data);
-    await resolve.call(this, this.onSuccess, payload, ...data);
-    return success;
+    return resolve.call(this, this.successPayload, payload, ...data);
   }
 
   async _processError(payload, ...data) {
     this.setStatus('error');
-    const error = resolve.call(this, this.errorPayload, payload, ...data);
-    await resolve.call(this, this.onError, error, ...data);
-    return error;
+    return resolve.call(this, this.errorPayload, payload, ...data);
   }
 
   async _afterDispatch(payload, ...data) {
