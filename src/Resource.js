@@ -20,6 +20,7 @@ class Resource extends Smart {
       credentials: resolver('credentials') || 'same-origin',
       responseType: resolver('responseType') || 'json',
       collection: resolver('collection') || false,
+      serializeRequest: resolver('serializeRequest') || true,
       requestParser: resolver('requestParser', false) || ((payload) => payload),
       responseParser: resolver('responseParser', false) || ((response, body) => body),
       entityParser: resolver('entityParser', false) || false,
@@ -27,6 +28,7 @@ class Resource extends Smart {
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
       options: resolver('options') || {},
+      mock: resolver('mock') || false,
       ...this.context() || {},
     };
   }
