@@ -80,9 +80,13 @@ class ResourceCall extends Smart {
   }
 
   async requestPayloadParser(payload) {
-    const { requestParser, requestTransform, serializeRequest } = this.context;
-    let parsedPayload = serializeRequest ? this.serializeRequestBody(payload) : payload;
-    parsedPayload = await resolve.call(this, requestParser, parsedPayload) || parsedPayload;
+    let parsedPayload;
+    const { requestParser, requestTransform } = this.context;
+    if (requestParser) {
+      parsedPayload = await resolve.call(this, requestParser, payload, this.context);
+    } else {
+      parsedPayload = await this.serializeRequestBody(payload);
+    }
     if (requestTransform) parsedPayload = this.transform(parsedPayload, requestTransform);
     return parsedPayload;
   }
@@ -125,26 +129,29 @@ class ResourceCall extends Smart {
     return url !== '/' ? url.replace(/\/$/, '') : url;
   }
 
+  mock({ body }) {
+    const parsedBody = JSON.parse(body);
+    const mock = resolve.call(this, this.context.mock, parsedBody);
+    const mockedBody = _.isPlainObject(mock) ? mock : parsedBody;
+    return {
+      ok: true,
+      body: { id: uuid(), ...mockedBody },
+    };
+  }
+
   async request(payload) {
-    const { baseUri, path } = this.context;
+    const { baseUri, path, mock } = this.context;
     const url = this.requestUrl(baseUri, path);
     const options = await this.buildRequest(payload);
+    if (mock) return this.mock(options);
     return fetch(url, options);
   }
 
-  mock(payload = {}) {
-    const mock = resolve.call(this, this.context.mock, payload);
-    const responseBody = _.isPlainObject(mock) ? mock : payload;
-    return responseBody.id ? responseBody : { id: uuid(), ...responseBody };
-  }
-
   call = async (payload) => {
+    const { mock } = this.context;
     try {
-      if (this.context.mock !== false) {
-        return this.mock(payload);
-      }
       const response = await this.request(payload);
-      const body = await this.bodyTypeParser(response);
+      const body = mock ? response.body : await this.bodyTypeParser(response);
       if (!response.ok) throw this.fetchErrorParser(response, body);
       return this.responseParser(response, body);
     } catch (exception) {
