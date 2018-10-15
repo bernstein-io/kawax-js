@@ -13,32 +13,41 @@ export default (Pure) => {
   const shallowRenderer = new ShallowRenderer();
   const displayName = Pure.name || 'Unnamed';
   let wrappedComponent = false;
-  let cssMap = false;
+  let uniqClassName = false;
+
+  function mapSelectors(selectors, applyWildcard = false) {
+    const specialChars = ['*', '&', ':', '@'];
+    const mappedSelectors = {};
+    _.each(selectors, (selector, key) => {
+      const newKey = !_.includes(specialChars, key[0]) ? `&${key}` : key;
+      if (_.isPlainObject(selector)) {
+        mappedSelectors[newKey] = mapSelectors(selector);
+      } else {
+        mappedSelectors[key] = selector;
+      }
+    });
+    return mappedSelectors;
+  }
 
   function mapNestedStyle(stylesheet) {
     _.each(stylesheet, (item, selectorKey) => {
       const selectors = item._definition;
-      _.each(selectors, (selector, key) => {
-        if (_.isPlainObject(selector) && key[0] !== '&' && key[0] !== ':' && key[0] !== '@') {
-          delete selectors[key];
-          selectors[`&${key}`] = selector;
-        }
-      });
+      stylesheet[selectorKey]._definition = mapSelectors(selectors, true);
     });
     return stylesheet;
   }
 
   function getCssClass(props, state) {
-    if (_.isFunction(Pure.css) || cssMap === false) {
+    if (_.isFunction(Pure.css) || uniqClassName === false) {
       const componentStyle = resolve(Pure.css, props, state);
       if (componentStyle) {
         const stylesheet = StyleSheet.create({ component: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
-        cssMap = css(styleWithNesting.component);
-        return cssMap;
+        uniqClassName = css(styleWithNesting.component);
+        return uniqClassName;
       }
     } else {
-      return cssMap;
+      return uniqClassName;
     }
   }
 
