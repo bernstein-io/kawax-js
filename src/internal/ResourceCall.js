@@ -6,15 +6,15 @@ import log from '../helpers/log';
 
 class ResourceCall extends Smart {
 
-  defaults(context) { return { context }; }
+  static defaults = (context) => ({ context });
 
-  async entityParser(entity) {
+  async entityParser(data) {
     const { collection, entityParser } = this.context;
     if (collection === true) {
-      const parsedEntities = entity.map((value) => entityParser(value, this.context));
+      const parsedEntities = data.map((entity) => resolve(entityParser, entity, this.context));
       return Promise.all(parsedEntities);
     }
-    return entityParser(entity, this.context);
+    return entityParser(data, this.context);
   }
 
   async collectionParser(response) {
@@ -23,7 +23,7 @@ class ResourceCall extends Smart {
 
   async responseParser(response, body) {
     const { responseParser, collection, responseTransform, entityParser } = this.context;
-    let payload = resolve.call(this, responseParser, response, body) || body;
+    let payload = resolve(responseParser, response, body, this.context) || body;
     payload = collection ? await this.collectionParser(payload) : payload;
     payload = responseTransform ? this.transform(payload, responseTransform) : payload;
     payload = entityParser ? await this.entityParser(payload) : payload;
@@ -44,7 +44,7 @@ class ResourceCall extends Smart {
     return this.context.errorParser({
       code: response.status,
       status: _.snakeCase(response.statusText),
-      message: response.statusText || _.isArray(body.errors) ? body.errors.join(' ') : null,
+      message: response.statusText,
       ...(responseTransform ? this.transform(body, responseTransform) : body),
     });
   }
@@ -83,7 +83,7 @@ class ResourceCall extends Smart {
     let parsedPayload;
     const { requestParser, requestTransform } = this.context;
     if (requestParser) {
-      parsedPayload = await resolve.call(this, requestParser, payload, this.context);
+      parsedPayload = await resolve(requestParser, payload, this.context);
     } else {
       parsedPayload = await this.serializeRequestBody(payload);
     }
@@ -106,10 +106,11 @@ class ResourceCall extends Smart {
 
   async buildRequest(payload) {
     const { method, headers, allowCors, credentials } = this.context;
+    const parsedHeaders = resolve(headers, this.context);
     const options = {
       method: method,
       credentials: credentials,
-      headers: new Headers(headers),
+      headers: new Headers(parsedHeaders),
       cors: allowCors ? 'cors' : 'no-cors',
     };
     if (method !== 'GET' && method !== 'HEAD') {
@@ -125,14 +126,17 @@ class ResourceCall extends Smart {
   }
 
   requestUrl(baseUri, path) {
-    const url = baseUri ? `${baseUri.replace(/\/$/, '')}${path}` : path;
+    const parsedPath = resolve(path, this.context);
+    const parsedBaseUri = resolve(baseUri, this.context);
+    const url = parsedBaseUri ? `${parsedBaseUri.replace(/\/$/, '')}${parsedPath}` : parsedPath;
     return url !== '/' ? url.replace(/\/$/, '') : url;
   }
 
   mock({ body }) {
+    const { mock } = this.context;
     const parsedBody = JSON.parse(body);
-    const mock = resolve.call(this, this.context.mock, parsedBody);
-    const mockedBody = _.isPlainObject(mock) ? mock : parsedBody;
+    const parsedMock = resolve(mock, parsedBody, this.context);
+    const mockedBody = _.isPlainObject(parsedMock) ? parsedMock : parsedBody;
     return {
       ok: true,
       body: { id: uuid(), ...mockedBody },

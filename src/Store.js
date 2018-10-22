@@ -61,7 +61,7 @@ class Store extends Smart {
       const output = this._formatLog(state, action, duration);
       if (action.status === 'error') {
         log.warning(...output);
-      } else {
+      } else if (action.status === 'success') {
         log.debug(...output);
       }
       return payload;
@@ -69,11 +69,11 @@ class Store extends Smart {
   }
 
   _formatLog(state, action, duration) {
-    const header = `dispatched ${String(action.type)}`;
+    const header = String(action.type);
     const status = (action.status ? `[${action.status}]` : '[no-status]');
     let time = ' ';
     if (duration) {
-      time = `(completed in ${duration >= 1000 ? `${(duration / 1000).toFixed(2)} s` : `${duration.toFixed(0)} ms`}) `;
+      time = `(${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}) `;
     }
     return [
       `%c${header} ${status} ${time}`,

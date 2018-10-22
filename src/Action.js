@@ -18,13 +18,13 @@ class Action extends Smart {
     return (context) => new this({ ...options, ...context }, ...args);
   }
 
-  defaults({ success, error, ...context }) {
-    return {
+  initialize({ success, error, ...context }) {
+    this.extend({
+      ...context,
       id: uuid(),
       onSuccess: success,
       onError: error,
-      context: context,
-    };
+    });
   }
 
   payload = (payload) => payload;
@@ -54,7 +54,6 @@ class Action extends Smart {
     status: this.status,
     timestamp: this.timestamp,
     type: this.constructor.type,
-    options: this._parseOptions(this.context),
     notice: this._parseNotice(payload) || false,
     payload: this._parsePayload(payload) || false,
   });
