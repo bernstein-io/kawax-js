@@ -2,53 +2,44 @@ import _ from 'lodash';
 import Smart from './Smart';
 import ResourceCall from './internal/ResourceCall';
 import resolve from './helpers/resolve';
-import log from './helpers/log';
 
 class Resource extends Smart {
 
-  defaults(options) { return options; }
-
-  _resolveContext(resolver, options) {
+  _contextParser(resolver, context) {
     return {
-      ...options,
+      ...context,
       schema: resolver('schema') || {},
       mock: resolver('mock', false) || false,
-      path: resolver('path') || log.error('Resource path is undefined'),
-      method: resolver('method') || log.error('Resource method is undefined'),
-      baseUri: resolver('baseUri') || '/',
-      headers: resolver('headers') || {},
+      path: resolver('path', false),
+      baseUri: resolver('baseUri', false),
+      method: resolver('method') || 'GET',
       allowCors: resolver('allowCors') || false,
       credentials: resolver('credentials') || 'same-origin',
       responseType: resolver('responseType') || 'json',
+      headers: resolver('headers', false),
       collection: resolver('collection') || false,
-      requestParser: resolver('requestParser', false) || false,
-      responseParser: resolver('responseParser', false) || ((response, body) => body),
       entityParser: resolver('entityParser', false) || false,
+      requestParser: resolver('requestParser', false) || false,
       errorParser: resolver('errorParser', false) || ((payload) => payload),
+      responseParser: resolver('responseParser', false) || ((response, body) => body),
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
     };
   }
 
-  _getResolver = (options, payload) => (
-    (key, call = true) => {
-      const resolver = call ? resolve : (value) => value;
-      const option = resolver(options[key]);
-      if (option || option === false) return option;
-      return resolver.call(this, this[key], payload);
-    }
-  );
+  _getResolver = (payload, context) => (key, call = true) => {
+    const resolver = call ? resolve : (value) => value;
+    const option = resolver(context[key]);
+    if (option || option === false) return option;
+    return resolver.call(this, this[key], { ...context, payload });
+  };
 
-  _getContext(options, payload) {
-    const resolver = this._getResolver(options, payload);
-    return this._resolveContext(resolver, options);
-  }
-
-  define(baseOptions) {
-    return (payload, callOptions) => {
-      const options = { ...baseOptions, ...callOptions };
-      const context = this._getContext(options, payload);
-      const resourceCall = ResourceCall.export(context);
+  define(base) {
+    return ({ payload, ...context } = {}) => {
+      const mergedContext = { ...base, ...context };
+      const resolver = this._getResolver(payload, mergedContext);
+      const options = this._contextParser(resolver, mergedContext);
+      const resourceCall = ResourceCall.export(options);
       return resourceCall(payload);
     };
   }

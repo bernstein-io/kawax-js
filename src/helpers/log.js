@@ -26,4 +26,18 @@ function debug(...args) {
   }
 }
 
-export default { error, warning, info, debug };
+function group(...args) {
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.groupCollapsed(...args);
+  }
+}
+
+function groupEnd(...args) {
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.groupEnd(...args);
+  }
+}
+
+export default { error, warning, info, debug, group, groupEnd };

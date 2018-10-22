@@ -8,28 +8,18 @@ import { setRuntime } from './Runtime';
 
 class Core extends Smart {
 
-  static new(options) {
-    return new this(options);
-  }
-
-  defaults(options) {
-    return setRuntime({
-      ...options,
-      htmlRoot: options.htmlRoot || false,
-      router: options.router || Router,
-      withRouter: options.withRouter !== false,
-      history: options.history || undefined,
-      historyHook: options.historyHook || undefined,
-      reducer: options.reducer || ((state) => state),
-      container: options.container || (() => (
-        <div>
-It works!
-        </div>
-      )),
-      context: options.context || React.createContext({}),
-      store: new Store({ reducer: options.reducer }),
-    });
-  }
+  static defaults = (options) => setRuntime({
+    ...options,
+    htmlRoot: options.htmlRoot || false,
+    router: options.router || Router,
+    withRouter: options.withRouter !== false,
+    history: options.history || undefined,
+    historyHook: options.historyHook || undefined,
+    reducer: options.reducer || ((state) => state),
+    container: options.container || (() => (<div>It works!</div>)),
+    context: options.context || React.createContext({}),
+    store: new Store({ reducer: options.reducer }),
+  });
 
   initialize(env) {
     const htmlRoot = document.getElementById(this.htmlRoot) || document.body;
