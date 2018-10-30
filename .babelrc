@@ -28,8 +28,9 @@
     "transform-regenerator",
     "transform-exponentiation-operator",
     "transform-async-to-generator",
+    "transform-async-generator-functions",
     "syntax-trailing-function-commas",
-    [ "inline-replace-variables", 
+    [ "inline-replace-variables",
       {
         "__DEV__": {
           "type": "node",

@@ -10,4 +10,6 @@ export Runtime from './Runtime';
 export Selector from './Selector';
 export Smart from './Smart';
 
+export * as Helpers from './Helpers';
+
 export default from './Core';

@@ -61,7 +61,7 @@ class Store extends Smart {
       const output = this._formatLog(state, action, duration);
       if (action.status === 'error') {
         log.warning(...output);
-      } else if (action.status === 'success') {
+      } else if (action.log && action.status === 'success') {
         log.debug(...output);
       }
       return payload;

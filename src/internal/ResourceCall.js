@@ -21,14 +21,14 @@ class ResourceCall extends Smart {
     return response.collection;
   }
 
-  async responseParser(response, body) {
+  responseParser = async (response, body) => {
     const { responseParser, collection, responseTransform, entityParser } = this.context;
     let payload = resolve(responseParser, response, body, this.context) || body;
     payload = collection ? await this.collectionParser(payload) : payload;
     payload = responseTransform ? this.transform(payload, responseTransform) : payload;
     payload = entityParser ? await this.entityParser(payload) : payload;
     return payload;
-  }
+  };
 
   exceptionParser(exception) {
     return {
@@ -49,41 +49,54 @@ class ResourceCall extends Smart {
     });
   }
 
-  bodyTypeParser(response) {
-    const { responseType } = this.context;
-    switch (responseType.toLowerCase()) {
-    case 'json':
-      return response.json();
-    case 'formdata':
-      return response.formData();
-    case 'arraybuffer':
-      return response.arrayBuffer();
-    case 'blob':
-      return response.blob();
-    case 'text':
-      return response.text();
-    default:
-      return response.text();
+  async readBodyStream(response) {
+    let body;
+    const reader = _.lowerCase(this.context.reader);
+    try {
+      switch (reader) {
+        case 'json':
+          body = await response.json();
+          break;
+        case 'formdata':
+          body = await response.formData();
+          break;
+        case 'arraybuffer':
+          body = await response.arrayBuffer();
+          break;
+        case 'blob':
+          body = await response.blob();
+          break;
+        case 'text':
+          body = await response.text();
+          break;
+        default:
+          body = await response.text();
+          break;
+      }
+      return body;
+    } catch (exception) {
+      const status = response.status;
+      throw new Error(`Unexpected content: Could not parse ${reader} (status: ${status})`);
     }
   }
 
-  async serializeRequestBody(payload) {
+  serializeRequestBody = async (payload) => {
     const parsedPayload = {};
     for (const key in payload) {
-      if (_.isObject(payload[key])) {
+      if (_.isPlainObject(payload[key])) {
         parsedPayload[key] = JSON.stringify(payload[key]);
       } else {
         parsedPayload[key] = payload[key];
       }
     }
     return parsedPayload;
-  }
+  };
 
   async requestPayloadParser(payload) {
     let parsedPayload;
-    const { requestParser, requestTransform } = this.context;
-    if (requestParser) {
-      parsedPayload = await resolve(requestParser, payload, this.context);
+    const { payloadParser, requestTransform } = this.context;
+    if (payloadParser) {
+      parsedPayload = await resolve(payloadParser, payload, this.context);
     } else {
       parsedPayload = await this.serializeRequestBody(payload);
     }
@@ -104,7 +117,7 @@ class ResourceCall extends Smart {
     return parsedPayload;
   }
 
-  async buildRequest(payload) {
+  buildRequest = async (payload) => {
     const { method, headers, allowCors, credentials } = this.context;
     const parsedHeaders = resolve(headers, this.context);
     const options = {
@@ -123,16 +136,16 @@ class ResourceCall extends Smart {
       }
     }
     return options;
-  }
+  };
 
-  requestUrl(baseUri, path) {
+  requestUrl = (baseUri, path) => {
     const parsedPath = resolve(path, this.context);
     const parsedBaseUri = resolve(baseUri, this.context);
     const url = parsedBaseUri ? `${parsedBaseUri.replace(/\/$/, '')}${parsedPath}` : parsedPath;
     return url !== '/' ? url.replace(/\/$/, '') : url;
-  }
+  };
 
-  mock({ body }) {
+  mock = ({ body }) => {
     const { mock } = this.context;
     const parsedBody = JSON.parse(body);
     const parsedMock = resolve(mock, parsedBody, this.context);
@@ -141,26 +154,76 @@ class ResourceCall extends Smart {
       ok: true,
       body: { id: uuid(), ...mockedBody },
     };
-  }
+  };
 
-  async request(payload) {
-    const { baseUri, path, mock } = this.context;
+  async processRequest(payload) {
+    const { baseUri, path, mock, hook } = this.context;
+    if (hook) {
+      const response = await this.generator.next();
+      return response.value;
+    }
     const url = this.requestUrl(baseUri, path);
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);
     return fetch(url, options);
+
+  }
+
+  async postProcess(status, parsedBody, response, payload) {
+    const context = this.context;
+    const { onSuccess, onError } = this.context;
+    if (onSuccess && status === 'success') {
+      await onSuccess(parsedBody, { response, payload, context });
+    } else if (onError && status === 'error') {
+      await onError(parsedBody, { response, payload, context });
+    }
+  }
+
+  async* requestProcessor(payload) {
+    console.log('-> requestProcessor/payload', payload);
+    const { baseUri, path, mock } = this.context;
+    const url = this.requestUrl(baseUri, path);
+    const options = await this.buildRequest(payload);
+    console.log('-> requestProcessor/options', JSON.parse(options.body));
+    if (mock) return this.mock(options);
+    return yield fetch(url, options);
+  }
+
+  async* parserProcessor(response) {
+    return yield this.responseParser(response, this.body);
+  }
+
+  async* defaultFlow(request, parser, { payload, context }) {
+    const response = yield* request(payload);
+    const body = yield* parser(response);
+    return body;
   }
 
   call = async (payload) => {
-    const { mock } = this.context;
+    let response;
+    const context = this.context;
+    const { mock, hook } = context;
     try {
-      const response = await this.request(payload);
-      const body = mock ? response.body : await this.bodyTypeParser(response);
-      if (!response.ok) throw this.fetchErrorParser(response, body);
-      return this.responseParser(response, body);
+      const requestProcessor = this.requestProcessor.bind(this);
+      const parserProcessor = this.parserProcessor.bind(this);
+      const generator = hook || this.defaultFlow;
+      this.generator = await generator(requestProcessor, parserProcessor, { payload, context });
+      response = await this.processRequest(payload);
+      this.body = mock ? response.body : await this.readBodyStream(response);
+      if (!response.ok) throw this.fetchErrorParser(response, this.body);
+      let parsedBody;
+      if (hook) {
+        parsedBody = await this.generator.next();
+      } else {
+        parsedBody = await this.responseParser(response, this.body);
+      }
+      await this.postProcess('success', parsedBody, response, payload);
+      return hook ? await parsedBody.value : parsedBody;
     } catch (exception) {
       if (exception instanceof Error) log.error(exception);
-      throw this.exceptionParser(exception);
+      const parsedException = await this.exceptionParser(exception);
+      await this.postProcess('error', parsedException, response, payload);
+      throw parsedException;
     }
   };
 

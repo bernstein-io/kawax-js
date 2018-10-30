@@ -16,7 +16,7 @@ module.exports = {
     "__DEV__": true,
   },
   rules: {
-    "indent": ["error", 2],
+    "indent": ["error", 2, { "SwitchCase": 1 }],
     "babel/semi": "error",
     "babel/no-invalid-this": "error",
     "babel/object-curly-spacing": "off",
