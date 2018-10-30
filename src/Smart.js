@@ -14,6 +14,10 @@ class Smart {
     return new this(...args);
   }
 
+  static build(options, ...args) {
+    return (context) => new this({ ...options, ...context }, ...args);
+  }
+
   constructor(options, ...args) {
     this.static = this._defineStatic();
     this._defineDetaults(options);
@@ -22,13 +26,16 @@ class Smart {
 
   initialize() { return this; }
 
-  _defineStatic() {
+  _defineStatic(parent = false) {
     const staticProperties = {};
-    const prototype = Object.getPrototypeOf(this);
+    const prototype = parent || Object.getPrototypeOf(this);
     _.each(prototype.constructor, (property, key) => {
       staticProperties[key] = property;
     });
-    return staticProperties;
+    const extend = Object.getPrototypeOf(prototype);
+    const hasParent = (extend instanceof Smart);
+    const extendStatic = hasParent ? this._defineStatic(extend) : {};
+    return { ...extendStatic, ...staticProperties };
   }
 
   _defineDetaults(options) {

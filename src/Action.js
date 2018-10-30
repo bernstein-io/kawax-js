@@ -14,17 +14,15 @@ class Action extends Smart {
 
   static warnOnClose = false;
 
-  static export(options, ...args) {
-    return (context) => new this({ ...options, ...context }, ...args);
-  }
+  static defaults = (options) => options;
 
-  initialize({ success, error, ...context }) {
-    this.extend({
-      ...context,
-      id: uuid(),
-      onSuccess: success,
-      onError: error,
-    });
+  constructor({ success, error, log: logEnabled, ...options }) {
+    super(options);
+    this.id = uuid();
+    this.onError = error;
+    this.onSuccess = success;
+    this.log = logEnabled || true;
+    this.options = options;
   }
 
   payload = (payload) => payload;
@@ -56,6 +54,8 @@ class Action extends Smart {
     type: this.constructor.type,
     notice: this._parseNotice(payload) || false,
     payload: this._parsePayload(payload) || false,
+    options: this.options,
+    log: this.log,
   });
 
   _parseOptions(options) {

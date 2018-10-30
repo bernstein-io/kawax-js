@@ -15,15 +15,19 @@ class Resource extends Smart {
       method: resolver('method') || 'GET',
       allowCors: resolver('allowCors') || false,
       credentials: resolver('credentials') || 'same-origin',
-      responseType: resolver('responseType') || 'json',
+      reader: resolver('reader') || 'json',
       headers: resolver('headers', false),
       collection: resolver('collection') || false,
       entityParser: resolver('entityParser', false) || false,
-      requestParser: resolver('requestParser', false) || false,
+      payloadParser: resolver('payloadParser', false) || false,
       errorParser: resolver('errorParser', false) || ((payload) => payload),
       responseParser: resolver('responseParser', false) || ((response, body) => body),
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
+      resourceClass: this.constructor.name || 'Resource',
+      onSuccess: resolver('onSuccess', false) || false,
+      onError: resolver('onError', false) || false,
+      hook: resolver('hook', false) || false,
     };
   }
 
@@ -52,3 +56,4 @@ class Resource extends Smart {
 
 export { ResourceCall };
 export default Resource;
+
