@@ -180,11 +180,9 @@ class ResourceCall extends Smart {
   }
 
   async* requestProcessor(payload) {
-    console.log('-> requestProcessor/payload', payload);
     const { baseUri, path, mock } = this.context;
     const url = this.requestUrl(baseUri, path);
     const options = await this.buildRequest(payload);
-    console.log('-> requestProcessor/options', JSON.parse(options.body));
     if (mock) return this.mock(options);
     return yield fetch(url, options);
   }
