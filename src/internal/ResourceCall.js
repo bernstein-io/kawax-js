@@ -208,7 +208,7 @@ class ResourceCall extends Smart {
     } catch (exception) {
       if (exception instanceof Error) log.error(exception);
       const error = await this.exceptionParser(exception);
-      await this.postProcess('error', body, payload);
+      await this.postProcess('error', error, payload);
       throw error;
     }
   };
