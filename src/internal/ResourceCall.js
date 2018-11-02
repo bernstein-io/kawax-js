@@ -160,9 +160,9 @@ class ResourceCall extends Smart {
     const context = this.context;
     const { onSuccess, onError } = this.context;
     if (onSuccess && status === 'success') {
-      await onSuccess(body, { response, payload, context });
+      await onSuccess(body, { payload, context });
     } else if (onError && status === 'error') {
-      await onError(body, { response, payload, context });
+      await onError(body, { payload, context });
     }
   }
 
