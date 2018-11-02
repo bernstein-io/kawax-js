@@ -156,72 +156,60 @@ class ResourceCall extends Smart {
     };
   };
 
-  async processRequest(payload) {
-    const { baseUri, path, mock, hook } = this.context;
-    if (hook) {
-      const response = await this.generator.next();
-      return response.value;
-    }
-    const url = this.requestUrl(baseUri, path);
-    const options = await this.buildRequest(payload);
-    if (mock) return this.mock(options);
-    return fetch(url, options);
-
-  }
-
-  async postProcess(status, parsedBody, response, payload) {
+  async postProcess(status, body, payload) {
     const context = this.context;
     const { onSuccess, onError } = this.context;
     if (onSuccess && status === 'success') {
-      await onSuccess(parsedBody, { response, payload, context });
+      await onSuccess(body, { response, payload, context });
     } else if (onError && status === 'error') {
-      await onError(parsedBody, { response, payload, context });
+      await onError(body, { response, payload, context });
     }
   }
 
-  async* requestProcessor(payload) {
+  requestProcessor = async (payload) => {
     const { baseUri, path, mock } = this.context;
     const url = this.requestUrl(baseUri, path);
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);
-    return yield fetch(url, options);
+    return fetch(url, options);
+  };
+
+  responseProcessor = async (response) => {
+    const { mock } = this.context;
+    const body = mock ? response.body : await this.readBodyStream(response);
+    return this.responseParser(response, body);
+  };
+
+  async* defaultHook(request, parser, { payload, context }) {
+    const response = yield request(payload);
+    return yield parser(response);
   }
 
-  async* parserProcessor(response) {
-    return yield this.responseParser(response, this.body);
-  }
-
-  async* defaultFlow(request, parser, { payload, context }) {
-    const response = yield* request(payload);
-    const body = yield* parser(response);
-    return body;
+  async process(payload) {
+    const context = this.context;
+    const request = this.requestProcessor;
+    const parser = this.responseProcessor;
+    const hook = context.hook || this.defaultHook;
+    const generator = await hook(request, parser, { payload, context });
+    const responseProcessor = await generator.next();
+    const response = await responseProcessor.value;
+    const bodyProcessor = await generator.next(response);
+    const body = await bodyProcessor.value;
+    const parsedBody = await generator.next(body);
+    if (!response.ok) throw this.fetchErrorParser(response, parsedBody);
+    return parsedBody.value;
   }
 
   call = async (payload) => {
-    let response;
-    const context = this.context;
-    const { mock, hook } = context;
     try {
-      const requestProcessor = this.requestProcessor.bind(this);
-      const parserProcessor = this.parserProcessor.bind(this);
-      const generator = hook || this.defaultFlow;
-      this.generator = await generator(requestProcessor, parserProcessor, { payload, context });
-      response = await this.processRequest(payload);
-      this.body = mock ? response.body : await this.readBodyStream(response);
-      if (!response.ok) throw this.fetchErrorParser(response, this.body);
-      let parsedBody;
-      if (hook) {
-        parsedBody = await this.generator.next();
-      } else {
-        parsedBody = await this.responseParser(response, this.body);
-      }
-      await this.postProcess('success', parsedBody, response, payload);
-      return hook ? await parsedBody.value : parsedBody;
+      const body = await this.process(payload);
+      await this.postProcess('success', body, payload);
+      return body;
     } catch (exception) {
       if (exception instanceof Error) log.error(exception);
-      const parsedException = await this.exceptionParser(exception);
-      await this.postProcess('error', parsedException, response, payload);
-      throw parsedException;
+      const error = await this.exceptionParser(exception);
+      await this.postProcess('error', body, payload);
+      throw error;
     }
   };
 
