@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import resolve from './helpers/resolve';
 
+const EXCLUDE_STATIC = ['export', 'new', 'build'];
+
 class Smart {
 
   static defaults = false;
@@ -30,7 +32,9 @@ class Smart {
     const staticProperties = {};
     const prototype = parent || Object.getPrototypeOf(this);
     _.each(prototype.constructor, (property, key) => {
-      staticProperties[key] = property;
+      if (!_.includes(EXCLUDE_STATIC, key)) {
+        staticProperties[key] = property;
+      }
     });
     const extend = Object.getPrototypeOf(prototype);
     const hasParent = (extend instanceof Smart);

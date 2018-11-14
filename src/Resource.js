@@ -35,7 +35,7 @@ class Resource extends Smart {
     const resolver = call ? resolve : (value) => value;
     const option = resolver(context[key]);
     if (option || option === false) return option;
-    return resolver.call(this, this[key], { ...context, payload });
+    return resolver.call(this, this.static[key], { ...context, payload });
   };
 
   define(base) {
