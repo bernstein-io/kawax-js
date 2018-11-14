@@ -56,4 +56,3 @@ class Resource extends Smart {
 
 export { ResourceCall };
 export default Resource;
-

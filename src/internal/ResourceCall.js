@@ -39,7 +39,7 @@ class ResourceCall extends Smart {
     };
   }
 
-  fetchErrorParser(response, body = {}) {
+  httpErrorParser(response, body = {}) {
     const { responseTransform } = this.context;
     return this.context.errorParser({
       code: response.status,
@@ -195,9 +195,10 @@ class ResourceCall extends Smart {
     const response = await responseProcessor.value;
     const bodyProcessor = await generator.next(response);
     const body = await bodyProcessor.value;
-    const parsedBody = await generator.next(body);
-    if (!response.ok) throw this.fetchErrorParser(response, parsedBody);
-    return parsedBody.value;
+    const parsedBodyProcessor = await generator.next(body);
+    const parsedBody = await parsedBodyProcessor.value;
+    if (!response.ok) throw this.httpErrorParser(response, parsedBody);
+    return parsedBody;
   }
 
   call = async (payload) => {
