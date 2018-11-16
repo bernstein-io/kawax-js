@@ -53,15 +53,13 @@ class Reducer extends Smart {
     },
   );
 
-t;
-
-call(state, action) {
-  const path = [];
-  const current = _.isEmpty(state) ? this._getInitialState(path) : state;
-  const resolvedState = resolve.call(this, this.state, current, action);
-  const next = (resolvedState === undefined) ? current : resolvedState;
-  return this.reduce(current, next, action, path);
-}
+  call(state, action) {
+    const path = [];
+    const current = _.isEmpty(state) ? this._getInitialState(path) : state;
+    const resolvedState = resolve.call(this, this.state, current, action);
+    const next = (resolvedState === undefined) ? current : resolvedState;
+    return this.reduce(current, next, action, path);
+  }
 
   matchOn = (statuses) => (state, action) => {
     let next = state;
