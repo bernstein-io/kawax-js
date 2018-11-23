@@ -41,9 +41,10 @@ export default (Pure) => {
     if (_.isFunction(Pure.css) || uniqClassName === false) {
       const componentStyle = resolve(Pure.css, props, state);
       if (componentStyle) {
-        const stylesheet = StyleSheet.create({ component: componentStyle });
+        const className = Pure.name || 'Component';
+        const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
-        uniqClassName = css(styleWithNesting.component);
+        uniqClassName = css(styleWithNesting[className]);
         return uniqClassName;
       }
     } else {
