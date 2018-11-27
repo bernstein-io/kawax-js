@@ -2,6 +2,7 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import Smart from '../Smart';
 import resolve from '../helpers/resolve';
+import promiseAll from '../helpers/promiseAll';
 import log from '../helpers/log';
 
 class ResourceCall extends Smart {
@@ -11,8 +12,8 @@ class ResourceCall extends Smart {
   async entityParser(data) {
     const { collection, entityParser } = this.context;
     if (collection === true) {
-      const parsedEntities = data.map((entity) => resolve(entityParser, entity, this.context));
-      return Promise.all(parsedEntities);
+      const entities = data.map((entity) => resolve(entityParser, entity, this.context));
+      return promiseAll(entities);
     }
     return entityParser(data, this.context);
   }
