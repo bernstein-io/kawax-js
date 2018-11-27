@@ -1,5 +1,7 @@
+import _ from 'lodash';
+
 export default async function (object, sync = false) {
-  const resolvedObject = {};
+  const resolvedObject = _.isArray(object) ? [] : {};
   const keys = Object.keys(object);
   if (sync === true) {
     for (const index in keys) {

@@ -19,8 +19,9 @@ export default (Pure) => {
     const specialChars = ['*', '&', ':', '@'];
     const mappedSelectors = {};
     _.each(selectors, (selector, key) => {
-      const newKey = !_.includes(specialChars, key[0]) ? `&${key}` : key;
-      if (_.isPlainObject(selector)) {
+      const native = !!_.includes(specialChars, key[0]);
+      const newKey = !native ? `&${key}` : key;
+      if (_.isPlainObject(selector) && !native) {
         mappedSelectors[newKey] = mapSelectors(selector);
       } else {
         mappedSelectors[key] = selector;
