@@ -98,7 +98,7 @@ class Action extends Smart {
         } else {
           await resolve.call(this, this.onError, payload, ...data);
         }
-        await this._afterDispatch(payload, data);
+        await this._afterDispatch(payload, ...data);
         this._removeWindowUnloadListener();
       });
       return this.id;
@@ -164,9 +164,9 @@ class Action extends Smart {
     return resolve.call(this, this.errorPayload, payload, ...data);
   }
 
-  async _afterDispatch(payload, data) {
+  async _afterDispatch(payload, ...data) {
     if (this.status === 'success') {
-      await resolve.call(this, this.afterDispatch, payload, data);
+      await resolve.call(this, this.afterDispatch, payload, ...data);
     }
   }
 
