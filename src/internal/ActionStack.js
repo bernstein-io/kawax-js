@@ -18,7 +18,19 @@ class ActionStack extends Smart {
     this.stack = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
   }
 
-  clearOnChange(keys = {}) {
+  clearExcept(preserve = []) {
+    this.stack = _.filter(this.stack, (item) => (
+      _.includes(this.persisted, item.key) || _.includes(preserve, item.key)
+    ));
+  }
+
+  clearSome(actions = []) {
+    this.stack = _.filter(this.stack, (item) => (
+      _.includes(this.persisted, item.key) && !_.includes(actions, item.key)
+    ));
+  }
+
+  clearOnChange(keys = []) {
     _.each(this.keys, (value, key) => {
       if (!_.isEmpty(this.keys) && value !== keys[key]) {
         this.clear(true);
