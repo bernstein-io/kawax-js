@@ -14,15 +14,15 @@ class Action extends Smart {
 
   static warnOnClose = false;
 
-  static defaults = (options) => options;
+  static defaults = (defaults) => defaults;
 
-  constructor({ success, error, log: logEnabled, ...options }) {
-    super(options);
+  constructor({ success, error, log: logEnabled, ...context }) {
+    super(context);
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
     this.log = logEnabled || true;
-    this.options = options;
+    this.context = context;
   }
 
   payload = (payload) => payload;
@@ -41,25 +41,28 @@ class Action extends Smart {
 
   errorNotice = (error, data) => false;
 
-  options = (options) => options;
-
   setStatus = (status) => { this.status = status; };
 
   export = (action) => action;
 
-  _export = (payload) => this.export({
-    id: this.id,
-    status: this.status,
-    timestamp: this.timestamp,
-    type: this.constructor.type,
-    notice: this._parseNotice(payload) || false,
-    payload: this._parsePayload(payload) || false,
-    options: this.options,
-    log: this.log,
-  });
+  _export = (output) => {
+    const payload = this._parsePayload(output) || false;
+    return this.export({
+      id: this.id,
+      log: this.log,
+      payload: payload,
+      status: this.status,
+      timestamp: this.timestamp,
+      type: this.constructor.type,
+      notice: this._parseNotice(payload) || false,
+      options: this._parseOptions(payload) || false,
+    });
+  };
 
-  _parseOptions(options) {
-    return resolve.call(this, this.options, options);
+  _parseOptions(payload) {
+    const current = _.isPlainObject(this.context) ? this.context : {};
+    const parsed = resolve.call(this, this.options, payload);
+    return { ...current, ...parsed };
   }
 
   _parsePayload(payload) {
@@ -92,6 +95,7 @@ class Action extends Smart {
         this._bindActionsCreators(dispatch, getState);
         const payload = await this._processPayload(...data);
         const action = this._export(payload);
+        await this._beforeDispatch(payload, ...data);
         await dispatch(action);
         if (this.status === 'success') {
           await resolve.call(this, this.onSuccess, payload, ...data);
@@ -162,6 +166,12 @@ class Action extends Smart {
   async _processError(payload, ...data) {
     this.setStatus('error');
     return resolve.call(this, this.errorPayload, payload, ...data);
+  }
+
+  async _beforeDispatch(payload, ...data) {
+    if (this.status === 'success') {
+      await resolve.call(this, this.beforeDispatch, payload, ...data);
+    }
   }
 
   async _afterDispatch(payload, ...data) {

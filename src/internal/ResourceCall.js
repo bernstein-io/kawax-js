@@ -168,10 +168,11 @@ class ResourceCall extends Smart {
   }
 
   requestProcessor = async (payload) => {
-    const { baseUri, path, mock } = this.context;
-    const url = this.requestUrl(baseUri, path);
+    const { baseUri, path, mock, paginate } = this.context;
+    const url = new URL(this.requestUrl(baseUri, path));
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);
+    if (paginate) url.search = new URLSearchParams(paginate);
     return fetch(url, options);
   };
 

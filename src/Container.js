@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import Runtime from './Runtime';
 import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
+import SelectHelper from './helpers/select';
 
 export default (Pure) => {
 
@@ -28,9 +29,8 @@ export default (Pure) => {
   }
 
   function getSelect(state) {
-    return function select(...args) {
-      const path = (args.length > 1 ? args : args[0]);
-      return _.get(state, path);
+    return function (...args) {
+      return SelectHelper(state, ...args);
     };
   }
 

@@ -13,6 +13,7 @@ class Resource extends Smart {
       path: resolver('path', false),
       baseUri: resolver('baseUri', false),
       method: resolver('method') || 'GET',
+      paginate: resolver('paginate') || false,
       allowCors: resolver('allowCors') || false,
       credentials: resolver('credentials') || 'same-origin',
       reader: resolver('reader') || 'json',
