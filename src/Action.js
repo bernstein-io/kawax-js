@@ -69,9 +69,10 @@ class Action extends Smart {
     return resolve.call(this, this.payload, payload);
   }
 
-  _parseNotice(payload = {}) {
+  _parseNotice(input = {}) {
     if (this.notice === false) return false;
     let notice;
+    const payload = _.isEmpty(input) ? {} : input;
     if (this.status === 'pending') notice = resolve.call(this, this.pendingNotice, payload);
     else if (this.status === 'error') notice = resolve.call(this, this.errorNotice, payload);
     else if (this.status === 'success') notice = resolve.call(this, this.successNotice, payload);
@@ -148,9 +149,8 @@ class Action extends Smart {
         return resolve.call(this, this.successPayload, payload, ...data);
       } catch (exception) {
         if (exception instanceof Error) log.error(exception);
-        const payload = (exception instanceof Error) ? {} : exception;
         this.setStatus('error');
-        return resolve.call(this, this.errorPayload, payload, ...data);
+        return resolve.call(this, this.errorPayload, exception, ...data);
       }
     } else if (this.call !== undefined) {
       return this.call;
