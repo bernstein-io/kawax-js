@@ -53,7 +53,7 @@ class Action extends Smart {
       payload: payload,
       status: this.status,
       timestamp: this.timestamp,
-      type: this.constructor.type,
+      type: this.static.type,
       notice: this._parseNotice(payload) || false,
       options: this._parseOptions(payload) || false,
     });

@@ -29,7 +29,7 @@ export default (Pure) => {
   }
 
   function getSelect(state) {
-    return function (...args) {
+    return function helper(...args) {
       return SelectHelper(state, ...args);
     };
   }
