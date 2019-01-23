@@ -2,6 +2,8 @@ import _ from 'lodash';
 import Smart from '../Smart';
 import Runtime from '../Runtime';
 
+const argsToArray = (keys = []) => ((_.isArray(_.first(keys))) ? _.first(keys) : keys);
+
 class ActionStack extends Smart {
 
   keys = {};
@@ -18,19 +20,22 @@ class ActionStack extends Smart {
     this.stack = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
   }
 
-  clearExcept(preserve = []) {
+  clearExcept(...args) {
+    const preserve = argsToArray(args);
     this.stack = _.filter(this.stack, (item) => (
       _.includes(this.persisted, item.key) || _.includes(preserve, item.key)
     ));
   }
 
-  clearSome(actions = []) {
+  clearSome(...args) {
+    const actions = argsToArray(args);
     this.stack = _.filter(this.stack, (item) => (
       _.includes(this.persisted, item.key) && !_.includes(actions, item.key)
     ));
   }
 
-  clearOnChange(keys = []) {
+  clearOnChange(args = []) {
+    const keys = argsToArray(args);
     _.each(this.keys, (value, key) => {
       if (!_.isEmpty(this.keys) && value !== keys[key]) {
         this.clear(true);
@@ -39,7 +44,8 @@ class ActionStack extends Smart {
     this.keys = keys;
   }
 
-  persist(...keys) {
+  persist(...args) {
+    const keys = argsToArray(args);
     this.persisted.push(...keys);
   }
 
@@ -63,7 +69,8 @@ class ActionStack extends Smart {
     return action && action.status === 'error' ? action.payload : false;
   }
 
-  isError(...keys) {
+  isError(...args) {
+    const keys = argsToArray(args);
     let success;
     _.each(keys, (key) => {
       const actions = this.find(key);
@@ -74,7 +81,8 @@ class ActionStack extends Smart {
     return success;
   }
 
-  isSuccess(...keys) {
+  isSuccess(...args) {
+    const keys = argsToArray(args);
     let success;
     _.each(keys, (key) => {
       const actions = this.find(key);
@@ -85,7 +93,8 @@ class ActionStack extends Smart {
     return success;
   }
 
-  isDone(...keys) {
+  isDone(...args) {
+    const keys = argsToArray(args);
     let done;
     _.each(keys, (key) => {
       const actions = this.find(key);
@@ -96,7 +105,8 @@ class ActionStack extends Smart {
     return done;
   }
 
-  wasDoneOnce(...keys) {
+  wasDoneOnce(...args) {
+    const keys = argsToArray(args);
     let done;
     _.each(keys, (key) => {
       const actions = this.find(key);
@@ -109,15 +119,20 @@ class ActionStack extends Smart {
     return done;
   }
 
-  isPending(...keys) {
-    let pending = false;
+  isPending(...args) {
+    const keys = argsToArray(args);
+    return this.any(keys, 'pending');
+  }
+
+  any(keys = [], status) {
+    let any = false;
     _.each(keys, (key) => {
       const actions = this.find(key);
       _.each(actions, (action) => {
-        pending = pending || !!(action && action.status === 'pending');
+        any = any || !!(action && action.status === status);
       });
     });
-    return pending;
+    return any;
   }
 
   groups() {
