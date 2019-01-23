@@ -171,12 +171,16 @@ class Action extends Smart {
   async _beforeDispatch(payload, ...data) {
     if (this.status === 'success') {
       await resolve.call(this, this.beforeDispatch, payload, ...data);
+    } else if (this.status === 'error') {
+      await resolve.call(this, this.beforeRescue, payload, ...data);
     }
   }
 
   async _afterDispatch(payload, ...data) {
     if (this.status === 'success') {
       await resolve.call(this, this.afterDispatch, payload, ...data);
+    } else if (this.status === 'error') {
+      await resolve.call(this, this.afterRescue, payload, ...data);
     }
   }
 

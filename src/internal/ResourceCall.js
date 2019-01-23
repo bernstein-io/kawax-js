@@ -18,8 +18,8 @@ class ResourceCall extends Smart {
     return entityParser(data, this.context);
   }
 
-  async collectionParser(response) {
-    return response.collection;
+  async collectionParser(payload) {
+    return _.isArray(payload.collection) ? payload.collection : payload;
   }
 
   responseParser = async (response, body) => {
@@ -27,7 +27,9 @@ class ResourceCall extends Smart {
     let payload = resolve(responseParser, response, body, this.context) || body;
     payload = collection ? await this.collectionParser(payload) : payload;
     payload = responseTransform ? this.transform(payload, responseTransform) : payload;
-    payload = entityParser ? await this.entityParser(payload) : payload;
+    if (response.ok === true) {
+      payload = entityParser ? await this.entityParser(payload) : payload;
+    }
     return payload;
   };
 
@@ -41,13 +43,15 @@ class ResourceCall extends Smart {
   }
 
   httpErrorParser(response, body = {}) {
+    const payload = _.isObject(body) ? body : {};
     const { responseTransform } = this.context;
-    return this.context.errorParser({
-      code: response.status,
-      status: _.snakeCase(response.statusText),
-      message: response.statusText,
+    const error = this.context.errorParser({
+      code: payload.code || response.status,
+      status: payload.status || _.snakeCase(response.statusText),
+      message: payload.message || response.statusText,
       ...(responseTransform ? this.transform(body, responseTransform) : body),
     });
+    return error;
   }
 
   async readBodyStream(response) {
