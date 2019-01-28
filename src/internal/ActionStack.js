@@ -121,16 +121,25 @@ class ActionStack extends Smart {
 
   isPending(...args) {
     const keys = argsToArray(args);
-    return this.any(keys, 'pending');
+    return this.anyOf(keys, 'pending');
   }
 
-  any(keys = [], status) {
-    let any = false;
+  anyOf(keys = [], status) {
+    let anyOf = false;
     _.each(keys, (key) => {
       const actions = this.find(key);
       _.each(actions, (action) => {
-        any = any || !!(action && action.status === status);
+        anyOf = anyOf || !!(action && action.status === status);
       });
+    });
+    return anyOf;
+  }
+
+  any(status) {
+    let any = false;
+    const actions = this.all();
+    _.each(actions, (action) => {
+      any = any || !!(action && action.status === status);
     });
     return any;
   }
