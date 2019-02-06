@@ -43,7 +43,7 @@ class Smart {
   }
 
   _defineDetaults(options) {
-    const defaults = resolve.call(this, this.static.defaults, options);
+    const defaults = resolve.call(this, this.static.defaults, options, this.static);
     this.extend(defaults);
   }
 

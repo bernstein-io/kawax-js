@@ -3,8 +3,8 @@ import uuid from 'uuid';
 import Smart from './Smart';
 import Runtime from './Runtime';
 import resolve from './helpers/resolve';
-import log from './helpers/log';
 import select from './helpers/select';
+import Log from './helpers/log';
 
 class Action extends Smart {
 
@@ -16,12 +16,20 @@ class Action extends Smart {
 
   static defaults = (defaults) => defaults;
 
-  constructor({ success, error, log: logEnabled, ...context }) {
+  // static defaults = ({ success, error, log, ...context }) => ({
+  //   id: uuid(),
+  //   onError: error,
+  //   onSuccess: success,
+  //   log: logEnabled || true,
+  //   context: context
+  // });
+
+  constructor({ success, error, log, ...context }) {
     super(context);
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
-    this.log = logEnabled || true;
+    this.log = log || true;
     this.context = context;
   }
 
@@ -54,12 +62,13 @@ class Action extends Smart {
       status: this.status,
       timestamp: this.timestamp,
       type: this.static.type,
+      class: this.constructor.name,
       notice: this._parseNotice(payload) || false,
-      options: this._parseOptions(payload) || false,
+      context: this._parseContext(payload) || false,
     });
   };
 
-  _parseOptions(payload) {
+  _parseContext(payload) {
     const current = _.isPlainObject(this.context) ? this.context : {};
     const parsed = resolve.call(this, this.options, payload);
     return { ...current, ...parsed };
@@ -128,12 +137,13 @@ class Action extends Smart {
     const actionCreators = this.constructor.actionCreators;
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
-        this[key] = (...data) => new Promise((success, error) => {
+        this[key] = (...data) => new Promise(async (success, error) => {
           const actionInstance = action({
             success: success,
             error: error,
             delegate: true,
           });
+          await actionInstance._setState(...data);
           actionInstance.run(...data)(dispatch, getState);
         });
       }
@@ -148,7 +158,7 @@ class Action extends Smart {
         this.setStatus('success');
         return resolve.call(this, this.successPayload, payload, ...data);
       } catch (exception) {
-        if (exception instanceof Error) log.error(exception);
+        if (exception instanceof Error) Log.error(exception);
         this.setStatus('error');
         return resolve.call(this, this.errorPayload, exception, ...data);
       }
@@ -184,6 +194,10 @@ class Action extends Smart {
     }
   }
 
+  async _setState(...args) {
+    this.state = await resolve.call(this, this.state, ...args);
+  }
+
   _setWindowUnloadListener() {
     if (this.constructor.warnOnClose) {
       window.addEventListener('beforeunload', this._handleWindowUnloadEvent);
@@ -203,7 +217,7 @@ class Action extends Smart {
   }
 
   static bind(context) {
-    return (...data) => new Promise((success, error) => {
+    return (...data) => new Promise(async (success, error) => {
       const { dispatch, getState } = Runtime('store');
       const action = new this({
         success: success,
@@ -211,6 +225,7 @@ class Action extends Smart {
         delegate: true,
         ...context,
       });
+      await action._setState(...data);
       action.run(...data)(dispatch, getState);
     });
   }

@@ -6,6 +6,8 @@ import log from './helpers/log';
 
 class Store extends Smart {
 
+  groupLog = false;
+
   initialize({ reducer }) {
     const reduxStore = this._createStore(reducer);
     this.extend(reduxStore);
@@ -59,26 +61,32 @@ class Store extends Smart {
         duration = performance.now() - initialAction.startTime;
       }
       const output = this._formatLog(state, action, duration);
+      const actionLog = _.cloneDeep(action);
       if (action.status === 'error') {
-        log.warning(...output);
+        log.group(...output);
+        log.error('Action:', actionLog);
+        log.groupEnd();
       } else if (action.log && action.status === 'success') {
-        log.debug(...output);
+        log.debug(...output, '\n ', actionLog);
       }
       return payload;
     };
   }
 
   _formatLog(state, action, duration) {
+    const className = String(action.class);
     const header = String(action.type);
-    const status = (action.status ? `[${action.status}]` : '[no-status]');
+    const status = (action.status ? `${action.status}` : 'no-status');
+    const style = action.status === 'error'
+      ? 'background: #FFF0F0; color: #FD4146; font-weight: bold;'
+      : 'color: black; font-weight: bold;';
     let time = ' ';
     if (duration) {
-      time = `(${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}) `;
+      time = `${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}`;
     }
     return [
-      `%c${header} ${status} ${time}`,
-      'color: #2A2F3A; font-weight: bold;',
-      '\n', _.cloneDeep(action),
+      `%c${className}: ${status} (${header}) (${time})`,
+      style,
     ];
   }
 

@@ -1,9 +1,9 @@
 import _ from 'lodash';
 
-export default async function (object, sync = false) {
+export default async function (object, async = true) {
   const resolvedObject = _.isArray(object) ? [] : {};
   const keys = Object.keys(object);
-  if (sync === true) {
+  if (async === false) {
     for (const index in keys) {
       const key = keys[index];
       // eslint-disable-next-line no-await-in-loop

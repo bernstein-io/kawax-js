@@ -9,13 +9,23 @@ class ResourceCall extends Smart {
 
   static defaults = (context) => ({ context });
 
-  async entityParser(data) {
-    const { collection, entityParser } = this.context;
+  async switchParser(data) {
+    const { collection } = this.context;
     if (collection === true) {
-      const entities = data.map((entity) => resolve(entityParser, entity, this.context));
+      const entities = data.map((entity) => this.entityParser(entity));
       return promiseAll(entities);
     }
-    return entityParser(data, this.context);
+    return this.entityParser(data, this.context);
+  }
+
+  async entityParser(entity) {
+    const { entityParser } = this.context;
+    try {
+      const parsedEntity = resolve(entityParser, entity, this.context);
+      return parsedEntity;
+    } catch (exception) {
+      return null;
+    }
   }
 
   async collectionParser(payload) {
@@ -28,7 +38,7 @@ class ResourceCall extends Smart {
     payload = collection ? await this.collectionParser(payload) : payload;
     payload = responseTransform ? this.transform(payload, responseTransform) : payload;
     if (response.ok === true) {
-      payload = entityParser ? await this.entityParser(payload) : payload;
+      payload = entityParser ? await this.switchParser(payload) : payload;
     }
     return payload;
   };
