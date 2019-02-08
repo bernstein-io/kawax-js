@@ -38,7 +38,8 @@ export default (Pure) => {
     return stylesheet;
   }
 
-  function getCssClass(props, state) {
+  function getCssClasses(props, state) {
+    const defaultClassName = `react-${_.kebabCase(displayName)}`;
     if (_.isFunction(Pure.css) || uniqClassName === false) {
       const componentStyle = resolve(Pure.css, props, state);
       if (componentStyle) {
@@ -46,11 +47,11 @@ export default (Pure) => {
         const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
         uniqClassName = css(styleWithNesting[className]);
-        return uniqClassName;
+        return `${defaultClassName} ${uniqClassName}`;
       }
-    } else {
-      return uniqClassName;
+      return defaultClassName;
     }
+    return `${defaultClassName} ${uniqClassName}`;
   }
 
   return class Component extends React.Component {
@@ -63,8 +64,8 @@ export default (Pure) => {
     }
 
     classNames = (current) => { /* eslint-disable react/prop-types */
-      const cssClass = getCssClass(this.props, this.state);
-      const inlineClass = cssClass || false;
+      const cssClasses = getCssClasses(this.props, this.state);
+      const inlineClass = cssClasses || false;
       const currentClasses = current ? current.split(' ') : false;
       const { className } = this.props;
       const propClasses = className ? className.split(' ') : false;
@@ -76,8 +77,8 @@ export default (Pure) => {
       const shallow = shallowRenderer.render(wrappedComponent);
       const node = ReactDOM.findDOMNode(this);
       const { className } = this.props;
-      const cssClass = getCssClass(this.props, this.state);
-      if (node && (className || cssClass)) {
+      const cssClasses = getCssClasses(this.props, this.state);
+      if (node && (className || cssClasses)) {
         if (isElement(shallow) && !isFragment(shallow)) {
           node.className = this.classNames(node.className);
         } else {
