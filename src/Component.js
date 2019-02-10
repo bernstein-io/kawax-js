@@ -11,6 +11,7 @@ import Runtime from './Runtime';
 export default (Pure) => {
 
   const shallowRenderer = new ShallowRenderer();
+  const defaultClassClassName = Pure.className || 'component';
   const displayName = Pure.name || 'Unnamed';
   let wrappedComponent = false;
   let uniqClassName = false;
@@ -39,7 +40,6 @@ export default (Pure) => {
   }
 
   function getCssClasses(props, state) {
-    const defaultClassName = `react-${_.kebabCase(displayName)}`;
     if (_.isFunction(Pure.css) || uniqClassName === false) {
       const componentStyle = resolve(Pure.css, props, state);
       if (componentStyle) {
@@ -47,11 +47,11 @@ export default (Pure) => {
         const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
         uniqClassName = css(styleWithNesting[className]);
-        return `${defaultClassName} ${uniqClassName}`;
+        return `${defaultClassClassName} ${uniqClassName}`;
       }
-      return defaultClassName;
+      return defaultClassClassName;
     }
-    return `${defaultClassName} ${uniqClassName}`;
+    return `${defaultClassClassName} ${uniqClassName}`;
   }
 
   return class Component extends React.Component {
