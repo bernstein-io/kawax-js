@@ -1,66 +1,12 @@
 import _ from 'lodash';
 import uuid from 'uuid';
 import Smart from '../Smart';
+import log from '../helpers/log';
 import resolve from '../helpers/resolve';
 import promiseAll from '../helpers/promiseAll';
-import log from '../helpers/log';
+import CallThrottler from './CallThrottler';
 
-const callStack = [];
-
-function findPromise(call) {
-  const payload = JSON.stringify(call);
-
-  const match = _.find(callStack, (item) => (_.isEqual(item.payload, payload)));
-  if (match && call.method === 'GET') {
-    match.instances += 1;
-    return match;
-  }
-  return false;
-}
-
-function pushToStack(request, call) {
-  let resolver;
-  const promise = new Promise((resolveCall) => {
-    resolver = resolveCall;
-  });
-  const id = uuid();
-  const payload = JSON.stringify(call);
-  const match = _.find(callStack, (item) => (_.isEqual(item.payload, payload)));
-  if (match && call.method === 'GET') {
-    return match.id;
-  }
-  const instances = 1;
-  callStack.push({ id, promise, request, resolver, payload, instances });
-  return id;
-}
-
-function clearFromStack(id) {
-  const match = _.find(callStack, (item) => (item.id === id));
-  if (match) {
-    match.resolver(true);
-    if (match.instances === 1) {
-      _.remove(callStack, (item) => (item.id === id));
-    } else {
-      match.instances -= 1;
-    }
-  }
-}
-
-function setStack(id, data) {
-  const match = _.find(callStack, (item) => (item.id === id));
-  if (match) {
-    _.extend(match, data);
-  }
-}
-
-function findFromStack(id) {
-  const match = _.find(callStack, (item) => (item.id === id));
-  return match;
-}
-
-/* ---------------------------------------------------------------------------------------------- */
-/* -------------------------------------------- CALL STACK -------------------------------------- */
-/* ---------------------------------------------------------------------------------------------- */
+const throttler = new CallThrottler();
 
 class ResourceCall extends Smart {
 
@@ -123,13 +69,8 @@ class ResourceCall extends Smart {
 
   async readBodyStream(response) {
     let body;
-
-    const match = findFromStack(this.uniqueId);
-
-    if (match && match.body) {
-      return match.body;
-    }
-
+    const shadow = throttler.find(this.uniqueId);
+    if (shadow && shadow.body) return shadow.body;
     const reader = _.lowerCase(this.context.reader);
     try {
       switch (reader) {
@@ -152,16 +93,12 @@ class ResourceCall extends Smart {
           body = await response.text();
           break;
       }
-
-      if (!match || !match.body) {
-        setStack(this.uniqueId, { body });
-      }
-
-      return body;
+      throttler.set(this.uniqueId, { body });
     } catch (exception) {
       const status = response.status;
       throw new Error(`Unexpected content: Could not parse ${reader} (status: ${status})`);
     }
+    return body;
   }
 
   serializeRequestBody = async (payload) => {
@@ -256,14 +193,14 @@ class ResourceCall extends Smart {
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);
     if (paginate) url.search = new URLSearchParams(paginate);
-    const match = findPromise({ url: url.toString(), ...options });
-    if (match) {
-      this.uniqueId = match.id;
-      await match.promise;
-      return match.request;
+    const shadow = throttler.match({ url: url.toString(), ...options });
+    if (shadow) {
+      this.uniqueId = shadow.id;
+      await shadow.promise;
+      return shadow.request;
     }
     const request = fetch(url, options);
-    this.uniqueId = pushToStack(request, { url: url.toString(), ...options });
+    this.uniqueId = throttler.push(request, { url: url.toString(), ...options });
     return request;
 
   };
@@ -299,7 +236,7 @@ class ResourceCall extends Smart {
     try {
       const body = await this.process(payload);
       await this.postProcess('success', body, payload);
-      clearFromStack(this.uniqueId);
+      throttler.clear(this.uniqueId);
       return body;
     } catch (exception) {
       if (exception instanceof Error) log.error(exception);

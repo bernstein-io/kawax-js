@@ -1,10 +1,14 @@
+// import { createSelector } from 'reselect';
 import Smart from './Smart';
 import Runtime from './Runtime';
 import select from './helpers/select';
 
 class Selector extends Smart {
 
-  createSelector = (path) => (options) => this.select(path);
+  getState = () => {
+    const { getState } = Runtime('store');
+    return getState();
+  };
 
   select = (...args) => {
     const path = (args.length > 1 ? args : args[0]);
@@ -15,6 +19,8 @@ class Selector extends Smart {
     }
     return false;
   };
+
+  createSelector = (path) => (options) => this.select(path);
 
 }
 
