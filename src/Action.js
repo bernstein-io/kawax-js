@@ -16,14 +16,6 @@ class Action extends Smart {
 
   static defaults = (defaults) => defaults;
 
-  // static defaults = ({ success, error, log, ...context }) => ({
-  //   id: uuid(),
-  //   onError: error,
-  //   onSuccess: success,
-  //   log: logEnabled || true,
-  //   context: context
-  // });
-
   constructor({ success, error, log, ...context }) {
     super(context);
     this.id = uuid();
@@ -69,9 +61,7 @@ class Action extends Smart {
   };
 
   _parseContext(payload) {
-    const current = _.isPlainObject(this.context) ? this.context : {};
-    const parsed = resolve.call(this, this.options, payload);
-    return { ...current, ...parsed };
+    return _.isPlainObject(this.context) ? this.context : {};
   }
 
   _parsePayload(payload) {
@@ -99,10 +89,12 @@ class Action extends Smart {
     this._setWindowUnloadListener();
     this.timestamp = Date.now();
     return (dispatch, getState) => {
-      this._setGetState(getState);
-      this._dispatchPending(dispatch, ...data);
+      this._getState = getState;
+      this._dispatch = dispatch;
+      this._setSmartGetState();
+      this._dispatchPending(...data);
       new Promise(async () => { /* eslint-disable-line no-new */
-        this._bindActionsCreators(dispatch, getState);
+        this._bindActionsCreators();
         const payload = await this._processPayload(...data);
         const action = this._export(payload);
         await this._beforeDispatch(payload, ...data);
@@ -119,21 +111,27 @@ class Action extends Smart {
     };
   }
 
-  _setGetState(getState) {
+  async setContext(context = {}) {
+    _.extend(this.context, context);
+    const action = this._export({});
+    return this._dispatch(action);
+  }
+
+  _setSmartGetState() {
     this.getState = (...args) => {
       const path = (args.length > 1 ? args : args[0]);
-      const state = getState();
+      const state = this._getState();
       return select(state, path);
     };
   }
 
-  _dispatchPending(dispatch, ...data) {
+  _dispatchPending(...data) {
     this.setStatus('pending');
     const pendingPayload = resolve.call(this, this.pendingPayload, ...data);
-    dispatch(this._export(pendingPayload));
+    this._dispatch(this._export(pendingPayload));
   }
 
-  _bindActionsCreators(dispatch, getState) {
+  _bindActionsCreators() {
     const actionCreators = this.constructor.actionCreators;
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
@@ -144,7 +142,7 @@ class Action extends Smart {
             delegate: true,
           });
           await actionInstance._setState(...data);
-          actionInstance.run(...data)(dispatch, getState);
+          actionInstance.run(...data)(this._dispatch, this._getState);
         });
       }
     });

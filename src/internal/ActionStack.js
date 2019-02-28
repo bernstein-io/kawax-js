@@ -61,7 +61,7 @@ class ActionStack extends Smart {
 
   getErrors(key = false) {
     const stack = key ? this.find(key) : this.all();
-    return _.filter(stack, (action) => (action.status === 'error'));
+    return _.filter(stack, (action) => (action && action.status === 'error'));
   }
 
   getLastError(key = false) {
@@ -75,7 +75,7 @@ class ActionStack extends Smart {
     _.each(keys, (key) => {
       const actions = this.find(key);
       _.each(actions, (action) => {
-        success = success === false ? success : action.status === 'error';
+        success = success === false ? success : (action && action.status === 'error');
       });
     });
     return success;
@@ -87,7 +87,7 @@ class ActionStack extends Smart {
     _.each(keys, (key) => {
       const actions = this.find(key);
       _.each(actions, (action) => {
-        success = success === false ? success : action.status === 'success';
+        success = success === false ? success : (action && action.status === 'success');
       });
     });
     return success;

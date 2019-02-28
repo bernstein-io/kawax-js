@@ -40,11 +40,11 @@ class Resource extends Smart {
   };
 
   define(base) {
-    return ({ payload, ...context } = {}) => {
-      const mergedContext = { ...base, ...context };
-      const resolver = this._getResolver(payload, mergedContext);
-      const options = this._contextParser(resolver, mergedContext);
-      const resourceCall = ResourceCall.export(options);
+    return ({ payload, ...options } = {}) => {
+      const mergedOptions = { ...base, ...options };
+      const resolver = this._getResolver(payload, mergedOptions);
+      const context = this._contextParser(resolver, mergedOptions);
+      const resourceCall = ResourceCall.export(context);
       return resourceCall(payload);
     };
   }
