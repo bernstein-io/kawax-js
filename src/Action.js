@@ -45,37 +45,43 @@ class Action extends Smart {
 
   export = (action) => action;
 
-  _export = (output) => {
-    const payload = this._parsePayload(output) || false;
+  _export = (payload, ...data) => {
+    const parsedPayload = this._parsePayload(payload, ...data);
     return this.export({
       id: this.id,
       log: this.log,
-      payload: payload,
+      payload: parsedPayload,
       status: this.status,
       timestamp: this.timestamp,
       type: this.static.type,
       class: this.constructor.name,
-      notice: this._parseNotice(payload) || false,
-      context: this._parseContext(payload) || false,
+      notice: this._parseNotice(parsedPayload, ...data) || false,
+      context: this._parseContext(parsedPayload, ...data) || false,
     });
   };
 
-  _parseContext(payload) {
-    return _.isPlainObject(this.context) ? this.context : {};
+  _resolve = (callback, payload, ...data) => {
+    const shallow = resolve.call(this, callback, ...data);
+    console.log(shallow);
+    return resolve.call(this, shallow, payload);
+  };
+
+  _parseContext(payload = {}, ...data) {
+    const defaultContext = this._resolve(this.defaultContext, payload, ...data) || {};
+    return _.isPlainObject(this.context) ? { ...defaultContext, ...this.context } : defaultContext;
   }
 
-  _parsePayload(payload) {
-    return resolve.call(this, this.payload, payload);
+  _parsePayload(payload, ...data) {
+    return this._resolve(this.payload, payload, ...data) || false;
   }
 
-  _parseNotice(input = {}) {
+  _parseNotice(payload = {}, ...data) {
     if (this.notice === false) return false;
     let notice;
-    const payload = _.isEmpty(input) ? {} : input;
-    if (this.status === 'pending') notice = resolve.call(this, this.pendingNotice, payload);
-    else if (this.status === 'error') notice = resolve.call(this, this.errorNotice, payload);
-    else if (this.status === 'success') notice = resolve.call(this, this.successNotice, payload);
-    const finalNotice = resolve.call(this, this.notice, _.isPlainObject(notice) ? notice : payload);
+    if (this.status === 'pending') notice = this._resolve(this.pendingNotice, payload, ...data);
+    else if (this.status === 'error') notice = this._resolve(this.errorNotice, payload, ...data);
+    else if (this.status === 'success') notice = this._resolve(this.successNotice, payload, ...data);
+    const finalNotice = this._resolve(this.notice, _.isPlainObject(notice) ? notice : payload);
     const defaultMessage = (this.status === 'error')
       ? 'An error has occured' : 'Action successfully processed';
     return !finalNotice && !notice ? false : {
@@ -91,18 +97,19 @@ class Action extends Smart {
     return (dispatch, getState) => {
       this._getState = getState;
       this._dispatch = dispatch;
-      this._setSmartGetState();
+      this._defineGetState();
+      this._defineSetContext(...data);
       this._dispatchPending(...data);
       new Promise(async () => { /* eslint-disable-line no-new */
         this._bindActionsCreators();
         const payload = await this._processPayload(...data);
-        const action = this._export(payload);
+        const action = this._export(payload, ...data);
         await this._beforeDispatch(payload, ...data);
         await dispatch(action);
         if (this.status === 'success') {
-          await resolve.call(this, this.onSuccess, payload, ...data);
+          await this._resolve(this.onSuccess, payload, ...data);
         } else {
-          await resolve.call(this, this.onError, payload, ...data);
+          await this._resolve(this.onError, payload, ...data);
         }
         await this._afterDispatch(payload, ...data);
         this._removeWindowUnloadListener();
@@ -111,13 +118,15 @@ class Action extends Smart {
     };
   }
 
-  async setContext(context = {}) {
-    _.extend(this.context, context);
-    const action = this._export({});
-    return this._dispatch(action);
-  }
+  _defineSetContext = (...data) => {
+    this.setContext = async (context = {}) => {
+      _.extend(this.context, context);
+      const action = this._export({}, ...data);
+      return this._dispatch(action);
+    };
+  };
 
-  _setSmartGetState() {
+  _defineGetState() {
     this.getState = (...args) => {
       const path = (args.length > 1 ? args : args[0]);
       const state = this._getState();
@@ -127,8 +136,9 @@ class Action extends Smart {
 
   _dispatchPending(...data) {
     this.setStatus('pending');
-    const pendingPayload = resolve.call(this, this.pendingPayload, ...data);
-    this._dispatch(this._export(pendingPayload));
+    const pendingPayload = this._resolve(this.pendingPayload, ...data);
+    const action = this._export(pendingPayload, ...data);
+    this._dispatch(action);
   }
 
   _bindActionsCreators() {
@@ -154,11 +164,11 @@ class Action extends Smart {
         const call = await this.call(...data);
         const payload = await resolve(call);
         this.setStatus('success');
-        return resolve.call(this, this.successPayload, payload, ...data);
+        return this._resolve(this.successPayload, payload, ...data);
       } catch (exception) {
         if (exception instanceof Error) Log.error(exception);
         this.setStatus('error');
-        return resolve.call(this, this.errorPayload, exception, ...data);
+        return this._resolve(this.errorPayload, exception, ...data);
       }
     } else if (this.call !== undefined) {
       return this.call;
@@ -168,27 +178,27 @@ class Action extends Smart {
 
   async _processSuccess(payload, data) {
     this.setStatus('success');
-    return resolve.call(this, this.successPayload, payload, ...data);
+    return this._resolve(this.successPayload, payload, ...data);
   }
 
   async _processError(payload, ...data) {
     this.setStatus('error');
-    return resolve.call(this, this.errorPayload, payload, ...data);
+    return this._resolve(this.errorPayload, payload, ...data);
   }
 
   async _beforeDispatch(payload, ...data) {
     if (this.status === 'success') {
-      await resolve.call(this, this.beforeDispatch, payload, ...data);
+      await this._resolve(this.beforeDispatch, payload, ...data);
     } else if (this.status === 'error') {
-      await resolve.call(this, this.beforeRescue, payload, ...data);
+      await this._resolve(this.beforeRescue, payload, ...data);
     }
   }
 
   async _afterDispatch(payload, ...data) {
     if (this.status === 'success') {
-      await resolve.call(this, this.afterDispatch, payload, ...data);
+      await this._resolve(this.afterDispatch, payload, ...data);
     } else if (this.status === 'error') {
-      await resolve.call(this, this.afterRescue, payload, ...data);
+      await this._resolve(this.afterRescue, payload, ...data);
     }
   }
 
