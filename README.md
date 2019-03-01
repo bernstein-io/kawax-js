@@ -19,9 +19,9 @@ Kawax is a complete framework build around React and Redux.
   class TodoResource extends Resource {
 
     getItem = this.define({
-    method: "GET",
-    path: (todoId) => `/todos/${todoId}`
-  });
+      method: "GET",
+      path: (todoId) => `/todos/${todoId}`
+    });
   }
 
   export default TodoResource.export();
@@ -30,29 +30,29 @@ Kawax is a complete framework build around React and Redux.
 All options:
 
 ```
-{
-      schema: resolver('schema') || {},
-      mock: resolver('mock', false) || false,
-      path: resolver('path', false),
-      baseUri: resolver('baseUri', false),
-      method: resolver('method') || 'GET',
-      paginate: resolver('paginate') || false,
-      allowCors: resolver('allowCors') || false,
-      credentials: resolver('credentials') || 'same-origin',
-      reader: resolver('reader') || 'json',
-      headers: resolver('headers', false),
-      collection: resolver('collection') || false,
-      entityParser: resolver('entityParser', false) || false,
-      payloadParser: resolver('payloadParser', false) || false,
-      errorParser: resolver('errorParser', false) || ((payload) => payload),
-      responseParser: resolver('responseParser', false) || ((response, body) => body),
-      requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
-      responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
-      resourceClass: this.constructor.name || 'Resource',
-      onSuccess: resolver('onSuccess', false) || false,
-      onError: resolver('onError', false) || false,
-      hook: resolver('hook', false) || false,
-}
+  {
+    schema: resolver('schema') || {},
+    mock: resolver('mock', false) || false,
+    path: resolver('path', false),
+    baseUri: resolver('baseUri', false),
+    method: resolver('method') || 'GET',
+    paginate: resolver('paginate') || false,
+    allowCors: resolver('allowCors') || false,
+    credentials: resolver('credentials') || 'same-origin',
+    reader: resolver('reader') || 'json',
+    headers: resolver('headers', false),
+    collection: resolver('collection') || false,
+    entityParser: resolver('entityParser', false) || false,
+    payloadParser: resolver('payloadParser', false) || false,
+    errorParser: resolver('errorParser', false) || ((payload) => payload),
+    responseParser: resolver('responseParser', false) || ((response, body) => body),
+    requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
+    responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
+    resourceClass: this.constructor.name || 'Resource',
+    onSuccess: resolver('onSuccess', false) || false,
+    onError: resolver('onError', false) || false,
+    hook: resolver('hook', false) || false,
+  }
 ```
 
 ### # Actions
@@ -65,11 +65,11 @@ All options:
     static type = "ADD_TODO";
 
     call = async (todoContent = "Some stuff to do") => {
-    return {
-      id: 1,
-    text: todoContent
-    };
-  }
+      return {
+        id: 1,
+        text: todoContent
+      };
+    }
   }
 ```
 
@@ -147,11 +147,11 @@ class RootReducer extends Reducer {
 
   state = this.match({
     ADD_TODO: {
-    todos: this.setOneTodo,
-  },
-  FETCH_ALL: {
-    todos: this.setAllTodos
-  }
+      todos: this.setOneTodo,
+    },
+    FETCH_ALL: {
+      todos: this.setAllTodos
+    }
   });
 
 }
@@ -186,21 +186,20 @@ export default RootReducer;
 
   class TodosView extends React.Component {
      static css = {
-     p: {
-       fontWeight: 'bold',
-     }
-   };
+       p: {
+         fontWeight: 'bold',
+       }
+     };
 
-    render () {
-      const { todos } = this.props;
-      return (
-        <div>
-          <p>Todos:</p>
-          <ul>
-           {_.map(todos, (todo) => (
-             <li key={todo.id}>{todo.text}</li>
-           ))
-           }
+     render () {
+       const { todos } = this.props;
+       return (
+         <div>
+           <p>Todos:</p>
+           <ul>
+             {_.map(todos, (todo) => (
+               <li key={todo.id}>{todo.text}</li>
+             ))}
           </ul>
         </div>
       );
@@ -226,13 +225,13 @@ export default RootReducer;
 
   class Todos extends React.Component {
     render () {
-    return (
-      <div>
-        Todos:
-        <TodosView />
-      </div>
-    );
-  }
+      return (
+        <div>
+          Todos:
+          <TodosView />
+        </div>
+      );
+    }
   }
 
   export default Container(Todos);
@@ -251,7 +250,7 @@ export default RootReducer;
 ```
   static dispatchToProps = () => ({
     add: AddAction.build(),
-  remove: RemoveAction.build()
+    remove: RemoveAction.build()
   });
 ```
 
