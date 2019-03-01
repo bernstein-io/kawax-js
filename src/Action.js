@@ -47,7 +47,6 @@ class Action extends Smart {
 
   _export = (payload, ...data) => {
     const parsedPayload = this._parsePayload(payload, ...data);
-    // console.log('parsedPayload', parsedPayload);
     return this.export({
       id: this.id,
       log: this.log,
@@ -76,16 +75,14 @@ class Action extends Smart {
   }
 
   _parseNotice(payload = {}, ...data) {
-    if (this.notice === false) return false;
     let notice;
     if (this.status === 'pending') notice = this._resolve(this.pendingNotice, payload, ...data);
     else if (this.status === 'error') notice = this._resolve(this.errorNotice, payload, ...data);
     else if (this.status === 'success') notice = this._resolve(this.successNotice, payload, ...data);
-    notice = _.isPlainObject(notice) ? notice : payload;
     const finalNotice = this._resolve(this.notice, notice, ...data);
-    const defaultMessage = (this.status === 'error')
-      ? 'An error has occured' : 'Action successfully processed';
-    return !finalNotice && !notice ? false : {
+    const defaultMessage = (this.status === 'pending')
+      ? 'Pending...' : (this.status === 'error') ? 'An error has occured.' : 'Success';
+    return !notice && !finalNotice ? false : {
       message: payload.message || defaultMessage,
       ...notice,
       ...finalNotice,
