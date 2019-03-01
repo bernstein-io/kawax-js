@@ -81,7 +81,8 @@ class Action extends Smart {
     if (this.status === 'pending') notice = this._resolve(this.pendingNotice, payload, ...data);
     else if (this.status === 'error') notice = this._resolve(this.errorNotice, payload, ...data);
     else if (this.status === 'success') notice = this._resolve(this.successNotice, payload, ...data);
-    const finalNotice = this._resolve(this.notice, _.isPlainObject(notice) ? notice : payload, ...data);
+    notice = _.isPlainObject(notice) ? notice : payload;
+    const finalNotice = this._resolve(this.notice, notice, ...data);
     const defaultMessage = (this.status === 'error')
       ? 'An error has occured' : 'Action successfully processed';
     return !finalNotice && !notice ? false : {
