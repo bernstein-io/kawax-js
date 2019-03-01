@@ -25,21 +25,21 @@ class Action extends Smart {
     this.context = context;
   }
 
-  payload = (payload) => payload;
-
   pendingPayload = (data) => {};
 
-  successPayload = (success, data) => success;
+  successPayload = (data) => (success) => success;
 
-  errorPayload = (error, data) => error;
+  errorPayload = (data) => (error) => error;
 
-  notice = (payload) => false;
+  payload = (data) => (payload) => payload;
 
   pendingNotice = (data) => false;
 
-  successNotice = (success, data) => false;
+  successNotice = (data) => (success) => false;
 
-  errorNotice = (error, data) => false;
+  errorNotice = (data) => (error) => false;
+
+  notice = (data) => (payload) => false;
 
   setStatus = (status) => { this.status = status; };
 
@@ -47,6 +47,7 @@ class Action extends Smart {
 
   _export = (payload, ...data) => {
     const parsedPayload = this._parsePayload(payload, ...data);
+    // console.log('parsedPayload', parsedPayload);
     return this.export({
       id: this.id,
       log: this.log,
@@ -62,7 +63,6 @@ class Action extends Smart {
 
   _resolve = (callback, payload, ...data) => {
     const shallow = resolve.call(this, callback, ...data);
-    console.log(shallow);
     return resolve.call(this, shallow, payload);
   };
 
@@ -81,7 +81,7 @@ class Action extends Smart {
     if (this.status === 'pending') notice = this._resolve(this.pendingNotice, payload, ...data);
     else if (this.status === 'error') notice = this._resolve(this.errorNotice, payload, ...data);
     else if (this.status === 'success') notice = this._resolve(this.successNotice, payload, ...data);
-    const finalNotice = this._resolve(this.notice, _.isPlainObject(notice) ? notice : payload);
+    const finalNotice = this._resolve(this.notice, _.isPlainObject(notice) ? notice : payload, ...data);
     const defaultMessage = (this.status === 'error')
       ? 'An error has occured' : 'Action successfully processed';
     return !finalNotice && !notice ? false : {
@@ -107,9 +107,9 @@ class Action extends Smart {
         await this._beforeDispatch(payload, ...data);
         await dispatch(action);
         if (this.status === 'success') {
-          await this._resolve(this.onSuccess, payload, ...data);
+          await resolve.call(this, this.onSuccess, payload, ...data);
         } else {
-          await this._resolve(this.onError, payload, ...data);
+          await resolve.call(this, this.onError, payload, ...data);
         }
         await this._afterDispatch(payload, ...data);
         this._removeWindowUnloadListener();
@@ -136,7 +136,7 @@ class Action extends Smart {
 
   _dispatchPending(...data) {
     this.setStatus('pending');
-    const pendingPayload = this._resolve(this.pendingPayload, ...data);
+    const pendingPayload = this._resolve(this.pendingPayload, {}, ...data);
     const action = this._export(pendingPayload, ...data);
     this._dispatch(action);
   }
