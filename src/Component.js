@@ -11,7 +11,6 @@ export default (Pure) => {
   const displayName = Pure.name || 'Unnamed';
   let componentInstance = false;
   let uniqClassName = false;
-  let cssClassNames = false;
 
   function mapSelectors(selectors, applyWildcard = false) {
     const specialChars = ['*', '&', ':', '@'];
@@ -37,28 +36,25 @@ export default (Pure) => {
   }
 
   function getCssClasses(props, state) {
-    if (!cssClassNames) {
-      if (_.isFunction(Pure.css) || uniqClassName === false) {
-        const componentStyle = resolve(Pure.css, props, state);
-        if (componentStyle) {
-          const className = Pure.name || 'Component';
-          const stylesheet = StyleSheet.create({ [className]: componentStyle });
-          const styleWithNesting = mapNestedStyle(stylesheet);
-          uniqClassName = css(styleWithNesting[className]);
-          cssClassNames = `${defaultClassName} ${uniqClassName}`;
-        }
-        cssClassNames = defaultClassName;
+    if (_.isFunction(Pure.css) || uniqClassName === false) {
+      const componentStyle = resolve(Pure.css, props, state);
+      if (componentStyle) {
+        const className = Pure.name || 'Component';
+        const stylesheet = StyleSheet.create({ [className]: componentStyle });
+        const styleWithNesting = mapNestedStyle(stylesheet);
+        uniqClassName = css(styleWithNesting[className]);
+        return `${defaultClassName} ${uniqClassName}`;
       }
-      cssClassNames = `${defaultClassName} ${uniqClassName}`;
+      return defaultClassName;
     }
-    return cssClassNames;
+    return `${defaultClassName} ${uniqClassName}`;
   }
 
   return class Component extends React.Component {
 
     static displayName = `Component(${displayName})`;
 
-    classNames = (current) => { /* eslint-disable react/prop-types */
+    getClassNames = (current) => { /* eslint-disable react/prop-types */
       const cssClasses = getCssClasses(this.props, this.state);
       const inlineClass = cssClasses || false;
       const currentClasses = current ? current.split(' ') : false;
@@ -77,9 +73,9 @@ export default (Pure) => {
       if (node && (className || cssClasses)) {
         if (sibling) {
           const parent = node ? node.parentNode : false;
-          if (parent) parent.className = this.classNames(parent.className);
+          if (parent) parent.className = this.getClassNames(parent.className);
         } else {
-          node.className = this.classNames(node.className);
+          node.className = this.getClassNames(node.className);
         }
       }
     }
