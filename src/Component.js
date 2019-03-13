@@ -11,6 +11,7 @@ export default (Pure) => {
   const displayName = Pure.name || 'Unnamed';
   let componentInstance = false;
   let uniqClassName = false;
+  let cssClassNames = false;
 
   function mapSelectors(selectors, applyWildcard = false) {
     const specialChars = ['*', '&', ':', '@'];
@@ -36,18 +37,21 @@ export default (Pure) => {
   }
 
   function getCssClasses(props, state) {
-    if (_.isFunction(Pure.css) || uniqClassName === false) {
-      const componentStyle = resolve(Pure.css, props, state);
-      if (componentStyle) {
-        const className = Pure.name || 'Component';
-        const stylesheet = StyleSheet.create({ [className]: componentStyle });
-        const styleWithNesting = mapNestedStyle(stylesheet);
-        uniqClassName = css(styleWithNesting[className]);
-        return `${defaultClassName} ${uniqClassName}`;
+    if (!cssClassNames) {
+      if (_.isFunction(Pure.css) || uniqClassName === false) {
+        const componentStyle = resolve(Pure.css, props, state);
+        if (componentStyle) {
+          const className = Pure.name || 'Component';
+          const stylesheet = StyleSheet.create({ [className]: componentStyle });
+          const styleWithNesting = mapNestedStyle(stylesheet);
+          uniqClassName = css(styleWithNesting[className]);
+          cssClassNames = `${defaultClassName} ${uniqClassName}`;
+        }
+        cssClassNames = defaultClassName;
       }
-      return defaultClassName;
+      cssClassNames = `${defaultClassName} ${uniqClassName}`;
     }
-    return `${defaultClassName} ${uniqClassName}`;
+    return cssClassNames;
   }
 
   return class Component extends React.Component {
@@ -87,7 +91,7 @@ export default (Pure) => {
     };
 
     componentDidMount = () => {
-      if (Pure.css && _.isFunction(Pure.css)) {
+      if (Pure.className || Pure.css) {
         this.assignCssClasses();
       }
     };

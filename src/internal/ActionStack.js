@@ -93,6 +93,11 @@ class ActionStack extends Smart {
     return success;
   }
 
+  lastSucceeded(...args) {
+    const keys = argsToArray(args);
+    return this.lastOf(keys, 'success');
+  }
+
   isDone(...args) {
     const keys = argsToArray(args);
     let done;
@@ -133,6 +138,15 @@ class ActionStack extends Smart {
       });
     });
     return anyOf;
+  }
+
+  lastOf(keys = [], status) {
+    let lastOf;
+    _.each(keys, (key) => {
+      const action = _.last(this.find(key));
+      lastOf = lastOf === false ? lastOf : (action && action.status === status);
+    });
+    return lastOf;
   }
 
   any(status) {
