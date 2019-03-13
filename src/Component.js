@@ -64,11 +64,12 @@ export default (Pure) => {
       return classNames(...uniq);
     };
 
-    computeCssClasses() { /* eslint-disable react/no-find-dom-node */
-      const node = ReactDOM.findDOMNode(this);
+    assignCssClasses() { /* eslint-disable react/no-find-dom-node */
       const { className } = this.props;
       const cssClasses = getCssClasses(this.props, this.state);
-      const sibling = _.get(componentInstance, '_reactInternalFiber.child.sibling');
+      const fiber = _.get(componentInstance, '_reactInternalFiber');
+      const sibling = _.get(fiber, 'child.sibling');
+      const node = ReactDOM.findDOMNode(fiber.stateNode);
       if (node && (className || cssClasses)) {
         if (sibling) {
           const parent = node ? node.parentNode : false;
@@ -81,19 +82,19 @@ export default (Pure) => {
 
     componentDidUpdate = () => {
       if (Pure.className || Pure.css) {
-        this.computeCssClasses();
+        this.assignCssClasses();
       }
     };
 
     componentDidMount = () => {
-      if (_.isFunction(Pure.css)) {
-        this.computeCssClasses();
+      if (Pure.css && _.isFunction(Pure.css)) {
+        this.assignCssClasses();
       }
     };
 
     render() {
       const Context = Runtime('context');
-      return (/* eslint-disable no-return-assign */
+      return (
         <Context.Consumer>
           {(context) => React.createElement(Pure, {
             ...context,
