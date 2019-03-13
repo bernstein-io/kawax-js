@@ -2,18 +2,14 @@ import _ from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import classNames from 'classnames';
-import ShallowRenderer from 'react-test-renderer/shallow';
-import { isElement, isFragment } from 'react-is';
 import { StyleSheet, css } from './helpers/aphrodite';
 import resolve from './helpers/resolve';
 import Runtime from './Runtime';
 
 export default (Pure) => {
-
-  const shallowRenderer = new ShallowRenderer();
-  const defaultClassClassName = Pure.className || 'component';
+  const defaultClassName = Pure.className || 'component';
   const displayName = Pure.name || 'Unnamed';
-  let wrappedComponent = false;
+  let componentInstance = false;
   let uniqClassName = false;
 
   function mapSelectors(selectors, applyWildcard = false) {
@@ -47,21 +43,16 @@ export default (Pure) => {
         const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
         uniqClassName = css(styleWithNesting[className]);
-        return `${defaultClassClassName} ${uniqClassName}`;
+        return `${defaultClassName} ${uniqClassName}`;
       }
-      return defaultClassClassName;
+      return defaultClassName;
     }
-    return `${defaultClassClassName} ${uniqClassName}`;
+    return `${defaultClassName} ${uniqClassName}`;
   }
 
   return class Component extends React.Component {
 
     static displayName = `Component(${displayName})`;
-
-    render() {
-      const factory = React.createFactory(Pure);
-      return this.wrapContext(factory);
-    }
 
     classNames = (current) => { /* eslint-disable react/prop-types */
       const cssClasses = getCssClasses(this.props, this.state);
@@ -74,33 +65,41 @@ export default (Pure) => {
     };
 
     computeCssClasses() { /* eslint-disable react/no-find-dom-node */
-      const shallow = shallowRenderer.render(wrappedComponent);
       const node = ReactDOM.findDOMNode(this);
       const { className } = this.props;
       const cssClasses = getCssClasses(this.props, this.state);
+      const sibling = _.get(componentInstance, '_reactInternalFiber.child.sibling');
       if (node && (className || cssClasses)) {
-        if (isElement(shallow) && !isFragment(shallow)) {
-          node.className = this.classNames(node.className);
-        } else {
+        if (sibling) {
           const parent = node ? node.parentNode : false;
           if (parent) parent.className = this.classNames(parent.className);
+        } else {
+          node.className = this.classNames(node.className);
         }
       }
     }
 
-    componentDidUpdate() {
-      this.computeCssClasses();
-    }
+    componentDidUpdate = () => {
+      if (Pure.className || Pure.css) {
+        this.computeCssClasses();
+      }
+    };
 
-    componentDidMount() {
-      this.computeCssClasses();
-    }
+    componentDidMount = () => {
+      if (_.isFunction(Pure.css)) {
+        this.computeCssClasses();
+      }
+    };
 
-    wrapContext(factory) {
+    render() {
       const Context = Runtime('context');
       return (/* eslint-disable no-return-assign */
         <Context.Consumer>
-          {(context) => wrappedComponent = factory({ ...context, ...this.props })}
+          {(context) => React.createElement(Pure, {
+            ...context,
+            ...this.props,
+            ref: (reference) => { componentInstance = reference; },
+          })}
         </Context.Consumer>
       );
     }

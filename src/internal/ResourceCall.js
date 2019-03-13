@@ -206,9 +206,12 @@ class ResourceCall extends Smart {
   };
 
   responseProcessor = async (response) => {
-    const { mock } = this.context;
-    const body = mock ? response.body : await this.readBodyStream(response);
-    return this.responseParser(response, body);
+    const { mock, noContent } = this.context;
+    if (!noContent) {
+      const body = mock ? response.body : await this.readBodyStream(response);
+      return this.responseParser(response, body);
+    }
+    return false;
   };
 
   async* defaultHook(request, parser, { payload, context }) {
