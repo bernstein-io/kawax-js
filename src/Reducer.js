@@ -17,7 +17,7 @@ class Reducer extends Smart {
     return new ReducerDelegate(instance);
   }
 
-  static initialState = false;
+  static initialState = null;
 
   unionKey = 'id';
 
@@ -102,7 +102,7 @@ class Reducer extends Smart {
     const initialState = _.get(this.constructor.initialState, path);
     if (initialState && initialState instanceof ReducerDelegate) {
       return true;
-    } if (next && next instanceof ReducerDelegate) {
+    } else if (next && next instanceof ReducerDelegate) {
       return true;
     }
     return false;
@@ -116,13 +116,13 @@ class Reducer extends Smart {
     } else if (shouldDelegate === true) {
       state = this.delegateState(current, next, action, path);
     }
-    return state || this.assign(current, next);
+    return state === undefined ? this.assign(current, next) : state;
   }
 
   delegateState(current, next, action, path) {
     if (next && next instanceof ReducerDelegate) {
       return next.reduce(current, action);
-    } if (next === null) {
+    } else if (next === null) {
       const initialState = _.get(this.constructor.initialState, path);
       return initialState.reduce(next, action);
     }
@@ -131,15 +131,15 @@ class Reducer extends Smart {
   parseState(current, next, action, path, depth = -1) {
     if (_.isPlainObject(next)) {
       return this.parsePlainObject(current, next, action, path, depth);
-    } if (_.isArray(next) && !path) {
+    } else if (_.isArray(next) && !path) {
       return this.parseArray(current, next, action, path, depth);
-    } if (_.isFunction(next)) {
+    } else if (_.isFunction(next)) {
       const resolvedState = resolve.call(this, next, current, action);
       const reducedState = this.reduce(current, resolvedState, action, path);
       return this.assign(current, reducedState);
-    } if (next === null && path) {
+    } else if (next === null && path) {
       return this._getInitialState(path);
-    } if (next && next instanceof ForceAssignment) {
+    } else if (next && next instanceof ForceAssignment) {
       return next.reduce(current, path);
     }
   }
@@ -188,8 +188,11 @@ class Reducer extends Smart {
   }
 
   _getInitialState(path) {
-    const initialState = this.reduce({}, this.constructor.initialState, { type: '@@kawax/INIT' }, []);
-    return _.isEmpty(path) ? initialState : _.get(initialState, path);
+    const initialState = this.constructor.initialState;
+    const state = initialState
+      ? this.reduce({}, this.constructor.initialState, { type: '@@kawax/INIT' }, [])
+      : null;
+    return _.isEmpty(path) ? state : _.get(state, path);
   }
 
   _matchWithStatus(statuses, callback) {

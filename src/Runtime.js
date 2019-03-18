@@ -1,5 +1,5 @@
-const Runtime = Object.create({});
+const runtime = Object.create({});
 
-export const setRuntime = (object) => Object.assign(Runtime, object);
+export const setRuntime = (object) => Object.assign(runtime, object);
 
-export default (object) => Runtime[object] || {};
+export default (object) => runtime[object] || runtime;

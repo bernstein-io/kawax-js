@@ -10,11 +10,24 @@ import SelectHelper from './helpers/select';
 
 export default (Pure) => {
 
+  const composedProps = [
+    'idKey',
+    'select',
+    'actions',
+    'dispatch',
+    'children',
+  ];
+
   const displayName = Pure.name || 'Unnamed';
   const defaultKey = `${displayName}-${_.uniqueId()}`;
   const actionStack = new ActionStack();
+
   let prevContext = {};
   let prevProps = {};
+
+  Pure.prototype.getPureProps = function getPureProps() {
+    return _.omitBy(this.props, (value, key) => _.includes(composedProps, key));
+  };
 
   function omitProps(props) {
     const omitted = Pure.omitProps || ['staticContext'];
@@ -42,6 +55,7 @@ export default (Pure) => {
       const nextProps = resolve(stateToProps, { state, ownProps, select });
       const idKey = nextProps.key || defaultKey;
       const actions = getActionStack({ idKey, ...nextProps }, state);
+      composedProps.push(..._.keys(nextProps));
       return { actions, select, idKey, ...nextProps };
     };
   }
@@ -61,6 +75,7 @@ export default (Pure) => {
     return (dispatch, ownProps) => {
       const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps });
       const actions = createActions(actionConstructors, dispatch);
+      composedProps.push(..._.keys(actions));
       return { dispatch, ...actions };
     };
   }
@@ -132,6 +147,7 @@ export default (Pure) => {
       const Context = Runtime('context');
       const ownProps = omitProps(this.props);
       const propsToContext = this.computeContext(ownProps);
+      composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
       if (propsToContext) {
         return (
           <Context.Provider value={{ ...prevContext, ...propsToContext }}>
@@ -153,15 +169,21 @@ export default (Pure) => {
       const Context = Runtime('context');
       const Consumer = Context.Consumer;
       const factory = React.createFactory(component);
-      const props = this.props;
+      const ownProps = this.props;
       return React.createElement(Consumer, null, (context) => {
         prevContext = context;
-        return factory({ ...context, ...props });
+        composedProps.push(..._.keys(context));
+        return factory({ ...context, ...ownProps });
       });
     }
 
   };
 
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
+
+  if (Pure.withContext === false) {
+    return compose(reduxConnect)(Container);
+  }
+
   return compose(contextConsumer, reduxConnect)(Container);
 };
