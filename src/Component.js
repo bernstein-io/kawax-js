@@ -43,11 +43,11 @@ export default (Pure) => {
         const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
         uniqClassName = css(styleWithNesting[className]);
-        return `${defaultClassName} ${uniqClassName}`;
+        return [defaultClassName, uniqClassName];
       }
-      return defaultClassName;
+      return [defaultClassName];
     }
-    return `${defaultClassName} ${uniqClassName}`;
+    return [defaultClassName, uniqClassName];
   }
 
   return class Component extends React.Component {
@@ -55,12 +55,11 @@ export default (Pure) => {
     static displayName = `Component(${displayName})`;
 
     getClassNames = (current) => { /* eslint-disable react/prop-types */
-      const cssClasses = getCssClasses(this.props, this.state);
-      const inlineClass = cssClasses || false;
+      const inlineClass = getCssClasses(this.props, this.state) || false;
       const currentClasses = current ? current.split(' ') : false;
       const { className } = this.props;
       const propClasses = className ? className.split(' ') : false;
-      const uniq = _.uniq([...currentClasses, inlineClass, propClasses]);
+      const uniq = _.uniq([...currentClasses, ...inlineClass, propClasses]);
       return classNames(...uniq);
     };
 
