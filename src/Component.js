@@ -7,10 +7,25 @@ import resolve from './helpers/resolve';
 import Runtime from './Runtime';
 
 export default (Pure) => {
+
+  const composedProps = [];
+
   const defaultClassName = Pure.className || 'component';
   const displayName = Pure.name || 'Unnamed';
   let componentInstance = false;
   let uniqClassName = false;
+
+  Pure.prototype.getPureProps = function getPureProps() {
+    return _.omitBy(this.props, (value, key) => _.includes(composedProps, key));
+  };
+
+  Pure.prototype.getForwardProps = function getForwardProps() {
+    /* eslint-disable-next-line react/forbid-foreign-prop-types */
+    const ownProps = _.keys(Pure.propTypes);
+    return _.omitBy(
+      this.props, (value, key) => (_.includes(ownProps, key) || _.includes(composedProps, key)),
+    );
+  };
 
   function mapSelectors(selectors, applyWildcard = false) {
     const specialChars = ['*', '&', ':', '@'];
@@ -95,11 +110,15 @@ export default (Pure) => {
       const Context = Runtime('context');
       return (
         <Context.Consumer>
-          {(context) => React.createElement(Pure, {
-            ...context,
-            ...this.props,
-            ref: (reference) => { componentInstance = reference; },
-          })}
+          {(context) => {
+            composedProps.push(..._.keys(context));
+            return React.createElement(Pure, {
+              ...context,
+              ...this.props,
+              ref: (reference) => { componentInstance = reference; },
+            });
+          }
+          }
         </Context.Consumer>
       );
     }
