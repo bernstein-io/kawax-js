@@ -71,17 +71,14 @@ export default (Pure) => {
 
     static displayName = `Component(${displayName})`;
 
-    getClassNames = (current) => { /* eslint-disable react/prop-types */
-      const inlineClass = getCssClasses(this.fullProps, this.state) || false;
-      const currentClasses = current ? current.split(' ') : false;
+    getClassNames = (currentClassNames) => { /* eslint-disable react/prop-types */
+      const current = currentClassNames.split(' ');
+      const currentClass = current ? _.reject(current, (i) => (i === previousClassName)) : false;
+      const computedClass = getCssClasses(this.fullProps, this.state) || false;
       const { className } = this.fullProps;
       const propClasses = className ? className.split(' ') : false;
-      const uniq = _.compact(_.uniq([...currentClasses, ...inlineClass, propClasses]));
-      const uniqClasses = _.reduce(uniq, (rest, value, key) => ({ ...rest, [value]: true }), {});
-      return classNames({
-        ...uniqClasses,
-        [previousClassName]: uniqClassName === previousClassName,
-      });
+      const uniq = _.uniq([...currentClass, ...computedClass, propClasses]);
+      return classNames(_.compact(uniq));
     };
 
     assignCssClasses() { /* eslint-disable react/no-find-dom-node */
