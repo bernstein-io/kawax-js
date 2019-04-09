@@ -10,9 +10,10 @@ export default (Pure) => {
 
   const composedProps = [];
 
-  const defaultClassName = Pure.className || 'component';
+  const defaultClassName = Pure.className || false;
   const displayName = Pure.name || 'Unnamed';
   let componentInstance = false;
+  let previousClassName = false;
   let uniqClassName = false;
 
   Pure.prototype.getPureProps = function getPureProps() {
@@ -57,6 +58,7 @@ export default (Pure) => {
         const className = Pure.name || 'Component';
         const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
+        if (uniqClassName) previousClassName = uniqClassName;
         uniqClassName = css(styleWithNesting[className]);
         return [defaultClassName, uniqClassName];
       }
@@ -70,17 +72,21 @@ export default (Pure) => {
     static displayName = `Component(${displayName})`;
 
     getClassNames = (current) => { /* eslint-disable react/prop-types */
-      const inlineClass = getCssClasses(this.props, this.state) || false;
+      const inlineClass = getCssClasses(this.fullProps, this.state) || false;
       const currentClasses = current ? current.split(' ') : false;
-      const { className } = this.props;
+      const { className } = this.fullProps;
       const propClasses = className ? className.split(' ') : false;
-      const uniq = _.uniq([...currentClasses, ...inlineClass, propClasses]);
-      return classNames(...uniq);
+      const uniq = _.compact(_.uniq([...currentClasses, ...inlineClass, propClasses]));
+      const uniqClasses = _.reduce(uniq, (rest, value, key) => ({ ...rest, [value]: true }), {});
+      return classNames({
+        ...uniqClasses,
+        [previousClassName]: uniqClassName === previousClassName,
+      });
     };
 
     assignCssClasses() { /* eslint-disable react/no-find-dom-node */
-      const { className } = this.props;
-      const cssClasses = getCssClasses(this.props, this.state);
+      const { className } = this.fullProps;
+      const cssClasses = getCssClasses(this.fullProps, this.state);
       const fiber = _.get(componentInstance, '_reactInternalFiber');
       const sibling = _.get(fiber, 'child.sibling');
       const node = ReactDOM.findDOMNode(fiber.stateNode);
@@ -112,9 +118,9 @@ export default (Pure) => {
         <Context.Consumer>
           {(context) => {
             composedProps.push(..._.keys(context));
+            this.fullProps = { ...context, ...this.props };
             return React.createElement(Pure, {
-              ...context,
-              ...this.props,
+              ...this.fullProps,
               ref: (reference) => { componentInstance = reference; },
             });
           }
