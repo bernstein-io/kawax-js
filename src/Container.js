@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import React from 'react';
+import { setStatic } from 'recompose';
 import PropTypes from 'prop-types';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
@@ -185,5 +186,12 @@ export default (Pure) => {
     return compose(reduxConnect)(Container);
   }
 
-  return compose(contextConsumer, reduxConnect)(Container);
+  const withStatic = setStatic(
+    'flushActionStack',
+    () => {
+      actionStack.clear(true);
+    }
+  );
+
+  return compose(withStatic, contextConsumer, reduxConnect)(Container);
 };
