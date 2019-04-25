@@ -186,12 +186,9 @@ export default (Pure) => {
     return compose(reduxConnect)(Container);
   }
 
-  const withStatic = setStatic(
-    'flushActionStack',
-    () => {
-      actionStack.clear(true);
-    }
-  );
+  const withStatic = setStatic('flushActionStack', () => {
+    actionStack.clear(true);
+  });
 
   return compose(withStatic, contextConsumer, reduxConnect)(Container);
 };
