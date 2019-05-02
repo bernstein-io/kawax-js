@@ -27,6 +27,7 @@ class ResourceCall extends Smart {
       const parsedEntity = resolve(entityParser, entity, this.context);
       return parsedEntity;
     } catch (exception) {
+      log.error(exception);
       return null;
     }
   }
