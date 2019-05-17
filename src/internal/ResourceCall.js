@@ -189,12 +189,14 @@ class ResourceCall extends Smart {
   }
 
   requestProcessor = async (payload) => {
-    const { baseUri, path, mock, paginate } = this.context;
+    const { baseUri, path, mock, paginate, filter } = this.context;
     const url = new URL(this.requestUrl(baseUri, path));
+    const pagination = resolve(paginate, this.context);
+    const params = resolve(filter, this.context);
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);
-    if (paginate) url.search = new URLSearchParams(paginate);
-    const shadow = throttler.match({ url: url.toString(), ...options });
+    if (params || pagination) url.search = new URLSearchParams({ ...pagination, ...params });
+    const shadow = throttler.match({ ...options, url: url.toString() });
     if (shadow) {
       this.uniqueId = shadow.id;
       await shadow.promise;

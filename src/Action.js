@@ -22,7 +22,7 @@ class Action extends Smart {
     this.onError = error;
     this.onSuccess = success;
     this.log = log || true;
-    this.context = context;
+    this._context = context;
   }
 
   pendingPayload = (data) => {};
@@ -43,7 +43,7 @@ class Action extends Smart {
 
   setStatus = (status) => { this.status = status; };
 
-  export = (action) => action;
+  export = (action, ...data) => action;
 
   _export = (payload, ...data) => {
     const parsedPayload = this._parsePayload(payload, ...data);
@@ -55,9 +55,9 @@ class Action extends Smart {
       timestamp: this.timestamp,
       type: this.static.type,
       class: this.constructor.name,
-      notice: this._parseNotice(parsedPayload, ...data) || false,
-      context: this._parseContext(parsedPayload, ...data) || false,
-    });
+      notice: this._parseNotice(payload, ...data) || false,
+      context: this._parseContext(payload, ...data) || false,
+    }, ...data);
   };
 
   _resolve = (callback, payload, ...data) => {
@@ -66,8 +66,8 @@ class Action extends Smart {
   };
 
   _parseContext(payload = {}, ...data) {
-    const defaultContext = this._resolve(this.defaultContext, payload, ...data) || {};
-    return _.isPlainObject(this.context) ? { ...defaultContext, ...this.context } : defaultContext;
+    const parsedContext = this._resolve(this.context, payload, ...data) || {};
+    return _.isPlainObject(this._context) ? { ...parsedContext, ...this._context } : parsedContext;
   }
 
   _parsePayload(payload, ...data) {
@@ -117,7 +117,7 @@ class Action extends Smart {
 
   _defineSetContext = (...data) => {
     this.setContext = async (context = {}) => {
-      _.extend(this.context, context);
+      _.extend(this._context, context);
       const action = this._export({}, ...data);
       return this._dispatch(action);
     };
