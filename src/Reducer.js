@@ -3,11 +3,11 @@ import Smart from './Smart';
 import resolve from './helpers/resolve';
 
 function ReducerDelegate(instance) {
-  this.reduce = (state, action) => instance.call(state, action);
+  this._reduce = (state, action) => instance.call(state, action);
 }
 
 function ForceAssignment(callback) {
-  this.reduce = (current, path) => callback(current, path);
+  this._reduce = (current, path) => callback(current, path);
 }
 
 class Reducer extends Smart {
@@ -39,6 +39,10 @@ class Reducer extends Smart {
 
   forceAssign = (helper) => new ForceAssignment(helper);
 
+  assign = (state, { payload }) => payload;
+
+  assignItem = (state, { payload }) => (_.isArray(state) ? [payload] : payload);
+
   removeItem = (predicate) => this.forceAssign((object) => {
     _.remove(object, predicate);
     return object;
@@ -47,7 +51,7 @@ class Reducer extends Smart {
   shallow = (next, depth = 1) => this.forceAssign(
     (current, action, path) => {
       if (!path) {
-        return this.reduce(current, next, action, path, depth);
+        return this._reduce(current, next, action, path, depth);
       }
       return next;
     },
@@ -58,7 +62,7 @@ class Reducer extends Smart {
     const current = _.isEmpty(state) ? this._getInitialState(path) : state;
     const resolvedState = resolve.call(this, this.state, current, action);
     const next = (resolvedState === undefined) ? current : resolvedState;
-    return this.reduce(current, next, action, path);
+    return this._reduce(current, next, action, path);
   }
 
   matchOn = (statuses) => (state, action) => {
@@ -91,14 +95,14 @@ class Reducer extends Smart {
         const regex = new RegExp(`(^[^.]?|[.])${match}`, 'g');
         if (type && type.match(regex)) {
           const resolvedState = resolve.call(this, pointer, state, action);
-          next = this.reduce(next, resolvedState, action);
+          next = this._reduce(next, resolvedState, action);
         }
       });
       return next;
     };
   }
 
-  shouldDelegate(next, path) {
+  _shouldDelegate(next, path) {
     const initialState = _.get(this.constructor.initialState, path);
     if (initialState && initialState instanceof ReducerDelegate) {
       return true;
@@ -108,56 +112,56 @@ class Reducer extends Smart {
     return false;
   }
 
-  reduce(current, next, action, path = false, depth = -1) {
+  _reduce(current, next, action, path = false, depth = -1) {
     let state;
-    const shouldDelegate = this.shouldDelegate(next, path);
+    const shouldDelegate = this._shouldDelegate(next, path);
     if (!_.isEqual(current, next) && !shouldDelegate) {
-      state = this.parseState(current, next, action, path, depth);
+      state = this._parseState(current, next, action, path, depth);
     } else if (shouldDelegate === true) {
-      state = this.delegateState(current, next, action, path);
+      state = this._delegateState(current, next, action, path);
     }
-    return state === undefined ? this.assign(current, next) : state;
+    return state === undefined ? this._assignNext(current, next) : state;
   }
 
-  delegateState(current, next, action, path) {
+  _delegateState(current, next, action, path) {
     if (next && next instanceof ReducerDelegate) {
-      return next.reduce(current, action);
+      return next._reduce(current, action);
     } else if (next === null) {
       const initialState = _.get(this.constructor.initialState, path);
-      return initialState.reduce(next, action);
+      return initialState._reduce(next, action);
     }
   }
 
-  parseState(current, next, action, path, depth = -1) {
+  _parseState(current, next, action, path, depth = -1) {
     if (_.isPlainObject(next)) {
-      return this.parsePlainObject(current, next, action, path, depth);
+      return this._parsePlainObject(current, next, action, path, depth);
     } else if (_.isArray(next) && !path) {
-      return this.parseArray(current, next, action, path, depth);
+      return this._parseArray(current, next, action, path, depth);
     } else if (_.isFunction(next)) {
       const resolvedState = resolve.call(this, next, current, action);
-      const reducedState = this.reduce(current, resolvedState, action, path);
-      return this.assign(current, reducedState);
+      const reducedState = this._reduce(current, resolvedState, action, path);
+      return this._assignNext(current, reducedState);
     } else if (next === null && path) {
       return this._getInitialState(path);
     } else if (next && next instanceof ForceAssignment) {
-      return next.reduce(current, path);
+      return next._reduce(current, path);
     }
   }
 
-  parsePlainObject(current, next, action, path, depth = -1) {
+  _parsePlainObject(current, next, action, path, depth = -1) {
     const state = {};
     _.each(next, (nextItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
       const currentItem = _.isObject(current) ? current[key] : null;
       const nextDepth = (depth < 0 || depth > 1) ? _.clone(depth) - 1 : false;
-      state[key] = nextDepth && nextItem ? this.reduce(
+      state[key] = nextDepth && nextItem ? this._reduce(
         currentItem, nextItem, action, currentPath, nextDepth,
       ) : nextItem;
     });
-    return this.assign(current, state);
+    return this._assignNext(current, state);
   }
 
-  parseArray(current, next, action, path, depth = -1) {
+  _parseArray(current, next, action, path, depth = -1) {
     const union = [];
     const unionKey = this.unionKey;
     const nextItems = _.cloneDeep(next);
@@ -169,7 +173,7 @@ class Reducer extends Smart {
         _.each(nextItems, (nextItem, nextKey) => {
           const matchKey = (nextItem && nextItem[unionKey]) ? nextItem[unionKey] : false;
           if (matchKey && currentItem[unionKey] === matchKey) {
-            union[key] = nextDepth ? this.reduce(
+            union[key] = nextDepth ? this._reduce(
               currentItem, nextItem, action, currentPath, nextDepth,
             ) : nextItem;
             nextItems[nextKey] = null;
@@ -180,7 +184,7 @@ class Reducer extends Smart {
     return _.compact([...union, ...nextItems]);
   }
 
-  assign(current, next) {
+  _assignNext(current, next) {
     if (_.isPlainObject(current) && _.isPlainObject(next)) {
       return Object.assign({}, current, next);
     }
@@ -190,7 +194,7 @@ class Reducer extends Smart {
   _getInitialState(path) {
     const initialState = this.constructor.initialState;
     const state = initialState
-      ? this.reduce({}, this.constructor.initialState, { type: '@@kawax/INIT' }, [])
+      ? this._reduce({}, this.constructor.initialState, { type: '@@kawax/INIT' }, [])
       : null;
     return _.isEmpty(path) ? state : _.get(state, path);
   }
