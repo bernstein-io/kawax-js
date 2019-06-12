@@ -90,9 +90,13 @@ export default (Pure) => {
       if (node && (className || cssClasses)) {
         if (sibling) {
           const parent = node ? node.parentNode : false;
-          if (parent) parent.className = this.getClassNames(parent.className);
+          if (parent) {
+            this.classNames = this.getClassNames(parent.className);
+            parent.className = this.classNames;
+          }
         } else {
-          node.className = this.getClassNames(node.className);
+          this.classNames = this.getClassNames(node.className);
+          node.className = this.classNames;
         }
       }
     }
@@ -111,17 +115,17 @@ export default (Pure) => {
 
     render() {
       const Context = Runtime('context');
+      const ownClassNames = this.classNames || String();
       return (
         <Context.Consumer>
           {(context) => {
-            composedProps.push(..._.keys(context));
-            this.fullProps = { ...context, ...this.props };
+            composedProps.push(..._.keys(context), 'ownClassNames');
+            this.fullProps = { ...context, ...this.props, ownClassNames };
             return React.createElement(Pure, {
               ...this.fullProps,
               ref: (reference) => { componentInstance = reference; },
             });
-          }
-          }
+          }}
         </Context.Consumer>
       );
     }

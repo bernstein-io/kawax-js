@@ -22,6 +22,7 @@ class Action extends Smart {
     this.onError = error;
     this.onSuccess = success;
     this.log = log || true;
+    this.done = false;
     this._context = context;
   }
 
@@ -50,6 +51,7 @@ class Action extends Smart {
     return this.export({
       id: this.id,
       log: this.log,
+      done: this.done,
       payload: parsedPayload,
       status: this.status,
       timestamp: this.timestamp,
@@ -109,11 +111,18 @@ class Action extends Smart {
           await resolve.call(this, this.onError, payload, ...data);
         }
         await this._afterDispatch(payload, ...data);
-        this._removeWindowUnloadListener();
+        await this._finalize(payload, ...data);
       });
       return this.id;
     };
   }
+
+  _finalize = async (payload, ...data) => {
+    this.done = true;
+    this._removeWindowUnloadListener();
+    const action = this._export(payload, ...data);
+    return this._dispatch(action);
+  };
 
   _defineSetContext = (...data) => {
     this.setContext = async (context = {}) => {

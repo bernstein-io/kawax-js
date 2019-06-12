@@ -54,7 +54,7 @@ class Store extends Smart {
         this.pendingActions.push({ id: action.id, startTime: performance.now() });
       }
       const payload = next(action);
-      if (action.status !== 'pending') {
+      if (action.status !== 'pending' && action.done) {
         state = getState();
         const [initialAction] = _.remove(this.pendingActions,
           (pendingAction) => pendingAction.id === action.id);
@@ -66,7 +66,7 @@ class Store extends Smart {
         log.group(...output);
         log.error('Action:', actionLog);
         log.groupEnd();
-      } else if (action.log && action.status === 'success') {
+      } else if (action.done && action.log && action.status === 'success') {
         log.debug(...output, '\n ', actionLog);
       }
       return payload;

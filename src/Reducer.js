@@ -37,18 +37,18 @@ class Reducer extends Smart {
 
   matchDone = (map) => this.onDone(this.match(map));
 
-  forceAssign = (helper) => new ForceAssignment(helper);
+  replace = (state, { payload }) => this._forceAssign((object) => payload);
 
   assign = (state, { payload }) => payload;
 
   assignItem = (state, { payload }) => (_.isArray(state) ? [payload] : payload);
 
-  removeItem = (predicate) => this.forceAssign((object) => {
-    _.remove(object, predicate);
-    return object;
+  removeItem = (predicate) => this._forceAssign((current) => {
+    _.remove(current, predicate);
+    return current;
   });
 
-  shallow = (next, depth = 1) => this.forceAssign(
+  shallow = (next, depth = 1) => this._forceAssign(
     (current, action, path) => {
       if (!path) {
         return this._reduce(current, next, action, path, depth);
@@ -101,6 +101,8 @@ class Reducer extends Smart {
       return next;
     };
   }
+
+  _forceAssign = (helper) => new ForceAssignment(helper);
 
   _shouldDelegate(next, path) {
     const initialState = _.get(this.constructor.initialState, path);
