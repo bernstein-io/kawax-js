@@ -33,18 +33,32 @@ class ResourceCall extends Smart {
   }
 
   async collectionParser(payload) {
-    return _.isArray(payload.collection) ? payload.collection : payload;
+    const { collectionParser } = this.context;
+    if (collectionParser) {
+      return resolve(collectionParser, payload);
+    }
+    return payload;
+  }
+
+  metaParser(payload) {
+    const { metaParser, responseTransform } = this.context;
+    const parsedMeta = resolve(metaParser, payload || {});
+    if (metaParser) {
+      return responseTransform ? this.transform(parsedMeta, responseTransform) : parsedMeta;
+    }
   }
 
   responseParser = async (response, body) => {
-    const { responseParser, collection, responseTransform, entityParser } = this.context;
-    let payload = resolve(responseParser, response, body, this.context) || body;
-    payload = collection ? await this.collectionParser(payload) : payload;
-    payload = responseTransform ? this.transform(payload, responseTransform) : payload;
+    const { responseParser, collection,
+      responseTransform, metaParser, entityParser } = this.context;
+    const payload = resolve(responseParser, response, body, this.context) || body;
+    let data = collection ? await this.collectionParser(payload) : payload;
+    data = responseTransform ? this.transform(data, responseTransform) : data;
+    if (metaParser) this.metaParser(payload, body);
     if (response.ok === true) {
-      payload = entityParser ? await this.switchParser(payload) : payload;
+      data = entityParser ? await this.switchParser(data) : data;
     }
-    return payload;
+    return data;
   };
 
   exceptionParser(exception) {
@@ -126,12 +140,12 @@ class ResourceCall extends Smart {
     return parsedPayload;
   }
 
-  transform(payload, transform) {
+  transform(payload, predicate) {
     const parsedPayload = _.isArray(payload) ? [] : {};
     for (const key in payload) {
-      const nextKey = transform(key);
+      const nextKey = predicate(key);
       if (_.isPlainObject(payload[key])) {
-        parsedPayload[nextKey] = this.transform(payload[key], transform);
+        parsedPayload[nextKey] = this.transform(payload[key], predicate);
       } else {
         parsedPayload[nextKey] = payload[key];
       }
@@ -160,11 +174,12 @@ class ResourceCall extends Smart {
     return options;
   };
 
-  requestUrl = (baseUri, path) => {
+  requestUrl = (baseUrl, basePath, path) => {
     const parsedPath = resolve(path, this.context);
-    const parsedBaseUri = resolve(baseUri, this.context);
-    const url = parsedBaseUri ? `${parsedBaseUri.replace(/\/$/, '')}${parsedPath}` : parsedPath;
-    return url !== '/' ? url.replace(/\/$/, '') : url;
+    const parsedBasePath = resolve(basePath, this.context);
+    const parsedBaseUri = resolve(baseUrl, this.context);
+    const urlArray = _.compact([parsedBaseUri, parsedBasePath, parsedPath]);
+    return urlArray.join('/').replace(/([^:]\/)\/+/g, '$1') || '/';
   };
 
   mock = ({ body }) => {
@@ -189,8 +204,8 @@ class ResourceCall extends Smart {
   }
 
   requestProcessor = async (payload) => {
-    const { baseUri, path, mock, paginate, filter } = this.context;
-    const url = new URL(this.requestUrl(baseUri, path));
+    const { baseUrl, basePath, path, mock, paginate, filter } = this.context;
+    const url = new URL(this.requestUrl(baseUrl, basePath, path));
     const pagination = resolve(paginate, this.context);
     const params = resolve(filter, this.context);
     const options = await this.buildRequest(payload);

@@ -133,8 +133,8 @@ export default (Pure) => {
 
     computeContext(ownProps) {
       const withRouter = Runtime('withRouter');
-      const { store } = this.context;
-      const state = store.getState();
+      const { getState } = Runtime('store');
+      const state = getState();
       const select = getSelect(state);
       const propsToContext = resolve(Pure.propsToContext, { ownProps, select });
       if (withRouter && ownProps.match) {
@@ -182,13 +182,13 @@ export default (Pure) => {
 
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
 
-  if (Pure.withContext === false) {
-    return compose(reduxConnect)(Container);
-  }
-
   const withStatic = setStatic('flushActionStack', () => {
     actionStack.clear(true);
   });
+
+  if (Pure.withContext === false) {
+    return compose(withStatic, reduxConnect)(Container);
+  }
 
   return compose(withStatic, contextConsumer, reduxConnect)(Container);
 };

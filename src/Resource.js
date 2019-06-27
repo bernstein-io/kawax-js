@@ -11,7 +11,8 @@ class Resource extends Smart {
       schema: resolver('schema') || {},
       mock: resolver('mock', false) || false,
       path: resolver('path', false),
-      baseUri: resolver('baseUri', false),
+      basePath: resolver('basePath', false),
+      baseUrl: resolver('baseUrl', false),
       method: resolver('method') || 'GET',
       allowCors: resolver('allowCors') || false,
       filter: resolver('filter', false) || false,
@@ -27,6 +28,8 @@ class Resource extends Smart {
       responseParser: resolver('responseParser', false) || ((response, body) => body),
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
+      collectionParser: resolver('collectionParser', false) || ((payload) => payload.collection),
+      metaParser: resolver('metaParser', false) || ((payload) => payload.pagination),
       resourceClass: this.constructor.name || 'Resource',
       onSuccess: resolver('onSuccess', false) || false,
       onError: resolver('onError', false) || false,
@@ -46,8 +49,8 @@ class Resource extends Smart {
       const mergedOptions = { ...base, ...options };
       const resolver = this._getResolver(payload, mergedOptions);
       const context = this._contextParser(resolver, mergedOptions);
-      const resourceCall = ResourceCall.export(context);
-      return resourceCall(payload);
+      const resource = new ResourceCall(context);
+      return resource.call(payload);
     };
   }
 
