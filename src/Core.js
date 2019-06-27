@@ -23,44 +23,37 @@ class Core extends Smart {
 
   initialize(env) {
     const htmlRoot = document.getElementById(this.htmlRoot) || document.body;
-    const ReactContext = this._contextRenderer();
+    const ReactContext = this._providerRenderer();
     render(ReactContext, htmlRoot);
   }
 
-  _wrapContext(children) {
+  _providerRenderer() {
+    return (
+      <Provider store={this.store}>
+        {this._contextRenderer()}
+      </Provider>
+    );
+  }
+
+  _contextRenderer(children) {
     const Context = this.context;
     return (
       <Context.Provider>
-        {children()}
+        {this._routerRenderer()}
       </Context.Provider>
     );
   }
 
-  _wrapRouter(children) {
+  _routerRenderer() {
     const ReactRouter = this.router;
     if (this.withRouter === true) {
       return (
         <ReactRouter history={this.history} historyHook={this.historyHook}>
-          {children()}
+          {React.createElement(this.container)}
         </ReactRouter>
       );
     }
-    return children();
-  }
-
-  _renderContainer() {
-    const Container = this.container;
-    return <Container />;
-  }
-
-  _contextRenderer() {
-    return (
-      <Provider store={this.store}>
-        {
-          this._wrapContext(() => this._wrapRouter(() => this._renderContainer()))
-        }
-      </Provider>
-    );
+    return React.createElement(this.container);
   }
 
 }
