@@ -29,7 +29,7 @@ class Core extends Smart {
 
   _providerRenderer() {
     return (
-      <Provider store={this.store}>
+      <Provider store={this.store} context={this.context}>
         {this._contextRenderer()}
       </Provider>
     );

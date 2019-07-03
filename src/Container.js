@@ -180,15 +180,21 @@ export default (Pure) => {
 
   };
 
-  const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, options);
+  console.log('----> ', Runtime('context'));
+
+  const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
+    context: Runtime('context'),
+    ...options,
+  });
 
   const withStatic = setStatic('flushActionStack', () => {
     actionStack.clear(true);
   });
 
-  if (Pure.withContext === false) {
-    return compose(withStatic, reduxConnect)(Container);
-  }
+  return compose(withStatic, reduxConnect)(Container);
+  // if (Pure.withContext === false) {
+  //   return compose(withStatic, reduxConnect)(Container);
+  // }
 
-  return compose(withStatic, contextConsumer, reduxConnect)(Container);
+  // return compose(withStatic, contextConsumer, reduxConnect)(Container);
 };
