@@ -16,9 +16,9 @@ class Core extends Smart {
     history: options.history || undefined,
     historyHook: options.historyHook || undefined,
     reducer: options.reducer || ((state) => state),
-    container: options.container || (() => (<div>It works!</div>)),
     context: options.context || React.createContext({}),
     store: new Store({ reducer: options.reducer }),
+    container: options.container || (() => React.createElement('div', null, 'It works!')),
   });
 
   initialize(env) {
@@ -29,18 +29,11 @@ class Core extends Smart {
 
   _providerRenderer() {
     return (
-      <Provider store={this.store} context={this.context}>
-        {this._contextRenderer()}
+      <Provider store={this.store.internal}>
+        <Provider store={this.store}>
+          {this._routerRenderer()}
+        </Provider>
       </Provider>
-    );
-  }
-
-  _contextRenderer(children) {
-    const Context = this.context;
-    return (
-      <Context.Provider>
-        {this._routerRenderer()}
-      </Context.Provider>
     );
   }
 

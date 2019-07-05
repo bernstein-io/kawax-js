@@ -5,9 +5,13 @@ import resolve from './helpers/resolve';
 
 class Resource extends Smart {
 
+  uniqueId = `${this.constructor.name}#${_.uniqueId()}`;
+
   _contextParser(resolver, context) {
     return {
       ...context,
+      uniqueId: this.uniqueId,
+      resourceName: this.constructor.name,
       schema: resolver('schema') || {},
       mock: resolver('mock', false) || false,
       path: resolver('path', false),
@@ -45,11 +49,11 @@ class Resource extends Smart {
   };
 
   define(base) {
-    return ({ payload, ...options } = {}) => {
+    return ({ payload, ...options } = {}, meta) => {
       const mergedOptions = { ...base, ...options };
       const resolver = this._getResolver(payload, mergedOptions);
       const context = this._contextParser(resolver, mergedOptions);
-      const resource = new ResourceCall(context);
+      const resource = new ResourceCall({ ...context, meta });
       return resource.call(payload);
     };
   }

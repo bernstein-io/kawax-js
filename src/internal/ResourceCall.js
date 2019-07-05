@@ -5,6 +5,7 @@ import log from '../helpers/log';
 import resolve from '../helpers/resolve';
 import promiseAll from '../helpers/promiseAll';
 import CallThrottler from './CallThrottler';
+import Runtime from '../Runtime';
 
 const throttler = new CallThrottler();
 
@@ -40,11 +41,20 @@ class ResourceCall extends Smart {
     return payload;
   }
 
-  metaParser(payload) {
-    const { metaParser, responseTransform } = this.context;
-    const parsedMeta = resolve(metaParser, payload || {});
-    if (metaParser) {
-      return responseTransform ? this.transform(parsedMeta, responseTransform) : parsedMeta;
+  metaParser(originalPayload, parsedData) {
+    const { meta, metaParser, responseTransform, uniqueId } = this.context;
+    const parsedMeta = resolve(metaParser, originalPayload || {});
+    if (meta && metaParser) {
+      const store = Runtime('store');
+      store._dispatch({
+        type: `@@RESOURCE_CALL[${meta.type}]`,
+        payload: {
+          resourceId: uniqueId,
+          actionId: meta.actionId,
+          itemIds: _.map(parsedData, (entity) => entity.id),
+          meta: responseTransform ? this.transform(parsedMeta, responseTransform) : parsedMeta,
+        },
+      });
     }
   }
 
@@ -54,9 +64,9 @@ class ResourceCall extends Smart {
     const payload = resolve(responseParser, response, body, this.context) || body;
     let data = collection ? await this.collectionParser(payload) : payload;
     data = responseTransform ? this.transform(data, responseTransform) : data;
-    if (metaParser) this.metaParser(payload, body);
     if (response.ok === true) {
       data = entityParser ? await this.switchParser(data) : data;
+      if (collection && metaParser) this.metaParser(payload, data);
     }
     return data;
   };
@@ -203,10 +213,16 @@ class ResourceCall extends Smart {
     }
   }
 
-  requestProcessor = async (payload) => {
-    const { baseUrl, basePath, path, mock, paginate, filter } = this.context;
-    const url = new URL(this.requestUrl(baseUrl, basePath, path));
+  getRequestPaginator() {
+    const { paginate, meta } = this.context;
     const pagination = resolve(paginate, this.context);
+    return pagination || meta ? { page: meta.page } : false;
+  }
+
+  requestProcessor = async (payload) => {
+    const { baseUrl, basePath, path, mock, filter } = this.context;
+    const url = new URL(this.requestUrl(baseUrl, basePath, path));
+    const pagination = this.getRequestPaginator();
     const params = resolve(filter, this.context);
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);

@@ -21,6 +21,7 @@ export default (Pure) => {
 
   const displayName = Pure.name || 'Unnamed';
   const defaultKey = `${displayName}-${_.uniqueId()}`;
+
   const actionStack = new ActionStack();
 
   let prevContext = {};
@@ -180,10 +181,7 @@ export default (Pure) => {
 
   };
 
-  console.log('----> ', Runtime('context'));
-
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
-    context: Runtime('context'),
     ...options,
   });
 
@@ -191,10 +189,9 @@ export default (Pure) => {
     actionStack.clear(true);
   });
 
-  return compose(withStatic, reduxConnect)(Container);
-  // if (Pure.withContext === false) {
-  //   return compose(withStatic, reduxConnect)(Container);
-  // }
+  if (Pure.withContext === false) {
+    return compose(withStatic, reduxConnect)(Container);
+  }
 
-  // return compose(withStatic, contextConsumer, reduxConnect)(Container);
+  return compose(withStatic, contextConsumer, reduxConnect)(Container);
 };

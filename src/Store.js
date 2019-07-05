@@ -3,27 +3,56 @@ import _ from 'lodash';
 import Thunk from 'redux-thunk';
 import Smart from './Smart';
 import log from './helpers/log';
+import InternalReducer from './instance/InternalReducer';
 
 class Store extends Smart {
 
   groupLog = false;
 
-  initialize({ reducer }) {
-    const reduxStore = this._createStore(reducer);
-    this.extend(reduxStore);
+  initialize({ reducer, name }) {
+    this.internal = this._createInternalStore();
+    this.main = this._createMainStore(reducer, name);
     if (__DEV__) {
       this.extend({ pendingActions: [] });
     }
   }
 
-  _createStore(reducer = this.reducer) {
+  dispatch = (action) => {
+    this.internal.dispatch(action);
+    return this.main.dispatch(action);
+  };
+
+  subscribe = (listener) => this.main.subscribe(listener);
+
+  replaceReducer = (nextReducer) => this.main.replaceReducer(nextReducer);
+
+  getState = () => this.main.getState();
+
+  getInternalState = () => this.internal.getState();
+
+  _dispatch = (action) => this.internal.dispatch(action);
+
+  _createInternalStore() {
+    const enhancer = this._getEnhancer(true);
+    const internalReducer = InternalReducer.export();
+    return createStore(internalReducer, false, enhancer);
+  }
+
+  _createMainStore(reducer = this.reducer) {
     const enhancer = this._getEnhancer();
     return createStore(reducer, false, enhancer);
   }
 
-  _getComposer() {
+  _getEnhancer(internal = false) {
+    const composer = this._getComposer(internal);
+    const middlewares = this._getMiddlewares(internal);
+    return composer(middlewares);
+  }
+
+  _getComposer(internal = false) {
     if (__DEV__ && global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) {
       return global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
+        name: internal ? 'Kawax Internal' : false,
         latency: 1000,
         maxAge: 25,
       });
@@ -31,15 +60,9 @@ class Store extends Smart {
     return compose;
   }
 
-  _getEnhancer() {
-    const composer = this._getComposer();
-    const middlewares = this._getMiddlewares();
-    return composer(middlewares);
-  }
-
-  _getMiddlewares() {
+  _getMiddlewares(internal = false) {
     const middlewares = [Thunk];
-    if (__DEV__) {
+    if (__DEV__ && !internal) {
       middlewares.push(this._logger.bind(this));
     }
     return applyMiddleware(...middlewares);
@@ -59,7 +82,7 @@ class Store extends Smart {
           state = getState();
           const [initialAction] = _.remove(this.pendingActions,
             (pendingAction) => pendingAction.id === action.id);
-          duration = performance.now() - initialAction.startTime;
+          duration = performance.now() - (initialAction ? initialAction.startTime : 0);
         }
         const output = this._formatLog(state, action, duration);
         const actionPayload = _.cloneDeep(action);

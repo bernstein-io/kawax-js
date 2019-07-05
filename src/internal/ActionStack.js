@@ -16,6 +16,10 @@ class ActionStack extends Smart {
     this.stack.push({ id, key });
   }
 
+  watch(key, id) {
+    this.push({ id, key });
+  }
+
   clear(force = false) {
     this.stack = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
   }
@@ -55,12 +59,12 @@ class ActionStack extends Smart {
   }
 
   findLast(key = false) {
-    const stack = key ? this.find(key) : this.all();
+    const stack = key ? this.find(key) : this.own();
     return _.last(stack);
   }
 
   getErrors(key = false) {
-    const stack = key ? this.find(key) : this.all();
+    const stack = key ? this.find(key) : this.own();
     return _.filter(stack, (action) => (action && action.status === 'error'));
   }
 
@@ -151,7 +155,7 @@ class ActionStack extends Smart {
 
   any(status) {
     let any = false;
-    const actions = this.all();
+    const actions = this.own();
     _.each(actions, (action) => {
       any = any || !!(action && action.status === status);
     });
@@ -160,7 +164,7 @@ class ActionStack extends Smart {
 
   groups() {
     const store = Runtime('store');
-    const state = store.getState();
+    const state = store.getInternalState();
     const actions = _.cloneDeep(state.actions);
     const groups = _.groupBy(this.stack, 'key');
     return _.mapValues(groups, (stack) => _.map(stack, (item) => {
@@ -169,14 +173,30 @@ class ActionStack extends Smart {
     }));
   }
 
-  all() {
-    const store = Runtime('store');
-    const state = store.getState();
+  own() {
+    const Store = Runtime('store');
+    const state = Store.getInternalState();
     const actions = _.cloneDeep(state.actions);
     return _.map(this.stack, (item) => {
       const stackId = item.id;
       return _.find(actions, (action) => (stackId === action.id));
     });
+  }
+
+  all() {
+    const Store = Runtime('store');
+    const state = Store.getInternalState();
+    return state.actions;
+  }
+
+  getMetaPer(key) {
+    const action = this.findLast(key);
+    if (action) {
+      const Store = Runtime('store');
+      const state = Store.getInternalState();
+      const resources = state.resources;
+      return _.find(resources, (meta) => _.includes(meta.actionIds, action.id));
+    }
   }
 
 }

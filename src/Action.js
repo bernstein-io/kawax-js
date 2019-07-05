@@ -100,6 +100,7 @@ class Action extends Smart {
       this._defineSetContext(...data);
       this._dispatchPending(...data);
       new Promise(async () => { /* eslint-disable-line no-new */
+        this._bindResources(...data);
         this._bindActionsCreators();
         const payload = await this._processPayload(...data);
         const action = this._export(payload, ...data);
@@ -145,6 +146,20 @@ class Action extends Smart {
     const pendingPayload = this._resolve(this.pendingPayload, {}, ...data);
     const action = this._export(pendingPayload, ...data);
     this._dispatch(action);
+  }
+
+  _bindResources(...data) {
+    const resources = this.constructor.resources;
+    _.each(resources, (resource, key) => {
+      if (typeof resource === 'function') {
+        const meta = _.last(data);
+        this[key] = (...options) => resource(options, _.isObject(meta) ? {
+          ...meta,
+          actionId: this.id,
+          type: this.constructor.type,
+        } : false);
+      }
+    });
   }
 
   _bindActionsCreators() {
