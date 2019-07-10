@@ -10,6 +10,7 @@ class Core extends Smart {
 
   static defaults = (options) => setRuntime({
     ...options,
+    name: options.name || 'App',
     htmlRoot: options.htmlRoot || false,
     router: options.router || Router,
     withRouter: options.withRouter !== false,
@@ -17,7 +18,7 @@ class Core extends Smart {
     historyHook: options.historyHook || undefined,
     reducer: options.reducer || ((state) => state),
     context: options.context || React.createContext({}),
-    store: new Store({ reducer: options.reducer }),
+    store: new Store({ name: options.name, reducer: options.reducer }),
     container: options.container || (() => React.createElement('div', null, 'It works!')),
   });
 

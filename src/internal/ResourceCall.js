@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import cleanDeep from 'clean-deep';
 import Smart from '../Smart';
 import log from '../helpers/log';
 import resolve from '../helpers/resolve';
@@ -42,15 +43,16 @@ class ResourceCall extends Smart {
   }
 
   metaParser(originalPayload, parsedData) {
-    const { meta, metaParser, responseTransform, uniqueId } = this.context;
+    const { metaOptions, metaParser, responseTransform, uniqueId } = this.context;
     const parsedMeta = resolve(metaParser, originalPayload || {});
-    if (meta && metaParser) {
+    if (metaOptions) {
       const store = Runtime('store');
       store._dispatch({
-        type: `@@RESOURCE_CALL[${meta.type}]`,
+        type: `@@RESOURCE_CALL[${metaOptions.type}]`,
         payload: {
           resourceId: uniqueId,
-          actionId: meta.actionId,
+          search: metaOptions.search,
+          actionId: metaOptions.actionId,
           itemIds: _.map(parsedData, (entity) => entity.id),
           meta: responseTransform ? this.transform(parsedMeta, responseTransform) : parsedMeta,
         },
@@ -147,7 +149,7 @@ class ResourceCall extends Smart {
       parsedPayload = await this.serializeRequestBody(payload);
     }
     if (requestTransform) parsedPayload = this.transform(parsedPayload, requestTransform);
-    return parsedPayload;
+    return cleanDeep(parsedPayload);
   }
 
   transform(payload, predicate) {
@@ -214,16 +216,26 @@ class ResourceCall extends Smart {
   }
 
   getRequestPaginator() {
-    const { paginate, meta } = this.context;
+    const { paginate, metaOptions } = this.context;
     const pagination = resolve(paginate, this.context);
-    return pagination || meta ? { page: meta.page } : false;
+    return pagination || metaOptions ? { page: metaOptions.page } : false;
+  }
+
+  getRequestParams() {
+    const { filter, metaOptions } = this.context;
+    const params = resolve(filter, this.context);
+    if (metaOptions) {
+      const { search } = metaOptions;
+      return search ? { search, ...params } : params;
+    }
+    return params;
   }
 
   requestProcessor = async (payload) => {
-    const { baseUrl, basePath, path, mock, filter } = this.context;
+    const { baseUrl, basePath, path, mock } = this.context;
     const url = new URL(this.requestUrl(baseUrl, basePath, path));
     const pagination = this.getRequestPaginator();
-    const params = resolve(filter, this.context);
+    const params = this.getRequestParams();
     const options = await this.buildRequest(payload);
     if (mock) return this.mock(options);
     if (params || pagination) url.search = new URLSearchParams({ ...pagination, ...params });

@@ -10,7 +10,7 @@ class Store extends Smart {
   groupLog = false;
 
   initialize({ reducer, name }) {
-    this.internal = this._createInternalStore();
+    this.internal = this._createInternalStore(name);
     this.main = this._createMainStore(reducer, name);
     if (__DEV__) {
       this.extend({ pendingActions: [] });
@@ -32,27 +32,27 @@ class Store extends Smart {
 
   _dispatch = (action) => this.internal.dispatch(action);
 
-  _createInternalStore() {
-    const enhancer = this._getEnhancer(true);
+  _createInternalStore(name) {
+    const enhancer = this._getEnhancer(name, true);
     const internalReducer = InternalReducer.export();
     return createStore(internalReducer, false, enhancer);
   }
 
-  _createMainStore(reducer = this.reducer) {
-    const enhancer = this._getEnhancer();
+  _createMainStore(reducer = this.reducer, name = false) {
+    const enhancer = this._getEnhancer(name);
     return createStore(reducer, false, enhancer);
   }
 
-  _getEnhancer(internal = false) {
-    const composer = this._getComposer(internal);
+  _getEnhancer(name, internal = false) {
+    const composer = this._getComposer(name, internal);
     const middlewares = this._getMiddlewares(internal);
     return composer(middlewares);
   }
 
-  _getComposer(internal = false) {
+  _getComposer(name = false, internal = false) {
     if (__DEV__ && global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) {
       return global.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
-        name: internal ? 'Kawax Internal' : false,
+        name: internal ? `Kawax@${name}` : name,
         latency: 1000,
         maxAge: 25,
       });
