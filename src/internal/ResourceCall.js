@@ -218,7 +218,7 @@ class ResourceCall extends Smart {
   getRequestPaginator() {
     const { paginate, metaOptions } = this.context;
     const pagination = resolve(paginate, this.context);
-    return pagination || metaOptions ? { page: metaOptions.page } : false;
+    return pagination || (metaOptions ? { page: metaOptions.page } : false);
   }
 
   getRequestParams() {
