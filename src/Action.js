@@ -153,11 +153,11 @@ class Action extends Smart {
     _.each(resources, (resource, key) => {
       if (typeof resource === 'function') {
         const meta = _.last(data);
-        this[key] = (options, ...customMeta) => resource(options, {
+        this[key] = (options, ...overrideMeta) => resource(options, {
           ...meta,
           actionId: this.id,
           type: this.constructor.type,
-          ...customMeta,
+          ...overrideMeta,
         });
       }
     });

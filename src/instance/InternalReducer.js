@@ -17,8 +17,11 @@ class InternalReducer extends Reducer {
 
   mapResource(state, { payload }) {
     const pageNo = _.get(payload, 'meta.currentPage');
+    const sort = payload.sort && _.snakeCase(payload.sort);
+    const order = payload.order && _.snakeCase(payload.order);
     const search = payload.search && _.snakeCase(payload.search);
-    const resourceKey = search ? `${payload.resourceId}/${search}` : payload.resourceId;
+    const resourceMap = _.compact([payload.resourceId, sort, order, search]);
+    const resourceKey = resourceMap.join('#');
     if (pageNo) {
       return {
         [resourceKey]: {

@@ -51,6 +51,8 @@ class ResourceCall extends Smart {
         type: `@@RESOURCE_CALL[${metaOptions.type}]`,
         payload: {
           resourceId: uniqueId,
+          sort: metaOptions.sort,
+          order: metaOptions.order,
           search: metaOptions.search,
           actionId: metaOptions.actionId,
           itemIds: _.map(parsedData, (entity) => entity.id),
@@ -218,7 +220,11 @@ class ResourceCall extends Smart {
   getRequestPaginator() {
     const { paginate, metaOptions } = this.context;
     const pagination = resolve(paginate, this.context);
-    return pagination || (metaOptions ? { page: metaOptions.page } : false);
+    return pagination || (metaOptions ? cleanDeep({
+      sort: _.snakeCase(metaOptions.sort),
+      order: metaOptions.order,
+      page: metaOptions.page,
+    }) : false);
   }
 
   getRequestParams() {
