@@ -151,7 +151,7 @@ class ResourceCall extends Smart {
       parsedPayload = await this.serializeRequestBody(payload);
     }
     if (requestTransform) parsedPayload = this.transform(parsedPayload, requestTransform);
-    return cleanDeep(parsedPayload);
+    return _.isPlainObject(parsedPayload) ? cleanDeep(parsedPayload) : parsedPayload;
   }
 
   transform(payload, predicate) {
