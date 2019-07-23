@@ -20,6 +20,7 @@ class Resource extends Smart {
       method: resolver('method') || 'GET',
       allowCors: resolver('allowCors') || false,
       filter: resolver('filter', false) || false,
+      formData: resolver('formData') || false,
       paginate: resolver('paginate', false) || false,
       credentials: resolver('credentials') || 'same-origin',
       headers: resolver('headers', false),
