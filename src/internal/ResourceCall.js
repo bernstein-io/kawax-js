@@ -142,6 +142,14 @@ class ResourceCall extends Smart {
     return parsedPayload;
   };
 
+  toFormData(payload) {
+    const data = new FormData();
+    _.each(payload, (value, key) => {
+      data.append(key, value);
+    });
+    return data;
+  };
+
   async requestPayloadParser(payload) {
     let parsedPayload;
     const { payloadParser, requestTransform } = this.context;
@@ -151,7 +159,7 @@ class ResourceCall extends Smart {
       parsedPayload = await this.serializeRequestBody(payload);
     }
     if (requestTransform) parsedPayload = this.transform(parsedPayload, requestTransform);
-    return _.isPlainObject(parsedPayload) ? cleanDeep(parsedPayload) : parsedPayload;
+    return cleanDeep(parsedPayload);
   }
 
   transform(payload, predicate) {
@@ -168,7 +176,7 @@ class ResourceCall extends Smart {
   }
 
   buildRequest = async (payload) => {
-    const { method, headers, allowCors, credentials } = this.context;
+    const { method, headers, allowCors, credentials, formData } = this.context;
     const parsedHeaders = resolve(headers, this.context);
     const options = {
       method: method,
@@ -178,9 +186,11 @@ class ResourceCall extends Smart {
     };
     if (method !== 'GET' && method !== 'HEAD') {
       const parsedPayload = await this.requestPayloadParser(payload);
-      if (_.isPlainObject(parsedPayload)) {
+      if (_.isPlainObject(parsedPayload) && !formData) {
         options.body = JSON.stringify(parsedPayload);
         options.headers.append('Content-Type', 'application/json');
+      } else if (formData) {
+        options.body = this.toFormData(parsedPayload);
       } else {
         options.body = parsedPayload;
       }
