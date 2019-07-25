@@ -39,6 +39,7 @@ class Resource extends Smart {
       onSuccess: resolver('onSuccess', false) || false,
       onError: resolver('onError', false) || false,
       hook: resolver('hook', false) || false,
+      debug: resolver('debug') || false,
     };
   }
 

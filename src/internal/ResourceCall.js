@@ -148,7 +148,7 @@ class ResourceCall extends Smart {
       data.append(key, value);
     });
     return data;
-  };
+  }
 
   async requestPayloadParser(payload) {
     let parsedPayload;

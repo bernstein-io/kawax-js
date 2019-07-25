@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import resolve from './helpers/resolve';
+import Log from './helpers/log';
 
 const EXCLUDE_STATIC = ['export', 'new', 'build'];
 
@@ -27,6 +28,10 @@ class Smart {
   }
 
   initialize() { return this; }
+
+  warn(message, ...args) {
+    return Log.warning(`[${this.constructor.name}] ${message}`, ...args);
+  }
 
   _defineStatic(parent = false) {
     const staticProperties = {};

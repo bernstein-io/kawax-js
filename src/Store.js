@@ -87,9 +87,7 @@ class Store extends Smart {
         const output = this._formatLog(state, action, duration);
         const actionPayload = _.cloneDeep(action);
         if (action.status === 'error') {
-          log.group(...output);
-          log.error('Action:', actionPayload);
-          log.groupEnd();
+          log.error(...output, 'Action:', actionPayload);
         } else if (action.log && action.status === 'success') {
           log.debug(...output, '\n ', actionPayload);
         }
@@ -109,10 +107,9 @@ class Store extends Smart {
     if (duration) {
       time = `${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}`;
     }
-    return [
-      `%c${className}: ${status} (${header}) (${time})`,
-      style,
-    ];
+    return action.status === 'error'
+      ? [`${className}: ${status} (${header}) (${time})`]
+      : [`%c${className}: ${status} (${header}) (${time})`, style];
   }
 
   reducer(state, action) {

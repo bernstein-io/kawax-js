@@ -1,43 +1,44 @@
-function error(...args) {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
+/* eslint-disable no-console */
+import _ from 'lodash';
+
+const defaultMessage = '[Logger]';
+
+function error(message = defaultMessage, ...args) {
+  if (!_.isEmpty(args)) {
+    console.groupCollapsed(`%c${message}`, 'background: #FFF0F0; color: #FD4146');
     console.error(...args);
+    console.groupEnd();
+  } else {
+    console.error(message);
   }
 }
 
-function warning(...args) {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
+function warning(message = defaultMessage, ...args) {
+  if (!_.isEmpty(args)) {
+    console.groupCollapsed(`%c${message}`, 'background: #FFFBE6; color: #77592b');
     console.warn(...args);
+    console.groupEnd();
+  } else {
+    console.warn(message);
   }
 }
 
-function info(...args) {
+function info(message = defaultMessage, ...args) {
+  console.info(message, ...args);
+}
+
+function debug(message = defaultMessage, ...args) {
   if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.info(...args);
+    console.debug(message, ...args);
   }
 }
 
-function debug(...args) {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.debug(...args);
-  }
+function group(message = defaultMessage, ...args) {
+  console.groupCollapsed(message, ...args);
 }
 
-function group(...args) {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.groupCollapsed(...args);
-  }
-}
-
-function groupEnd(...args) {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.groupEnd(...args);
-  }
+function groupEnd() {
+  console.groupEnd();
 }
 
 export default { error, warning, info, debug, group, groupEnd };
