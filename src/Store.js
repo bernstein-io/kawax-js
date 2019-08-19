@@ -4,16 +4,14 @@ import Thunk from 'redux-thunk';
 import Smart from './Smart';
 import log from './helpers/log';
 import InternalReducer from './instance/InternalReducer';
-import Runtime from './Runtime';
-import ActionCable from 'actioncable';
 
 class Store extends Smart {
 
   groupLog = false;
 
-  initialize({ reducer, name }) {
+  initialize({ reducer, name, customMiddlewares }) {
     this.internal = this._createInternalStore(name);
-    this.main = this._createMainStore(reducer, name);
+    this.main = this._createMainStore(customMiddlewares, reducer, name);
     if (__DEV__) {
       this.extend({ pendingActions: [] });
     }
@@ -40,14 +38,14 @@ class Store extends Smart {
     return createStore(internalReducer, false, enhancer);
   }
 
-  _createMainStore(reducer = this.reducer, name = false) {
-    const enhancer = this._getEnhancer(name);
+  _createMainStore(customMiddlewares, reducer = this.reducer, name = false) {
+    const enhancer = this._getEnhancer(name, false, customMiddlewares);
     return createStore(reducer, false, enhancer);
   }
 
-  _getEnhancer(name, internal = false) {
+  _getEnhancer(name, internal = false, customMiddlewares = []) {
     const composer = this._getComposer(name, internal);
-    const middlewares = this._getMiddlewares(internal);
+    const middlewares = this._getMiddlewares(customMiddlewares, internal);
     return composer(middlewares);
   }
 
@@ -62,56 +60,13 @@ class Store extends Smart {
     return compose;
   }
 
-  _getMiddlewares(internal = false) {
-    const customMiddlewares = Runtime('middlewares');
-    console.log('customMiddlewares', customMiddlewares);
+  _getMiddlewares(customMiddlewares = [], internal = false) {
     const middlewares = _.compact(_.concat(Thunk, customMiddlewares));
-    console.log('middlewares', middlewares);
-    // middlewares.push(this._actionCable.bind(this));
     if (__DEV__ && !internal) {
       middlewares.push(this._logger.bind(this));
     }
     return applyMiddleware(...middlewares);
   }
-
-
-  // Temporary implementation. Ideally kawax shall accept and apply custiom
-  // middleware
-  // _actionCable({ dispatch, getState }) {
-  //   const cable = ActionCable.createConsumer('ws://localhost:3000/cable');
-  //   return (next) => (action) => {
-
-  //     const {
-  //       channel,
-  //       room,
-  //       leave,
-  //       type,
-  //     } = action.context;
-
-  //     if (!channel) {
-  //       return next(action);
-  //     }
-
-  //     if (leave) {
-  //       const subscription = _.find(
-  //         cable.subscriptions.subscriptions,
-  //         sub => sub.identifier === JSON.stringify({ channel, room }),
-  //       );
-
-  //       cable.subscriptions.remove(subscription);
-  //       // console.log('.UNSUBSCRIBE: ', action);
-  //       return next(action);
-  //     }
-
-  //     // we actually need to create a new Action Obj here and set member var
-  //     // correctly.
-  //     const onPayloadReceived = payload => dispatch({ type, payload });
-
-  //     cable.subscriptions.create({ channel, room }, { onPayloadReceived });
-  //     // console.log('.SUBSCRIBE: ', action);
-  //     return next(action);
-  //   };
-  // }
 
   _logger({ getState }) {
     return (next) => (action) => {
