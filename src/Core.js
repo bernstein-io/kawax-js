@@ -20,6 +20,7 @@ class Core extends Smart {
     context: options.context || React.createContext({}),
     store: new Store({ name: options.name, reducer: options.reducer }),
     container: options.container || (() => React.createElement('div', null, 'It works!')),
+    middlewares: options.middlewares || [],
   });
 
   initialize(env) {

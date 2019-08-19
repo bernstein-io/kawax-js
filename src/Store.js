@@ -4,6 +4,7 @@ import Thunk from 'redux-thunk';
 import Smart from './Smart';
 import log from './helpers/log';
 import InternalReducer from './instance/InternalReducer';
+import Runtime from './Runtime';
 import ActionCable from 'actioncable';
 
 class Store extends Smart {
@@ -62,8 +63,11 @@ class Store extends Smart {
   }
 
   _getMiddlewares(internal = false) {
-    const middlewares = [Thunk];
-    middlewares.push(this._actionCable.bind(this));
+    const customMiddlewares = Runtime('middlewares');
+    console.log('customMiddlewares', customMiddlewares);
+    const middlewares = _.compact(_.concat(Thunk, customMiddlewares));
+    console.log('middlewares', middlewares);
+    // middlewares.push(this._actionCable.bind(this));
     if (__DEV__ && !internal) {
       middlewares.push(this._logger.bind(this));
     }
@@ -73,41 +77,41 @@ class Store extends Smart {
 
   // Temporary implementation. Ideally kawax shall accept and apply custiom
   // middleware
-  _actionCable({ dispatch, getState }) {
-    const cable = ActionCable.createConsumer('ws://localhost:3000/cable');
-    return (next) => (action) => {
+  // _actionCable({ dispatch, getState }) {
+  //   const cable = ActionCable.createConsumer('ws://localhost:3000/cable');
+  //   return (next) => (action) => {
 
-      const {
-        channel,
-        room,
-        leave,
-        type,
-      } = action.context;
+  //     const {
+  //       channel,
+  //       room,
+  //       leave,
+  //       type,
+  //     } = action.context;
 
-      if (!channel) {
-        return next(action);
-      }
+  //     if (!channel) {
+  //       return next(action);
+  //     }
 
-      if (leave) {
-        const subscription = _.find(
-          cable.subscriptions.subscriptions,
-          sub => sub.identifier === JSON.stringify({ channel, room }),
-        );
+  //     if (leave) {
+  //       const subscription = _.find(
+  //         cable.subscriptions.subscriptions,
+  //         sub => sub.identifier === JSON.stringify({ channel, room }),
+  //       );
 
-        cable.subscriptions.remove(subscription);
-        // console.log('.UNSUBSCRIBE: ', action);
-        return next(action);
-      }
+  //       cable.subscriptions.remove(subscription);
+  //       // console.log('.UNSUBSCRIBE: ', action);
+  //       return next(action);
+  //     }
 
-      // we actually need to create a new Action Obj here and set member var
-      // correctly.
-      const onPayloadReceived = payload => dispatch({ type, payload });
+  //     // we actually need to create a new Action Obj here and set member var
+  //     // correctly.
+  //     const onPayloadReceived = payload => dispatch({ type, payload });
 
-      cable.subscriptions.create({ channel, room }, { onPayloadReceived });
-      // console.log('.SUBSCRIBE: ', action);
-      return next(action);
-    };
-  }
+  //     cable.subscriptions.create({ channel, room }, { onPayloadReceived });
+  //     // console.log('.SUBSCRIBE: ', action);
+  //     return next(action);
+  //   };
+  // }
 
   _logger({ getState }) {
     return (next) => (action) => {
