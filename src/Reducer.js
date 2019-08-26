@@ -21,13 +21,13 @@ class Reducer extends Smart {
 
   unionKey = 'id';
 
-  onPending = (pointer) => (state, action) => this._matchWithStatus(['pending'], pointer)(state, action);
+  onPending = (pointer) => (state, action) => this._matchWithStatus(['pending'], false, pointer)(state, action);
 
-  onSuccess = (pointer) => (state, action) => this._matchWithStatus(['success'], pointer)(state, action);
+  onSuccess = (pointer) => (state, action) => this._matchWithStatus(['success'], false, pointer)(state, action);
 
-  onError = (pointer) => (state, action) => this._matchWithStatus(['error'], pointer)(state, action);
+  onError = (pointer) => (state, action) => this._matchWithStatus(['error'], false, pointer)(state, action);
 
-  onDone = (pointer) => (state, action) => this._matchWithStatus(['success', 'error'], pointer)(state, action);
+  onDone = (pointer) => (state, action) => this._matchWithStatus(['success', 'error'], true, pointer)(state, action);
 
   matchPending = (map) => this.onPending(this.match(map));
 
@@ -201,9 +201,11 @@ class Reducer extends Smart {
     return _.isEmpty(path) ? state : _.get(state, path);
   }
 
-  _matchWithStatus(statuses, callback) {
+  _matchWithStatus(statuses, done, callback) {
     return (state, action) => (
-      _.includes(statuses, action.status) ? resolve.call(this, callback, state, action) : state
+      _.includes(statuses, action.status) && action.done === done
+        ? resolve.call(this, callback, state, action)
+        : state
     );
   }
 
