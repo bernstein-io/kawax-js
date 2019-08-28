@@ -12,8 +12,8 @@ class ActionStack extends Smart {
 
   persisted = [];
 
-  push({ id, key }) {
-    this.stack.push({ id, key });
+  push({ id, key, instance }) {
+    this.stack.push({ id, key, instance });
   }
 
   watch(key, id) {
@@ -21,6 +21,7 @@ class ActionStack extends Smart {
   }
 
   clear(force = false) {
+    const subscri = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
     this.stack = force ? [] : _.filter(this.stack, (item) => _.includes(this.persisted, item.key));
   }
 
@@ -197,6 +198,14 @@ class ActionStack extends Smart {
       const resources = state.resources;
       return _.find(resources, (meta) => _.includes(meta.actionIds, action.id));
     }
+  }
+
+  getInstances(key) {
+    const store = Runtime('store');
+    const state = store.getInternalState();
+    const actions = _.cloneDeep(state.actions);
+    const groups = _.groupBy(this.stack, 'key');
+    return groups[key].map(item => item.instance);
   }
 
 }

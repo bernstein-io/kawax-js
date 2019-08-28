@@ -67,7 +67,7 @@ export default (Pure) => {
       const { getState } = Runtime('store');
       const instance = actionConstructor({ delegate: false });
       const id = instance.run(...data)(dispatch, getState);
-      actionStack.push({ id, key });
+      actionStack.push({ id, key, instance });
       return id;
     });
   }
@@ -123,8 +123,11 @@ export default (Pure) => {
       return state;
     }
 
-    componentWillUnmount() {
-      actionStack.clear();
+    async componentWillUnmount() {
+      await new Promise((resolve) => {
+        console.log('container comp will unmount', displayName);
+        actionStack.clear();
+      });
     }
 
     render() {
