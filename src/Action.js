@@ -144,9 +144,8 @@ class Action extends Smart {
 
   _defineDispatchSuccess = (...data) => {
     this.dispatchSuccess = async (payload) => {
-      // export needs to overide status success
-      const action = this._export(payload, ...data);
       this.setStatus('success');
+      const action = this._export(payload, ...data);
       return this._dispatch(action);
     };
   };

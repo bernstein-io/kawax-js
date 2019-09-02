@@ -123,11 +123,9 @@ export default (Pure) => {
       return state;
     }
 
-    async componentWillUnmount() {
-      await new Promise((resolve) => {
+    componentWillUnmount() {
         console.log('container comp will unmount', displayName);
         actionStack.clear();
-      });
     }
 
     render() {
