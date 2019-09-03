@@ -124,8 +124,7 @@ export default (Pure) => {
     }
 
     componentWillUnmount() {
-        console.log('container comp will unmount', displayName);
-        actionStack.clear();
+      actionStack.clear();
     }
 
     render() {
