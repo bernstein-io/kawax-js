@@ -99,7 +99,7 @@ class Action extends Smart {
       this._defineGetState();
       this._defineSetContext(...data);
       this._dispatchPending(...data);
-      new Promise(async () => { /* eslint-disable-line no-new */
+      new Promise(async (success) => { /* eslint-disable-line no-new */
         this._bindResources(...data);
         this._bindActionsCreators();
         const payload = await this._processPayload(...data);
@@ -113,6 +113,7 @@ class Action extends Smart {
         }
         await this._afterDispatch(payload, ...data);
         await this._finalize(payload, ...data);
+        success();
       });
       return this.id;
     };
