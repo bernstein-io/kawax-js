@@ -201,7 +201,7 @@ class ActionStack extends Smart {
 
   getInstances(key) {
     const groups = _.groupBy(this.stack, 'key');
-    return groups[key].map((item) => item.instance);
+    return _.isArray(groups[key]) ? groups[key].map((item) => item.instance) : [];
   }
 
 }
