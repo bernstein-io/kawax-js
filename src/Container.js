@@ -67,7 +67,7 @@ export default (Pure) => {
       const { getState } = Runtime('store');
       const instance = actionConstructor({ delegate: false });
       const id = instance.run(...data)(dispatch, getState);
-      actionStack.push({ id, key });
+      actionStack.push({ id, key, instance });
       return id;
     });
   }

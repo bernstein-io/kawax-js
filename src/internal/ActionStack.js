@@ -12,8 +12,8 @@ class ActionStack extends Smart {
 
   persisted = [];
 
-  push({ id, key }) {
-    this.stack.push({ id, key });
+  push({ id, key, instance }) {
+    this.stack.push({ id, key, instance });
   }
 
   watch(key, id) {
@@ -197,6 +197,11 @@ class ActionStack extends Smart {
       const resources = state.resources;
       return _.find(resources, (meta) => _.includes(meta.actionIds, action.id));
     }
+  }
+
+  getInstances(key) {
+    const groups = _.groupBy(this.stack, 'key');
+    return _.isArray(groups[key]) ? groups[key].map((item) => item.instance) : [];
   }
 
 }

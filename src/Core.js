@@ -18,7 +18,11 @@ class Core extends Smart {
     historyHook: options.historyHook || undefined,
     reducer: options.reducer || ((state) => state),
     context: options.context || React.createContext({}),
-    store: new Store({ name: options.name, reducer: options.reducer }),
+    store: new Store({
+      name: options.name,
+      reducer: options.reducer,
+      customMiddlewares: options.customMiddlewares,
+    }),
     container: options.container || (() => React.createElement('div', null, 'It works!')),
   });
 

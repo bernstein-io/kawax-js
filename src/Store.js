@@ -9,9 +9,9 @@ class Store extends Smart {
 
   groupLog = false;
 
-  initialize({ reducer, name }) {
+  initialize({ reducer, name, customMiddlewares }) {
     this.internal = this._createInternalStore(name);
-    this.main = this._createMainStore(reducer, name);
+    this.main = this._createMainStore(customMiddlewares, reducer, name);
     if (__DEV__) {
       this.extend({ pendingActions: [] });
     }
@@ -38,14 +38,14 @@ class Store extends Smart {
     return createStore(internalReducer, false, enhancer);
   }
 
-  _createMainStore(reducer = this.reducer, name = false) {
-    const enhancer = this._getEnhancer(name);
+  _createMainStore(customMiddlewares, reducer = this.reducer, name = false) {
+    const enhancer = this._getEnhancer(name, false, customMiddlewares);
     return createStore(reducer, false, enhancer);
   }
 
-  _getEnhancer(name, internal = false) {
+  _getEnhancer(name, internal = false, customMiddlewares = []) {
     const composer = this._getComposer(name, internal);
-    const middlewares = this._getMiddlewares(internal);
+    const middlewares = this._getMiddlewares(customMiddlewares, internal);
     return composer(middlewares);
   }
 
@@ -60,8 +60,8 @@ class Store extends Smart {
     return compose;
   }
 
-  _getMiddlewares(internal = false) {
-    const middlewares = [Thunk];
+  _getMiddlewares(customMiddlewares = [], internal = false) {
+    const middlewares = _.compact(_.concat(Thunk, customMiddlewares));
     if (__DEV__ && !internal) {
       middlewares.push(this._logger.bind(this));
     }
