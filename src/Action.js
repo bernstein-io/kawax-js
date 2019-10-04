@@ -46,8 +46,8 @@ class Action extends Smart {
 
   export = (action, ...data) => action;
 
-  _export = (payload, ...data) => {
-    const parsedPayload = this._parsePayload(payload, ...data);
+  _export = async (payload, ...data) => {
+    const parsedPayload = await this._parsePayload(payload, ...data);
     return this.export({
       id: this.id,
       log: this.log,
@@ -57,31 +57,31 @@ class Action extends Smart {
       timestamp: this.timestamp,
       type: this.static.type,
       class: this.constructor.name,
-      notice: this._parseNotice(payload, ...data) || false,
-      context: this._parseContext(payload, ...data) || false,
+      notice: await this._parseNotice(payload, ...data) || false,
+      context: await this._parseContext(payload, ...data) || false,
     }, ...data);
   };
 
-  _resolve = (callback, payload, ...data) => {
-    const shallow = resolve.call(this, callback, ...data);
+  _resolve = async (callback, payload, ...data) => {
+    const shallow = await resolve.call(this, callback, ...data);
     return resolve.call(this, shallow, payload);
   };
 
-  _parseContext(payload = {}, ...data) {
-    const parsedContext = this._resolve(this.context, payload, ...data) || {};
+  async _parseContext(payload = {}, ...data) {
+    const parsedContext = await this._resolve(this.context, payload, ...data) || {};
     return _.isPlainObject(this._context) ? { ...parsedContext, ...this._context } : parsedContext;
   }
 
-  _parsePayload(payload, ...data) {
+  async _parsePayload(payload, ...data) {
     return this._resolve(this.payload, payload, ...data) || false;
   }
 
-  _parseNotice(payload = {}, ...data) {
+  async _parseNotice(payload = {}, ...data) {
     let notice;
-    if (this.status === 'pending') notice = this._resolve(this.pendingNotice, payload, ...data);
-    else if (this.status === 'error') notice = this._resolve(this.errorNotice, payload, ...data);
-    else if (this.status === 'success') notice = this._resolve(this.successNotice, payload, ...data);
-    const finalNotice = this._resolve(this.notice, notice, ...data);
+    if (this.status === 'pending') notice = await this._resolve(this.pendingNotice, payload, ...data);
+    else if (this.status === 'error') notice = await this._resolve(this.errorNotice, payload, ...data);
+    else if (this.status === 'success') notice = await this._resolve(this.successNotice, payload, ...data);
+    const finalNotice = await this._resolve(this.notice, notice, ...data);
     const defaultMessage = (this.status === 'error') ? 'An error has occured.' : String();
     return !notice && !finalNotice ? false : {
       message: payload.message || defaultMessage,
@@ -98,13 +98,13 @@ class Action extends Smart {
       this._dispatch = dispatch;
       this._defineGetState();
       this._defineSetContext(...data);
-      this._dispatchPending(...data);
       this._defineDispatchSuccess(...data);
       new Promise(async (success) => { /* eslint-disable-line no-new */
         this._bindResources(...data);
         this._bindActionsCreators();
+        await this._dispatchPending(...data);
         const payload = await this._processPayload(...data);
-        const action = this._export(payload, ...data);
+        const action = await this._export(payload, ...data);
         await this._beforeDispatch(payload, ...data);
         await dispatch(action);
         if (this.status === 'success') {
@@ -123,14 +123,14 @@ class Action extends Smart {
   _finalize = async (payload, ...data) => {
     this.done = true;
     this._removeWindowUnloadListener();
-    const action = this._export(payload, ...data);
+    const action = await this._export(payload, ...data);
     return this._dispatch(action);
   };
 
-  _defineSetContext = (...data) => {
+  _defineSetContext = async (...data) => {
     this.setContext = async (context = {}) => {
       _.extend(this._context, context);
-      const action = this._export({}, ...data);
+      const action = await this._export({}, ...data);
       return this._dispatch(action);
     };
   };
@@ -143,18 +143,18 @@ class Action extends Smart {
     };
   }
 
-  _defineDispatchSuccess = (...data) => {
+  _defineDispatchSuccess = async (...data) => {
     this.dispatchSuccess = async (payload) => {
       this.setStatus('success');
-      const action = this._export(payload, ...data);
+      const action = await this._export(payload, ...data);
       return this._dispatch(action);
     };
   };
 
-  _dispatchPending(...data) {
+  async _dispatchPending(...data) {
     this.setStatus('pending');
     const pendingPayload = this._resolve(this.pendingPayload, {}, ...data);
-    const action = this._export(pendingPayload, ...data);
+    const action = await this._export(pendingPayload, ...data);
     this._dispatch(action);
   }
 
