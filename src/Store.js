@@ -102,7 +102,7 @@ class Store extends Smart {
     const status = (action.status ? `${action.status}` : 'no-status');
     const style = action.status === 'error'
       ? 'background: #FFF0F0; color: #FD4146; font-weight: bold;'
-      : 'color: black; font-weight: bold;';
+      : 'background: #FFF0F0; color: black; font-weight: bold;';
     let time = ' ';
     if (duration) {
       time = `${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}`;
