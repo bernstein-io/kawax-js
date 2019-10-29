@@ -96,13 +96,27 @@ class Store extends Smart {
     };
   }
 
+  _isDarkModeEnabled() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+
+  _getStyle(status) {
+    const darkMode = this._isDarkModeEnabled();
+    const isError = status === 'error';
+    if (darkMode) {
+      return isError ? 'color: #fd4146; font-weight: bold;'
+        : 'color: white; font-weight: bold;';
+    } else {
+      return isError ? 'color: #ff443a; font-weight: bold;'
+        : 'color: black; font-weight: bold;';
+    }
+  }
+
   _formatLog(state, action, duration) {
     const className = String(action.class);
     const header = String(action.type);
     const status = (action.status ? `${action.status}` : 'no-status');
-    const style = action.status === 'error'
-      ? 'background: #FFF0F0; color: #FD4146; font-weight: bold;'
-      : 'background: #FFF0F0; color: black; font-weight: bold;';
+    const style = this._getStyle(action.status);
     let time = ' ';
     if (duration) {
       time = `${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}`;

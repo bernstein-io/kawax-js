@@ -138,7 +138,7 @@ export default (Pure) => {
     return (state, props) => {
       const select = getSelect(state);
       const ownProps = omitProps(props);
-      const nextProps = resolve(stateToProps, { state, ownProps, select });
+      const nextProps = resolve(stateToProps, { state, ownProps, select }) || {};
       const idKey = nextProps.key || defaultKey;
       const actions = getActionStack({ idKey, ...nextProps }, state);
       composedProps.push(..._.keys(nextProps));
@@ -159,7 +159,7 @@ export default (Pure) => {
   function wrapDispatchToProps() {
     const dispatchToProps = Pure.dispatchToProps || {};
     return (dispatch, ownProps) => {
-      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps });
+      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps }) || {};
       const actions = createActions(actionConstructors, dispatch);
       composedProps.push(..._.keys(actions));
       return { dispatch, ...actions };

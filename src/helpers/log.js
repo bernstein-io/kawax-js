@@ -3,9 +3,25 @@ import _ from 'lodash';
 
 const defaultMessage = '[Logger]';
 
+function isDarkModeEnabled() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+
+function getStyle(level) {
+  const darkMode = isDarkModeEnabled();
+  if (level === 'error') {
+    return darkMode ? 'color: #fd4146;' : 'color: #ff443a;';
+  } else if (level === 'warning') {
+    return darkMode ? 'color: #fedc9e;' : 'color: #77592b;';
+  } else {
+    return darkMode ? 'color: white;' : 'color: black;';
+  }
+}
+
 function error(message = defaultMessage, ...args) {
   if (!_.isEmpty(args)) {
-    console.groupCollapsed(`%c${message}`, 'background: #FFF0F0; color: #FD4146');
+    const style = getStyle('error');
+    console.groupCollapsed(`%c${message}`, style);
     console.error(...args);
     console.groupEnd();
   } else {
@@ -15,7 +31,8 @@ function error(message = defaultMessage, ...args) {
 
 function warning(message = defaultMessage, ...args) {
   if (!_.isEmpty(args)) {
-    console.groupCollapsed(`%c${message}`, 'background: #FFFBE6; color: #77592b');
+    const style = getStyle('warning');
+    console.groupCollapsed(`%c${message}`, style);
     console.warn(...args);
     console.groupEnd();
   } else {

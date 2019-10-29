@@ -2,6 +2,7 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import Smart from './Smart';
 import Runtime from './Runtime';
+import Reducer from './Reducer';
 import resolve from './helpers/resolve';
 import select from './helpers/select';
 import Log from './helpers/log';
@@ -15,6 +16,8 @@ class Action extends Smart {
   static warnOnClose = false;
 
   static defaults = (defaults) => defaults;
+
+  static reducer = false;
 
   constructor({ success, error, log, ...context }) {
     super(context);
@@ -59,6 +62,7 @@ class Action extends Smart {
       class: this.constructor.name,
       notice: await this._parseNotice(payload, ...data) || false,
       context: await this._parseContext(payload, ...data) || false,
+      reducer: this.static.reducer || false,
     }, ...data);
   };
 
