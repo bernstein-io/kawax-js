@@ -63,8 +63,8 @@ class Reducer extends Smart {
     let baseState = current;
     action.depth = depth + 1;
     if (action.reducer && action.depth === 1) {
-      const bundledState = action.reducer(action);
-      baseState = this._reduce(current, bundledState, action, path);
+      const bundledState = resolve.call(this, action.reducer, { ...this, ...action }) || {};
+      baseState = this._reduce(current, bundledState, action);
     }
     const resolvedState = resolve.call(this, this.state, baseState, action);
     const next = (resolvedState === undefined) ? current : resolvedState;

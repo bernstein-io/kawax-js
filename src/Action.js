@@ -2,7 +2,6 @@ import _ from 'lodash';
 import uuid from 'uuid';
 import Smart from './Smart';
 import Runtime from './Runtime';
-import Reducer from './Reducer';
 import resolve from './helpers/resolve';
 import select from './helpers/select';
 import Log from './helpers/log';
