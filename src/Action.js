@@ -23,9 +23,10 @@ class Action extends Smart {
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
-    this.log = log || true;
+    this.log = !!log;
     this.done = false;
     this._context = context;
+    // this.cache = !!cache;
   }
 
   pendingPayload = (data) => {};
@@ -106,7 +107,9 @@ class Action extends Smart {
         this._bindResources(...data);
         this._bindActionsCreators();
         await this._dispatchPending(...data);
-        const payload = await this._processPayload(...data);
+        const cache = resolve.call(this, this.cache, ...data) || false;
+        const payload = cache || await this._processPayload(...data);
+        // const payload = await this._processPayload(...data);
         const action = await this._export(payload, ...data);
         await this._beforeDispatch(payload, ...data);
         await dispatch(action);
@@ -166,11 +169,12 @@ class Action extends Smart {
     _.each(resources, (resource, key) => {
       if (typeof resource === 'function') {
         const meta = _.last(data);
-        this[key] = (options, ...overrideMeta) => resource(options, {
+        this[key] = (options, ...rest) => resource(options, {
           ...meta,
           actionId: this.id,
+          // cache: this.cache,
           type: this.constructor.type,
-          ...overrideMeta,
+          ...rest,
         });
       }
     });

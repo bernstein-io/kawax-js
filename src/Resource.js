@@ -51,11 +51,11 @@ class Resource extends Smart {
   };
 
   define(base) {
-    return ({ payload, ...options } = {}, metaOptions) => {
+    return ({ payload, ...options } = {}, meta) => {
       const mergedOptions = { ...base, ...options };
       const resolver = this._getResolver(payload, mergedOptions);
       const context = this._contextParser(resolver, mergedOptions);
-      const resource = new ResourceCall({ ...context, metaOptions });
+      const resource = new ResourceCall({ ...context, meta });
       return resource.call(payload);
     };
   }

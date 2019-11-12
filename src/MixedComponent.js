@@ -146,10 +146,10 @@ export default (Pure) => {
     };
   }
 
-  function createActions(actionConstructors, dispatch) {
+  function createActions(actionConstructors, dispatch, props) {
     return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
       const { getState } = Runtime('store');
-      const instance = actionConstructor({ delegate: false });
+      const instance = actionConstructor({ delegate: false, props: props });
       const id = instance.run(...data)(dispatch, getState);
       actionStack.push({ id, key });
       return id;
@@ -160,7 +160,7 @@ export default (Pure) => {
     const dispatchToProps = Pure.dispatchToProps || {};
     return (dispatch, ownProps) => {
       const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps }) || {};
-      const actions = createActions(actionConstructors, dispatch);
+      const actions = createActions(actionConstructors, dispatch, ownProps);
       composedProps.push(..._.keys(actions));
       return { dispatch, ...actions };
     };

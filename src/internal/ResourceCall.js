@@ -43,18 +43,18 @@ class ResourceCall extends Smart {
   }
 
   metaParser(originalPayload, parsedData) {
-    const { metaOptions, metaParser, responseTransform, uniqueId } = this.context;
+    const { meta, metaParser, responseTransform, uniqueId } = this.context;
     const parsedMeta = resolve(metaParser, originalPayload || {});
-    if (metaOptions) {
+    if (meta) {
       const store = Runtime('store');
       store._dispatch({
-        type: `@@RESOURCE_CALL[${metaOptions.type}]`,
+        type: `@@RESOURCE_CALL[${meta.type}]`,
         payload: {
           resourceId: uniqueId,
-          sort: metaOptions.sort,
-          order: metaOptions.order,
-          search: metaOptions.search,
-          actionId: metaOptions.actionId,
+          sort: meta.sort,
+          order: meta.order,
+          search: meta.search,
+          actionId: meta.actionId,
           itemIds: _.map(parsedData, (entity) => entity.id),
           meta: responseTransform ? this.transform(parsedMeta, responseTransform) : parsedMeta,
         },
@@ -99,7 +99,9 @@ class ResourceCall extends Smart {
   async readBodyStream(response) {
     let body;
     const shadow = throttler.find(this.uniqueId);
-    if (shadow && shadow.body) return shadow.body;
+    if (shadow && shadow.body) {
+      return shadow.body;
+    }
     const reader = _.lowerCase(this.context.reader);
     try {
       switch (reader) {
@@ -228,20 +230,20 @@ class ResourceCall extends Smart {
   }
 
   getRequestPaginator() {
-    const { paginate, metaOptions } = this.context;
+    const { paginate, meta } = this.context;
     const pagination = resolve(paginate, this.context);
-    return pagination || (metaOptions ? cleanDeep({
-      sort: _.snakeCase(metaOptions.sort),
-      order: metaOptions.order,
-      page: metaOptions.page,
+    return pagination || (meta ? cleanDeep({
+      sort: _.snakeCase(meta.sort),
+      order: meta.order,
+      page: meta.page,
     }) : false);
   }
 
   getRequestParams() {
-    const { filter, metaOptions } = this.context;
+    const { filter, meta } = this.context;
     const params = resolve(filter, this.context);
-    if (metaOptions) {
-      const { search } = metaOptions;
+    if (meta) {
+      const { search } = meta;
       return search ? { search, ...params } : params;
     }
     return params;
@@ -262,7 +264,7 @@ class ResourceCall extends Smart {
       return shadow.request;
     }
     const request = fetch(url, options);
-    this.uniqueId = throttler.push(request, { url: url.toString(), ...options });
+    this.uniqueId = throttler.push(request, { ...options, url: url.toString() });
     return request;
 
   };
