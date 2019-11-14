@@ -174,8 +174,8 @@ class Action extends Smart {
     });
   }
 
-  _bindActionsCreators(...data) {
-    const actionCreators = resolve.call(this, this.constructor.actionCreators, ...data);
+  _bindActionsCreators(...ownData) {
+    const actionCreators = resolve.call(this, this.constructor.actionCreators, ...ownData);
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise(async (success, error) => {

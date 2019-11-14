@@ -323,7 +323,11 @@ export default (Pure) => {
       const actions = getActionStack(instanceKey);
       const ownActions = actions.own();
       composedProps.push(..._.keys(nextProps));
+      // if (Pure.contextToProps) {
+      //   return { actions, instanceKey, ownActions, ...prevContext, ...nextProps };
+      // } else {
       return { actions, instanceKey, ownActions, ...nextProps };
+      // }
     };
   }
 
@@ -353,11 +357,11 @@ export default (Pure) => {
   }
 
   function mergeConnectProps() {
-    return Pure.mergeConnectProps;
+    return Pure.mergeConnectProps || null;
   }
 
   function getConnectOptions() {
-    return Pure.connectOptions;
+    return Pure.connectOptions || {};
   }
 
   const mapStateToProps = wrapStateToProps();

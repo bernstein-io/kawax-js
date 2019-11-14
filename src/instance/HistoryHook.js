@@ -4,7 +4,7 @@ class HistoryHook extends Action {
 
   static type = '@@ROUTER_EVENT';
 
-  static actionCreators = function () {
+  static actionCreators = function bindedActions() {
     return {
       hook: this.customHistoryHook,
     };
