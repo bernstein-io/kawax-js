@@ -373,11 +373,20 @@ export default (Pure) => {
   |*                                      Compose and Render                                      *|
   \* -------------------------------------------------------------------------------------------- */
 
+  const shallowCompare = (next, prev) => {
+    if ((next.location || prev.location) && next.location !== prev.location) {
+      return false;
+    } else if ((next.match || prev.match) && next.match !== prev.match) {
+      return false;
+    }
+    return _.isEqual(next, prev);
+  };
+
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
     areStatesEqual: (next, prev) => (prev === next),
-    areOwnPropsEqual: (next, prev) => _.isEqual(next, prev),
-    areStatePropsEqual: (next, prev) => _.isEqual(next, prev),
-    areMergedPropsEqual: (next, prev) => _.isEqual(next, prev),
+    areOwnPropsEqual: (next, prev) => shallowCompare(next, prev),
+    areStatePropsEqual: (next, prev) => shallowCompare(next, prev),
+    areMergedPropsEqual: (next, prev) => shallowCompare(next, prev),
     ...options,
   });
 
