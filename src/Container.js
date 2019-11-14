@@ -30,6 +30,10 @@ export default (Pure) => {
     'ownClassNames',
   ];
 
+  Pure.prototype.lol = function test() {
+    console.log('wesh');
+  };
+
   Pure.prototype.getPureProps = function getPureProps() {
     return _.omitBy(this.props, (value, key) => _.includes(composedProps, key));
   };
@@ -60,7 +64,7 @@ export default (Pure) => {
   |*                                        Action Stack                                          *|
   \* -------------------------------------------------------------------------------------------- */
 
-  const actionStacks = {};
+  let actionStacks = {};
 
   function getActionStack(instanceKey) {
     if (!actionStacks[instanceKey]) {
@@ -84,17 +88,10 @@ export default (Pure) => {
       instanceKeys.push(this.instanceKey);
     }
 
-    flushActionStack = () => { /* eslint-disable react/prop-types */
-      const { instanceKey } = this.props;
-      const actionStack = getActionStack(instanceKey);
-      actionStack.clear(true);
-    };
-
     render() {
       const ownProps = this.props;
       const instanceKey = this.instanceKey;
-      const withStatic = setStatic('flushActionStack', this.flushActionStack)(component);
-      const factory = React.createFactory(withStatic);
+      const factory = React.createFactory(component);
       if (Pure.contextToProps || Pure.propsToContext) {
         const Context = Runtime('context');
         return React.createElement(Context.Consumer, null, (context) => {
@@ -390,5 +387,11 @@ export default (Pure) => {
     ...options,
   });
 
-  return compose(wrapper, reduxConnect)(Container);
+  const flushActionStack = () => {
+    actionStacks = [];
+  };
+
+  const withStatic = setStatic('flushActionStack', flushActionStack);
+
+  return compose(withStatic, wrapper, reduxConnect)(Container);
 };
