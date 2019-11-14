@@ -77,21 +77,19 @@ class Store extends Smart {
         this.pendingActions.push({ id: action.id, startTime: performance.now() });
       }
       const payload = next(action);
-      if (action.done) {
-        if (action.status !== 'pending') {
-          state = getState();
-          const [initialAction] = _.remove(this.pendingActions,
-            (pendingAction) => pendingAction.id === action.id);
-          duration = performance.now() - (initialAction ? initialAction.startTime : 0);
-        }
-        if (action.log) {
-          const output = this._formatLog(state, action, duration);
-          const actionPayload = _.cloneDeep(action);
-          if (action.status === 'error') {
-            log.error(...output, 'Action:', actionPayload);
-          } else if (action.log && action.status === 'success') {
-            log.debug(...output, '\n ', actionPayload);
-          }
+      if (action.status !== 'pending') {
+        state = getState();
+        const [initialAction] = _.remove(this.pendingActions,
+          (pendingAction) => pendingAction.id === action.id);
+        duration = performance.now() - (initialAction ? initialAction.startTime : 0);
+      }
+      if (action.log) {
+        const output = this._formatLog(state, action, duration);
+        const actionPayload = _.cloneDeep(action);
+        if (action.status === 'error') {
+          log.error(...output, 'Action:', actionPayload);
+        } else if (action.log && action.status === 'success') {
+          log.debug(...output, '\n ', actionPayload);
         }
       }
       return payload;

@@ -2,7 +2,6 @@ export Action from './Action';
 export Component from './Component';
 export Container from './Container';
 export Exception from './Exception';
-export MixedComponent from './MixedComponent';
 export Reducer from './Reducer';
 export Resource from './Resource';
 export Router from './Router';

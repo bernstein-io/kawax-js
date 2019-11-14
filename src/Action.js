@@ -27,6 +27,7 @@ class Action extends Smart {
     this.done = false;
     this.origin = origin || false;
     this._context = context;
+    // TODO: handle cached actions
     // this.cache = !!cache;
   }
 
@@ -111,7 +112,6 @@ class Action extends Smart {
         await this._dispatchPending(...data);
         const cache = resolve.call(this, this.cache, ...data) || false;
         const payload = cache || await this._processPayload(...data);
-        // const payload = await this._processPayload(...data);
         const action = await this._export(payload, ...data);
         await this._beforeDispatch(payload, ...data);
         await dispatch(action);
@@ -121,19 +121,12 @@ class Action extends Smart {
           await resolve.call(this, this.onError, payload, ...data);
         }
         await this._afterDispatch(payload, ...data);
-        await this._finalize(payload, ...data);
+        this._removeWindowUnloadListener();
         success();
       });
       return this.id;
     };
   }
-
-  _finalize = async (payload, ...data) => {
-    this.done = true;
-    this._removeWindowUnloadListener();
-    const action = await this._export(payload, ...data);
-    return this._dispatch(action);
-  };
 
   _defineSetContext = async (...data) => {
     this.setContext = async (context = {}) => {
@@ -174,7 +167,6 @@ class Action extends Smart {
         this[key] = (options, ...rest) => resource(options, {
           ...meta,
           actionId: this.id,
-          // cache: this.cache,
           type: this.constructor.type,
           ...rest,
         });
@@ -228,6 +220,7 @@ class Action extends Smart {
   }
 
   async _beforeDispatch(payload, ...data) {
+    this.done = true;
     if (this.status === 'success') {
       await this._resolve(this.beforeDispatch, payload, ...data);
     } else if (this.status === 'error') {
@@ -260,7 +253,7 @@ class Action extends Smart {
   }
 
   _handleWindowUnloadEvent(event) {
-    const dialogText = 'Warning ! Changes you have made may not be saved if you leave this page.';
+    const dialogText = 'Changes you made may not be saved!';
     event.returnValue = dialogText;
     return dialogText;
   }
