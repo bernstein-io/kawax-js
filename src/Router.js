@@ -1,20 +1,37 @@
+import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Router as ReactRouter } from 'react-router-dom';
+import resolve from './helpers/resolve';
 import Container from './Container';
 import History from './History';
-import DefaultHistoryHook from './instance/DefaultHistoryHook';
-
-const navigateTo = (to) => (event) => {
-  event.preventDefault();
-  History.push(to);
-};
+import HistoryHook from './instance/HistoryHook';
+import Runtime from './Runtime';
 
 class Router extends React.Component {
 
-  static dispatchToProps = ({ ownProps }) => ({
-    historyHook: ownProps.historyHook || DefaultHistoryHook.build(),
-  });
+  static connectOptions = {
+    areStatesEqual: () => false,
+    areOwnPropsEqual: () => false,
+    areStatePropsEqual: () => false,
+    areMergedPropsEqual: () => false,
+    pure: false,
+  };
+
+  static stateToProps = ({ ownProps }) => {
+    const Store = Runtime('store');
+    const state = Store.getInternalState();
+    return {
+      events: state.router,
+    };
+  };
+
+  static dispatchToProps = ({ ownProps, dispatch }) => {
+    const customHistoryHook = ownProps.historyHook;
+    return {
+      historyHook: HistoryHook.build({ customHistoryHook }),
+    };
+  };
 
   static propTypes = {
     history: PropTypes.object,
@@ -28,13 +45,19 @@ class Router extends React.Component {
   static propsToContext = ({ ownProps }) => ({
     location: ownProps.history.location,
     history: ownProps.history,
-    navigateTo: navigateTo,
+    navigateTo: (to) => (event) => {
+      const { history } = ownProps;
+      event.preventDefault();
+      history.push(to);
+    },
   });
 
   constructor(props, state) {
     super(props, state);
-    this.toggleHistory = props.history.listen((location, action) => {
-      props.historyHook({ location, action });
+    const { history, historyHook } = this.props;
+    this.toggleHistory = history.listen((location, action) => {
+      // console.log('ToggleHistory', _.cloneDeep({ location, action }));
+      historyHook({ location, action });
     });
   }
 
@@ -43,6 +66,7 @@ class Router extends React.Component {
   }
 
   render() {
+    // console.log('Router:', _.cloneDeep(this.props));
     ReactRouter.displayName = 'ReactRouter';
     return <ReactRouter {...this.props} />;
   }

@@ -5,6 +5,7 @@ class InternalReducer extends Reducer {
 
   static initialState = {
     actions: [],
+    router: [],
     resources: {},
   };
 
@@ -38,9 +39,16 @@ class InternalReducer extends Reducer {
     }
   }
 
+  routerEvent(state, { payload }) {
+    return [payload];
+  }
+
   state = this.match({
     '.': {
       actions: this.logActions,
+    },
+    '@@ROUTER_EVENT': {
+      router: this.routerEvent,
     },
     '@@RESOURCE_CALL': {
       resources: this.mapResource,

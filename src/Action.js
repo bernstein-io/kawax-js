@@ -108,7 +108,7 @@ class Action extends Smart {
       this._defineDispatchSuccess(...data);
       new Promise(async (success) => { /* eslint-disable-line no-new */
         this._bindResources(...data);
-        this._bindActionsCreators();
+        this._bindActionsCreators(...data);
         await this._dispatchPending(...data);
         const cache = resolve.call(this, this.cache, ...data) || false;
         const payload = cache || await this._processPayload(...data);
@@ -174,8 +174,8 @@ class Action extends Smart {
     });
   }
 
-  _bindActionsCreators() {
-    const actionCreators = this.constructor.actionCreators;
+  _bindActionsCreators(...data) {
+    const actionCreators = resolve.call(this, this.constructor.actionCreators, ...data);
     _.each(actionCreators, (action, key) => {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise(async (success, error) => {

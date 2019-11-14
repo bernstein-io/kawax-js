@@ -370,11 +370,11 @@ export default (Pure) => {
   \* -------------------------------------------------------------------------------------------- */
 
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
-    ...options,
     areStatesEqual: (next, prev) => (prev === next),
     areOwnPropsEqual: (next, prev) => _.isEqual(next, prev),
     areStatePropsEqual: (next, prev) => _.isEqual(next, prev),
     areMergedPropsEqual: (next, prev) => _.isEqual(next, prev),
+    ...options,
   });
 
   return compose(wrapper, reduxConnect)(Container);
