@@ -6,11 +6,20 @@ import PropTypes from 'prop-types';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
+import jsonDiff from 'json-diff';
 import { StyleSheet, css } from './helpers/aphrodite';
 import Runtime from './Runtime';
 import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
 import SelectHelper from './helpers/select';
+import shallowEqual from './helpers/shallowEqual';
+
+let areStatesEqual = 0;
+let areOwnPropsEqual = 0;
+let areStatePropsEqual = 0;
+let areMergedPropsEqual = 0;
+
+const instanceKeys = [];
 
 export default (Pure) => {
 
@@ -19,11 +28,13 @@ export default (Pure) => {
   \* -------------------------------------------------------------------------------------------- */
 
   const composedProps = [
-    'idKey',
+    'instanceKey',
     'select',
     'actions',
     'dispatch',
     'children',
+    'ownActions',
+    'ownClassNames',
   ];
 
   Pure.prototype.getPureProps = function getPureProps() {
@@ -43,15 +54,35 @@ export default (Pure) => {
   \* -------------------------------------------------------------------------------------------- */
 
   const displayName = Pure.name || 'Unnamed';
-  const defaultKey = `${displayName}-${_.uniqueId()}`;
+
+  /* -------------------------------------------------------------------------------------------- *\
+  |*                                           Wrapper                                            *|
+  \* -------------------------------------------------------------------------------------------- */
+
+  /* eslint-disable react/no-multi-comp */
+  const wrapper = (component) => class ContainerWrapper extends React.Component {
+
+    static displayName = `Wrapper(${displayName})`;
+
+    instanceKey = `${displayName}-${_.uniqueId()}`;
+
+    componentDidMount() {
+      instanceKeys.push(this.instanceKey);
+    }
+
+    render() {
+      const factory = React.createFactory(component);
+      const instanceKey = this.instanceKey;
+      return factory({ ...this.props, instanceKey });
+    }
+
+  };
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                     CSS Helpers Vars                                         *|
   \* -------------------------------------------------------------------------------------------- */
 
   const defaultClassName = Pure.className || false;
-
-  let componentInstance = false;
   let previousClassName = false;
   let uniqClassName = false;
 
@@ -95,20 +126,6 @@ export default (Pure) => {
   }
 
   /* -------------------------------------------------------------------------------------------- *\
-  |*                                        Action Stack                                          *|
-  \* -------------------------------------------------------------------------------------------- */
-
-  const actionStack = new ActionStack();
-  let prevProps = {};
-
-  function getActionStack(props, state) {
-    const { idKey: prevKey = defaultKey } = prevProps;
-    const { idKey: nextKey = defaultKey } = props;
-    if (!_.isEqual(prevKey, nextKey)) actionStack.clear();
-    return actionStack;
-  }
-
-  /* -------------------------------------------------------------------------------------------- *\
   |*                                          Context                                             *|
   \* -------------------------------------------------------------------------------------------- */
 
@@ -130,54 +147,18 @@ export default (Pure) => {
   }
 
   /* -------------------------------------------------------------------------------------------- *\
-  |*                                           Redux                                              *|
+  |*                                        Action Stack                                          *|
   \* -------------------------------------------------------------------------------------------- */
 
-  function wrapStateToProps() {
-    const stateToProps = Pure.stateToProps || {};
-    return (state, props) => {
-      const select = getSelect(state);
-      const ownProps = omitProps(props);
-      const nextProps = resolve(stateToProps, { state, ownProps, select }) || {};
-      const idKey = nextProps.key || defaultKey;
-      const actions = getActionStack({ idKey, ...nextProps }, state);
-      composedProps.push(..._.keys(nextProps));
-      return { actions, select, idKey, ...nextProps };
-    };
-  }
+  const actionStacks = {};
+  let prevProps = {};
 
-  function createActions(actionConstructors, dispatch, props) {
-    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
-      const { getState } = Runtime('store');
-      const instance = actionConstructor({ delegate: false, props: props });
-      const id = instance.run(...data)(dispatch, getState);
-      actionStack.push({ id, key });
-      return id;
-    });
+  function getActionStack(instanceKey) {
+    if (!actionStacks[instanceKey]) {
+      actionStacks[instanceKey] = new ActionStack();
+    }
+    return actionStacks[instanceKey];
   }
-
-  function wrapDispatchToProps() {
-    const dispatchToProps = Pure.dispatchToProps || {};
-    return (dispatch, ownProps) => {
-      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps }) || {};
-      const actions = createActions(actionConstructors, dispatch, ownProps);
-      composedProps.push(..._.keys(actions));
-      return { dispatch, ...actions };
-    };
-  }
-
-  function mergeConnectProps() {
-    return Pure.mergeConnectProps;
-  }
-
-  function getConnectOptions() {
-    return Pure.connectOptions;
-  }
-
-  const mapStateToProps = wrapStateToProps();
-  const mapDispatchToProps = wrapDispatchToProps();
-  const mergeProps = mergeConnectProps();
-  const options = getConnectOptions();
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                      Container Wrapper                                       *|
@@ -186,6 +167,8 @@ export default (Pure) => {
   class Container extends React.Component {
 
     state = {};
+
+    componentInstance = false;
 
     static displayName = `MixedComponent(${displayName})`;
 
@@ -224,7 +207,7 @@ export default (Pure) => {
     assignCssClasses() { /* eslint-disable react/no-find-dom-node */
       const { className } = this.fullProps;
       const cssClasses = getCssClasses(this.fullProps, this.state);
-      const fiber = _.get(componentInstance, '_reactInternalFiber');
+      const fiber = _.get(this.componentInstance, '_reactInternalFiber');
       const sibling = _.get(fiber, 'child.sibling');
       const node = ReactDOM.findDOMNode(fiber.stateNode);
       if (node && (className || cssClasses)) {
@@ -248,13 +231,19 @@ export default (Pure) => {
     };
 
     componentDidMount = () => {
+      const { id, instanceKey } = this.props;
+      if (Pure.name === 'UserThumbnail') {
+        // console.warn('/!!!!\\========ID KEY=========/!!!!\\', id, instanceKey);
+      }
       if (Pure.className || Pure.css) {
         this.assignCssClasses();
       }
     };
 
     async componentWillUnmount() {
+      const { instanceKey } = this.props;
       await new Promise(() => {
+        const actionStack = getActionStack(instanceKey);
         actionStack.clear();
       });
     }
@@ -272,7 +261,7 @@ export default (Pure) => {
       this.fullProps = { ...props, ...this.props, ownClassNames };
       return factory({
         ...this.fullProps,
-        ref: (reference) => { componentInstance = reference; },
+        ref: (reference) => { this.componentInstance = reference; },
       });
     }
 
@@ -296,14 +285,19 @@ export default (Pure) => {
       if (propsToContext) {
         composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
         return (
-          <Context.Provider value={{ ...prevContext, ...propsToContext }}>
-            {this.renderComponent(factory, {
-              ...prevContext,
-              ...propsToContext,
-              ...ownProps,
-              ref: (reference) => { componentInstance = reference; },
-            })}
-          </Context.Provider>
+          <Context.Consumer>
+            {(currentContext) => (
+              <Context.Provider value={{ ...currentContext, ...prevContext, ...propsToContext }}>
+                {this.renderComponent(factory, {
+                  // ...currentContext,
+                  // ...prevContext,
+                  // ...propsToContext,
+                  ...ownProps,
+                  ref: (reference) => { this.componentInstance = reference; },
+                })}
+              </Context.Provider>
+            )}
+          </Context.Consumer>
         );
       }
       return this.renderComponent(factory, ownProps);
@@ -327,28 +321,158 @@ export default (Pure) => {
       const ownProps = this.props;
       return React.createElement(Consumer, null, (context) => {
         prevContext = context;
-        composedProps.push(..._.keys(context));
-        return factory({ ...context, ...ownProps });
+        const contextProps = resolve.call(this, Pure.contextToProps, { context, ownProps });
+        composedProps.push(..._.keys(contextProps));
+        return factory({ ...contextProps, ...ownProps });
       });
     }
 
   };
 
   /* -------------------------------------------------------------------------------------------- *\
+  |*                                           Redux                                              *|
+  \* -------------------------------------------------------------------------------------------- */
+
+  function wrapStateToProps() {
+    const stateToProps = Pure.stateToProps || {};
+    return (state, { instanceKey, ...props }) => {
+      const select = getSelect(state);
+      const ownProps = omitProps(props);
+      const nextProps = resolve(stateToProps, { state, ownProps, select }) || {};
+      const actions = getActionStack(instanceKey);
+      const ownActions = actions.own();
+      composedProps.push(..._.keys(nextProps));
+      return { actions, instanceKey, ownActions, ...nextProps };
+    };
+  }
+
+  function createActions(actionConstructors, dispatch, props) {
+    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
+      const { instanceKey } = props;
+      const { getState } = Runtime('store');
+      const instance = actionConstructor({ delegate: false, props: props });
+      const id = instance.run(...data)(dispatch, getState);
+      const actionStack = getActionStack(instanceKey);
+      actionStack.push({ id, key, instance });
+      return id;
+    });
+  }
+
+  function wrapDispatchToProps() {
+    const dispatchToProps = Pure.dispatchToProps || {};
+    return (dispatch, ownProps) => {
+      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps }) || {};
+      const actions = createActions(actionConstructors, dispatch, ownProps);
+      composedProps.push(..._.keys(actions));
+      return actions;
+    };
+  }
+
+  function mergeConnectProps() {
+    return Pure.mergeConnectProps;
+  }
+
+  function getConnectOptions() {
+    return Pure.connectOptions;
+  }
+
+  const mapStateToProps = wrapStateToProps();
+  const mapDispatchToProps = wrapDispatchToProps();
+  const mergeProps = mergeConnectProps();
+  const options = getConnectOptions();
+
+  /* -------------------------------------------------------------------------------------------- *\
   |*                                      Compose and Render                                      *|
   \* -------------------------------------------------------------------------------------------- */
 
-  const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
-    ...options,
-  });
+  let reduxConnect;
 
-  const withStatic = setStatic('flushActionStack', () => {
+  if (false && Pure.name === 'UserThumbnail') {
+    reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
+      ...options,
+      areStatesEqual: (next, prev) => {
+        const isEqual = (prev === next);
+        const log = _.cloneDeep({ prev, next });
+        if (!isEqual) {
+          areStatesEqual++;
+          // console.groupCollapsed('%careStatesEqual (NO)', 'color: red; font-weight: bold;', areStatesEqual, log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        } else {
+          // console.groupCollapsed('areStatesEqual', log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        }
+        return isEqual;
+      },
+      areOwnPropsEqual: (next, prev) => {
+        const isEqual = _.isEqual(prev, next);
+        const log = _.cloneDeep({ prev, next });
+        if (!isEqual) {
+          areOwnPropsEqual++;
+          // console.groupCollapsed('%careOwnPropsEqual (NO)', 'color: red; font-weight: bold;', areOwnPropsEqual, log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        } else {
+          // console.groupCollapsed('areOwnPropsEqual', log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        }
+        return isEqual;
+      },
+      areStatePropsEqual: (next, prev) => {
+        const isEqual = _.isEqual(prev, next);
+        const log = _.cloneDeep({ prev, next });
+        if (!isEqual) {
+          areStatePropsEqual++;
+          // console.groupCollapsed('%careStatePropsEqual (NO)', 'color: red; font-weight: bold;', areStatePropsEqual, log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        } else {
+          // console.groupCollapsed('areStatePropsEqual', log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        }
+        return isEqual;
+      },
+      areMergedPropsEqual: (next, prev) => {
+        const isEqual = _.isEqual(prev, next);
+        const log = _.cloneDeep({ prev, next });
+        if (!isEqual) {
+          areMergedPropsEqual++;
+          // console.groupCollapsed('%careMergedPropsEqual (NO)', 'color: red; font-weight: bold;', areMergedPropsEqual, log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        } else {
+          // console.groupCollapsed('areMergedPropsEqual', log);
+          // console.log(jsonDiff.diff(prev, next));
+          // console.log(jsonDiff.diffString(prev, next));
+          // console.groupEnd();
+        }
+        return isEqual;
+      },
+    });
+  } else {
+    reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
+      ...options,
+    });
+  }
+
+  const withStatic = setStatic('flushActionStack', (props) => {
+    const { instanceKey } = props;
+    const actionStack = getActionStack(instanceKey);
     actionStack.clear(true);
   });
 
-  if (Pure.withContext === false) {
-    return compose(withStatic, reduxConnect)(Container);
+  if (Pure.contextToProps) {
+    return compose(wrapper, withStatic, contextConsumer, reduxConnect)(Container);
   }
-
-  return compose(withStatic, contextConsumer, reduxConnect)(Container);
+  return compose(wrapper, withStatic, reduxConnect)(Container);
 };

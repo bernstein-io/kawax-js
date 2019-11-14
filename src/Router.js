@@ -5,6 +5,11 @@ import Container from './Container';
 import History from './History';
 import DefaultHistoryHook from './instance/DefaultHistoryHook';
 
+const navigateTo = (to) => (event) => {
+  event.preventDefault();
+  History.push(to);
+};
+
 class Router extends React.Component {
 
   static dispatchToProps = ({ ownProps }) => ({
@@ -23,11 +28,7 @@ class Router extends React.Component {
   static propsToContext = ({ ownProps }) => ({
     location: ownProps.history.location,
     history: ownProps.history,
-    navigateTo: (to) => (event) => {
-      const { history } = ownProps;
-      event.preventDefault();
-      history.push(to);
-    },
+    navigateTo: navigateTo,
   });
 
   constructor(props, state) {

@@ -85,6 +85,21 @@ class ActionStack extends Smart {
     return success;
   }
 
+  // isFuckingSuccess(...args) {
+  //   const keys = argsToArray(args);
+  //   let success;
+  //   console.log('actionStack:for', _.cloneDeep(keys));
+  //   _.each(keys, (key) => {
+  //     const actions = this.find(key);
+  //     console.log('actionStack:find', key, _.cloneDeep(actions));
+  //     _.each(actions, (action) => {
+  //       console.log('actionStack:find', _.cloneDeep(action));
+  //       success = success === false ? success : (action && action.status === 'success');
+  //     });
+  //   });
+  //   return success;
+  // }
+
   isSuccess(...args) {
     const keys = argsToArray(args);
     let success;

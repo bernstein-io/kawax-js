@@ -23,7 +23,7 @@ class Action extends Smart {
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
-    this.log = !!log;
+    this.log = log || true;
     this.done = false;
     this._context = context;
     // this.cache = !!cache;
