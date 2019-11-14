@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Router as ReactRouter } from 'react-router-dom';
 import Container from './Container';
 import History from './History';
-import HistoryHook from './instance/HistoryHook';
+// import HistoryHook from './instance/HistoryHook';
 import Runtime from './Runtime';
 
 class Router extends React.Component {
@@ -19,13 +19,15 @@ class Router extends React.Component {
   static dispatchToProps = ({ ownProps, dispatch }) => {
     const customHistoryHook = ownProps.historyHook;
     return {
-      historyHook: HistoryHook.build({ customHistoryHook }),
+      // historyHook: HistoryHook.build({ customHistoryHook }),
+      customHistoryHook,
     };
   };
 
   static propTypes = {
     history: PropTypes.object,
-    historyHook: PropTypes.func.isRequired,
+    // historyHook: PropTypes.func.isRequired,
+    customHistoryHook: PropTypes.func.isRequired,
   };
 
   static defaultProps = {
@@ -44,9 +46,10 @@ class Router extends React.Component {
 
   constructor(props, state) {
     super(props, state);
-    const { history, historyHook } = this.props;
+    const { history, customHistoryHook } = this.props;
     this.toggleHistory = history.listen((location, action) => {
-      historyHook({ location, action });
+      customHistoryHook({ location, action });
+      // historyHook({ location, action });
     });
   }
 
