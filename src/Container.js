@@ -377,7 +377,6 @@ export default (Pure) => {
 
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
     areStatesEqual: (next, prev) => (prev === next),
-    areOwnPropsEqual: (next, prev) => shallowCompare(next, prev),
     areStatePropsEqual: (next, prev) => shallowCompare(next, prev),
     areMergedPropsEqual: (next, prev) => shallowCompare(next, prev),
     ...options,
