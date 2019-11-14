@@ -18,7 +18,7 @@ class Action extends Smart {
 
   static reducer = false;
 
-  constructor({ success, error, log, origin, ...context }) {
+  constructor({ success, error, log, origin, cache, ...context }) {
     super(context);
     this.id = uuid();
     this.onError = error;
@@ -27,8 +27,7 @@ class Action extends Smart {
     this.done = false;
     this.origin = origin || false;
     this._context = context;
-    // TODO: handle cached actions
-    // this.cache = !!cache;
+    this._shouldCache = !!cache;
   }
 
   pendingPayload = (data) => {};
@@ -97,6 +96,15 @@ class Action extends Smart {
     };
   }
 
+  _getCachedPayload = (...data) => {
+    if (this._shouldCache) {
+      const cache = resolve.call(this, this.cache, ...data);
+      if (!_.isEmpty(cache)) this.setStatus('success');
+      return cache || false;
+    }
+    return false;
+  };
+
   run(...data) {
     this._setWindowUnloadListener();
     this.timestamp = Date.now();
@@ -107,22 +115,28 @@ class Action extends Smart {
       this._defineSetContext(...data);
       this._defineDispatchSuccess(...data);
       new Promise(async (success) => { /* eslint-disable-line no-new */
-        this._bindResources(...data);
-        this._bindActionsCreators(...data);
-        await this._dispatchPending(...data);
-        const cache = resolve.call(this, this.cache, ...data) || false;
-        const payload = cache || await this._processPayload(...data);
-        const action = await this._export(payload, ...data);
-        await this._beforeDispatch(payload, ...data);
-        await dispatch(action);
-        if (this.status === 'success') {
-          await resolve.call(this, this.onSuccess, payload, ...data);
-        } else {
-          await resolve.call(this, this.onError, payload, ...data);
+        try {
+          this._bindResources(...data);
+          this._bindActionsCreators(...data);
+          await this._dispatchPending(...data);
+          const cache = this._getCachedPayload(...data);
+          const payload = cache || await this._processPayload(...data);
+          const action = await this._export(payload, ...data);
+          await this._beforeDispatch(payload, ...data);
+          await dispatch(action);
+          if (this.status === 'success') {
+            await resolve.call(this, this.onSuccess, payload, ...data);
+          } else {
+            await resolve.call(this, this.onError, payload, ...data);
+          }
+          await this._afterDispatch(payload, ...data);
+          this._removeWindowUnloadListener();
+          success();
+        } catch (exception) {
+          Log.error(exception);
+          this.setStatus('error');
+          return exception;
         }
-        await this._afterDispatch(payload, ...data);
-        this._removeWindowUnloadListener();
-        success();
       });
       return this.id;
     };
