@@ -99,8 +99,10 @@ class Action extends Smart {
   _getCachedPayload = (...data) => {
     if (this._shouldCache) {
       const cache = resolve.call(this, this.cache, ...data);
-      if (!_.isEmpty(cache)) this.setStatus('success');
-      return cache || false;
+      if (cache && !_.isEmpty(cache)) {
+        this.setStatus('success');
+        return cache;
+      }
     }
     return false;
   };
