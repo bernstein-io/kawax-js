@@ -6,18 +6,11 @@ import PropTypes from 'prop-types';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
-import jsonDiff from 'json-diff';
 import { StyleSheet, css } from './helpers/aphrodite';
 import Runtime from './Runtime';
 import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
 import SelectHelper from './helpers/select';
-import shallowEqual from './helpers/shallowEqual';
-
-let areStatesEqual = 0;
-let areOwnPropsEqual = 0;
-let areStatePropsEqual = 0;
-let areMergedPropsEqual = 0;
 
 const instanceKeys = [];
 
@@ -56,6 +49,27 @@ export default (Pure) => {
   const displayName = Pure.name || 'Unnamed';
 
   /* -------------------------------------------------------------------------------------------- *\
+  |*                                       Props & Context                                        *|
+  \* -------------------------------------------------------------------------------------------- */
+
+  /* eslint-disable no-unused-vars */
+  let prevProps = {};
+  let prevContext = {};
+
+  /* -------------------------------------------------------------------------------------------- *\
+  |*                                        Action Stack                                          *|
+  \* -------------------------------------------------------------------------------------------- */
+
+  const actionStacks = {};
+
+  function getActionStack(instanceKey) {
+    if (!actionStacks[instanceKey]) {
+      actionStacks[instanceKey] = new ActionStack();
+    }
+    return actionStacks[instanceKey];
+  }
+
+  /* -------------------------------------------------------------------------------------------- *\
   |*                                           Wrapper                                            *|
   \* -------------------------------------------------------------------------------------------- */
 
@@ -70,10 +84,32 @@ export default (Pure) => {
       instanceKeys.push(this.instanceKey);
     }
 
+    flushActionStack = () => { /* eslint-disable react/prop-types */
+      const { instanceKey } = this.props;
+      const actionStack = getActionStack(instanceKey);
+      actionStack.clear(true);
+    };
+
     render() {
-      const factory = React.createFactory(component);
+      const ownProps = this.props;
       const instanceKey = this.instanceKey;
-      return factory({ ...this.props, instanceKey });
+      const withStatic = setStatic('flushActionStack', this.flushActionStack)(component);
+      const factory = React.createFactory(withStatic);
+      if (Pure.contextToProps || Pure.propsToContext) {
+        const Context = Runtime('context');
+        return React.createElement(Context.Consumer, null, (context) => {
+          prevContext = context;
+          const contextProps = resolve.call(this, Pure.contextToProps, { context, ownProps });
+          composedProps.push(..._.keys(contextProps));
+          if (Pure.contextToProps) {
+            return factory({ ...contextProps, ...ownProps, instanceKey });
+          } else {
+            return factory({ ...ownProps, instanceKey });
+          }
+        });
+      } else {
+        return factory({ ...ownProps, instanceKey });
+      }
     }
 
   };
@@ -126,12 +162,6 @@ export default (Pure) => {
   }
 
   /* -------------------------------------------------------------------------------------------- *\
-  |*                                          Context                                             *|
-  \* -------------------------------------------------------------------------------------------- */
-
-  let prevContext = {};
-
-  /* -------------------------------------------------------------------------------------------- *\
   |*                                          Helpers                                             *|
   \* -------------------------------------------------------------------------------------------- */
 
@@ -144,20 +174,6 @@ export default (Pure) => {
     return function helper(...args) {
       return SelectHelper(state, ...args);
     };
-  }
-
-  /* -------------------------------------------------------------------------------------------- *\
-  |*                                        Action Stack                                          *|
-  \* -------------------------------------------------------------------------------------------- */
-
-  const actionStacks = {};
-  let prevProps = {};
-
-  function getActionStack(instanceKey) {
-    if (!actionStacks[instanceKey]) {
-      actionStacks[instanceKey] = new ActionStack();
-    }
-    return actionStacks[instanceKey];
   }
 
   /* -------------------------------------------------------------------------------------------- *\
@@ -231,10 +247,6 @@ export default (Pure) => {
     };
 
     componentDidMount = () => {
-      const { id, instanceKey } = this.props;
-      if (Pure.name === 'UserThumbnail') {
-        // console.warn('/!!!!\\========ID KEY=========/!!!!\\', id, instanceKey);
-      }
       if (Pure.className || Pure.css) {
         this.assignCssClasses();
       }
@@ -266,7 +278,7 @@ export default (Pure) => {
     }
 
     computeContext(ownProps) {
-      const withRouter = Runtime('withRouter');
+      const withRouter = !!Runtime('withRouter');
       const { getState } = Runtime('store');
       const state = getState();
       const select = getSelect(state);
@@ -285,49 +297,18 @@ export default (Pure) => {
       if (propsToContext) {
         composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
         return (
-          <Context.Consumer>
-            {(currentContext) => (
-              <Context.Provider value={{ ...currentContext, ...prevContext, ...propsToContext }}>
-                {this.renderComponent(factory, {
-                  // ...currentContext,
-                  // ...prevContext,
-                  // ...propsToContext,
-                  ...ownProps,
-                  ref: (reference) => { this.componentInstance = reference; },
-                })}
-              </Context.Provider>
-            )}
-          </Context.Consumer>
+          <Context.Provider value={{ ...prevContext, ...propsToContext }}>
+            {this.renderComponent(factory, {
+              ...ownProps,
+              ref: (reference) => { this.componentInstance = reference; },
+            })}
+          </Context.Provider>
         );
       }
       return this.renderComponent(factory, ownProps);
     };
 
   }
-
-  /* -------------------------------------------------------------------------------------------- *\
-  |*                                      Context Consummer                                       *|
-  \* -------------------------------------------------------------------------------------------- */
-
-  /* eslint-disable react/no-multi-comp */
-  const contextConsumer = (component) => class WithContext extends React.Component {
-
-    static displayName = `WithContext(${displayName})`;
-
-    render() {
-      const Context = Runtime('context');
-      const Consumer = Context.Consumer;
-      const factory = React.createFactory(component);
-      const ownProps = this.props;
-      return React.createElement(Consumer, null, (context) => {
-        prevContext = context;
-        const contextProps = resolve.call(this, Pure.contextToProps, { context, ownProps });
-        composedProps.push(..._.keys(contextProps));
-        return factory({ ...contextProps, ...ownProps });
-      });
-    }
-
-  };
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                           Redux                                              *|
@@ -346,11 +327,14 @@ export default (Pure) => {
     };
   }
 
-  function createActions(actionConstructors, dispatch, props) {
+  function createActions(actionConstructors, dispatch, { instanceKey, ...props }) {
     return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
-      const { instanceKey } = props;
       const { getState } = Runtime('store');
-      const instance = actionConstructor({ delegate: false, props: props });
+      const instance = actionConstructor({
+        origin: instanceKey,
+        delegate: false,
+        props: props,
+      });
       const id = instance.run(...data)(dispatch, getState);
       const actionStack = getActionStack(instanceKey);
       actionStack.push({ id, key, instance });
@@ -385,94 +369,13 @@ export default (Pure) => {
   |*                                      Compose and Render                                      *|
   \* -------------------------------------------------------------------------------------------- */
 
-  let reduxConnect;
-
-  if (false && Pure.name === 'UserThumbnail') {
-    reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
-      ...options,
-      areStatesEqual: (next, prev) => {
-        const isEqual = (prev === next);
-        const log = _.cloneDeep({ prev, next });
-        if (!isEqual) {
-          areStatesEqual++;
-          // console.groupCollapsed('%careStatesEqual (NO)', 'color: red; font-weight: bold;', areStatesEqual, log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        } else {
-          // console.groupCollapsed('areStatesEqual', log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        }
-        return isEqual;
-      },
-      areOwnPropsEqual: (next, prev) => {
-        const isEqual = _.isEqual(prev, next);
-        const log = _.cloneDeep({ prev, next });
-        if (!isEqual) {
-          areOwnPropsEqual++;
-          // console.groupCollapsed('%careOwnPropsEqual (NO)', 'color: red; font-weight: bold;', areOwnPropsEqual, log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        } else {
-          // console.groupCollapsed('areOwnPropsEqual', log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        }
-        return isEqual;
-      },
-      areStatePropsEqual: (next, prev) => {
-        const isEqual = _.isEqual(prev, next);
-        const log = _.cloneDeep({ prev, next });
-        if (!isEqual) {
-          areStatePropsEqual++;
-          // console.groupCollapsed('%careStatePropsEqual (NO)', 'color: red; font-weight: bold;', areStatePropsEqual, log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        } else {
-          // console.groupCollapsed('areStatePropsEqual', log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        }
-        return isEqual;
-      },
-      areMergedPropsEqual: (next, prev) => {
-        const isEqual = _.isEqual(prev, next);
-        const log = _.cloneDeep({ prev, next });
-        if (!isEqual) {
-          areMergedPropsEqual++;
-          // console.groupCollapsed('%careMergedPropsEqual (NO)', 'color: red; font-weight: bold;', areMergedPropsEqual, log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        } else {
-          // console.groupCollapsed('areMergedPropsEqual', log);
-          // console.log(jsonDiff.diff(prev, next));
-          // console.log(jsonDiff.diffString(prev, next));
-          // console.groupEnd();
-        }
-        return isEqual;
-      },
-    });
-  } else {
-    reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
-      ...options,
-    });
-  }
-
-  const withStatic = setStatic('flushActionStack', (props) => {
-    const { instanceKey } = props;
-    const actionStack = getActionStack(instanceKey);
-    actionStack.clear(true);
+  const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
+    ...options,
+    areStatesEqual: (next, prev) => (prev === next),
+    areOwnPropsEqual: (next, prev) => _.isEqual(next, prev),
+    areStatePropsEqual: (next, prev) => _.isEqual(next, prev),
+    areMergedPropsEqual: (next, prev) => _.isEqual(next, prev),
   });
 
-  if (Pure.contextToProps) {
-    return compose(wrapper, withStatic, contextConsumer, reduxConnect)(Container);
-  }
-  return compose(wrapper, withStatic, reduxConnect)(Container);
+  return compose(wrapper, reduxConnect)(Container);
 };

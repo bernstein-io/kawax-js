@@ -65,7 +65,10 @@ export default (Pure) => {
   function createActions(actionConstructors, dispatch) {
     return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
       const { getState } = Runtime('store');
-      const instance = actionConstructor({ delegate: false });
+      const instance = actionConstructor({
+        origin: defaultKey,
+        delegate: false,
+      });
       const id = instance.run(...data)(dispatch, getState);
       actionStack.push({ id, key, instance });
       return id;

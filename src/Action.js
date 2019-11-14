@@ -18,13 +18,14 @@ class Action extends Smart {
 
   static reducer = false;
 
-  constructor({ success, error, log, ...context }) {
+  constructor({ success, error, log, origin, ...context }) {
     super(context);
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
     this.log = log || true;
     this.done = false;
+    this.origin = origin || false;
     this._context = context;
     // this.cache = !!cache;
   }
@@ -55,6 +56,7 @@ class Action extends Smart {
       id: this.id,
       log: this.log,
       done: this.done,
+      origin: this.origin,
       payload: parsedPayload,
       status: this.status,
       timestamp: this.timestamp,
