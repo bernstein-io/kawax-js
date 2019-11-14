@@ -30,10 +30,6 @@ export default (Pure) => {
     'ownClassNames',
   ];
 
-  Pure.prototype.lol = function test() {
-    console.log('wesh');
-  };
-
   Pure.prototype.getPureProps = function getPureProps() {
     return _.omitBy(this.props, (value, key) => _.includes(composedProps, key));
   };
