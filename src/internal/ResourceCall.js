@@ -10,6 +10,35 @@ import Runtime from '../Runtime';
 
 const throttler = new CallThrottler();
 
+const cachedFetch = (url, options, expiry) => {
+  const cacheKey = url;
+  const cached = localStorage.getItem(cacheKey);
+  const whenCached = localStorage.getItem(`${cacheKey}:ts`);
+  if (cached !== null && whenCached !== null) {
+    const age = (Date.now() - whenCached) / 1000;
+    if (age < expiry) {
+      const response = new Response(new Blob([cached]));
+      return Promise.resolve(response);
+    } else {
+      localStorage.removeItem(cacheKey);
+      localStorage.removeItem(`${cacheKey}:ts`);
+    }
+  }
+
+  return fetch(url, options).then((response) => {
+    if (response.status === 200) {
+      const ct = response.headers.get('Content-Type');
+      if (ct && (ct.match(/application\/json/i) || ct.match(/text\//i))) {
+        response.clone().text().then((content) => {
+          localStorage.setItem(cacheKey, content);
+          localStorage.setItem(`${cacheKey}:ts`, Date.now());
+        });
+      }
+    }
+    return response;
+  });
+};
+
 class ResourceCall extends Smart {
 
   static defaults = (context) => ({ context });
@@ -250,7 +279,7 @@ class ResourceCall extends Smart {
   }
 
   requestProcessor = async (payload) => {
-    const { baseUrl, basePath, path, mock } = this.context;
+    const { baseUrl, basePath, path, mock, expiry, method } = this.context;
     const url = new URL(this.requestUrl(baseUrl, basePath, path));
     const pagination = this.getRequestPaginator();
     const params = this.getRequestParams();
@@ -263,7 +292,7 @@ class ResourceCall extends Smart {
       await shadow.promise;
       return shadow.request;
     }
-    const request = fetch(url, options);
+    const request = method === 'GET' ? cachedFetch(url, options, expiry) : fetch(url, options);
     this.uniqueId = throttler.push(request, { ...options, url: url.toString() });
     return request;
 

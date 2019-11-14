@@ -107,7 +107,6 @@
     "clean-deep": "^3.0.2",
     "escape-regex-string": "^1.0.6",
     "history": "^4.7.2",
-    "json-diff": "^0.5.4",
     "lodash": "^4.17.15",
     "prop-types": "^15.6.2",
     "react-is": "^16.8.6",
