@@ -82,7 +82,7 @@ class ActionStack extends Smart {
         success = success === false ? success : (action && action.status === 'error');
       });
     });
-    return success;
+    return !!success;
   }
 
   isSuccess(...args) {
@@ -94,7 +94,7 @@ class ActionStack extends Smart {
         success = success === false ? success : (action && action.status === 'success');
       });
     });
-    return success;
+    return !!success;
   }
 
   lastSucceeded(...args) {
@@ -111,7 +111,7 @@ class ActionStack extends Smart {
         done = done === false ? done : !(!action || action.status === 'pending');
       });
     });
-    return done;
+    return !!done;
   }
 
   wasDoneOnce(...args) {
@@ -125,7 +125,7 @@ class ActionStack extends Smart {
       });
       done = done === false ? done : keyDone;
     });
-    return done;
+    return !!done;
   }
 
   isPending(...args) {
@@ -141,7 +141,7 @@ class ActionStack extends Smart {
         anyOf = anyOf || !!(action && action.status === status);
       });
     });
-    return anyOf;
+    return !!anyOf;
   }
 
   lastOf(keys = [], status) {
@@ -150,7 +150,7 @@ class ActionStack extends Smart {
       const action = _.last(this.find(key));
       lastOf = lastOf === false ? lastOf : (action && action.status === status);
     });
-    return lastOf;
+    return !!lastOf;
   }
 
   any(status) {
@@ -159,7 +159,7 @@ class ActionStack extends Smart {
     _.each(actions, (action) => {
       any = any || !!(action && action.status === status);
     });
-    return any;
+    return !!any;
   }
 
   groups() {
