@@ -312,15 +312,11 @@ export default (Pure) => {
     return (state, { instanceKey, ...props }) => {
       const select = getSelect(state);
       const ownProps = omitProps(props);
-      const nextProps = resolve(stateToProps, { state, ownProps, select }) || {};
       const actions = getActionStack(instanceKey);
+      const nextProps = resolve(stateToProps, { state, actions, ownProps, select }) || {};
       const ownActions = actions.own();
       composedProps.push(..._.keys(nextProps));
-      // if (Pure.contextToProps) {
-      //   return { actions, instanceKey, ownActions, ...prevContext, ...nextProps };
-      // } else {
       return { actions, instanceKey, ownActions, ...nextProps };
-      // }
     };
   }
 
@@ -340,7 +336,7 @@ export default (Pure) => {
   }
 
   function wrapDispatchToProps() {
-    const dispatchToProps = Pure.dispatchToProps || {};
+    const dispatchToProps = Pure.dispatchToProps || Pure.actionCreators || {};
     return (dispatch, ownProps) => {
       const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps }) || {};
       const actions = createActions(actionConstructors, dispatch, ownProps);
