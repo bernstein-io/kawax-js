@@ -60,13 +60,13 @@ export default (Pure) => {
   |*                                        Action Stack                                          *|
   \* -------------------------------------------------------------------------------------------- */
 
-  let actionStacks = {};
+  let actionStack = {};
 
   function getActionStack(instanceKey) {
-    if (!actionStacks[instanceKey]) {
-      actionStacks[instanceKey] = new ActionStack();
+    if (!actionStack[instanceKey]) {
+      actionStack[instanceKey] = new ActionStack();
     }
-    return actionStacks[instanceKey];
+    return actionStack[instanceKey];
   }
 
   /* -------------------------------------------------------------------------------------------- *\
@@ -248,8 +248,8 @@ export default (Pure) => {
     async componentWillUnmount() {
       const { instanceKey } = this.props;
       await new Promise(() => {
-        const actionStack = getActionStack(instanceKey);
-        actionStack.clear();
+        const actions = getActionStack(instanceKey);
+        actions.clear();
       });
     }
 
@@ -329,8 +329,8 @@ export default (Pure) => {
         props: props,
       });
       const id = instance.run(...data)(dispatch, getState);
-      const actionStack = getActionStack(instanceKey);
-      actionStack.push({ id, key, instance });
+      const actions = getActionStack(instanceKey);
+      actions.push({ id, key, instance });
       return id;
     });
   }
@@ -379,7 +379,7 @@ export default (Pure) => {
   });
 
   const flushActionStack = () => {
-    actionStacks = [];
+    actionStack = [];
   };
 
   const withStatic = setStatic('flushActionStack', flushActionStack);

@@ -196,9 +196,9 @@ class Action extends Smart {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise(async (success, error) => {
           const actionInstance = action({
+            origin: this.constructor.name,
             success: success,
             error: error,
-            delegate: true,
           });
           await actionInstance._setState(...data);
           actionInstance.run(...data)(this._dispatch, this._getState);
@@ -277,12 +277,7 @@ class Action extends Smart {
   static bind(context) {
     return (...data) => new Promise(async (success, error) => {
       const { dispatch, getState } = Runtime('store');
-      const action = new this({
-        success: success,
-        error: error,
-        delegate: true,
-        ...context,
-      });
+      const action = new this({ success, error, ...context });
       await action._setState(...data);
       action.run(...data)(dispatch, getState);
     });

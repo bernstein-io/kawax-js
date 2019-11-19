@@ -177,10 +177,11 @@ class ActionStack extends Smart {
     const Store = Runtime('store');
     const state = Store.getInternalState();
     const actions = _.cloneDeep(state.actions);
-    return _.map(this.stack, (item) => {
+    const map = _.map(this.stack, (item) => {
       const stackId = item.id;
       return _.find(actions, (action) => (stackId === action.id));
     });
+    return _.compact(map);
   }
 
   all() {
