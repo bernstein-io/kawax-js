@@ -111,7 +111,7 @@ class Reducer extends Smart {
     const initialState = _.get(this.constructor.initialState, path);
     if (initialState && initialState instanceof ReducerDelegate) {
       return true;
-    } else if (next && next instanceof ReducerDelegate) {
+    } if (next && next instanceof ReducerDelegate) {
       return true;
     }
     return false;
@@ -131,7 +131,7 @@ class Reducer extends Smart {
   _delegateState(current, next, action, path) {
     if (next && next instanceof ReducerDelegate) {
       return next._reduce(current, action);
-    } else if (next === null) {
+    } if (next === null) {
       const initialState = _.get(this.constructor.initialState, path);
       return initialState._reduce(next, action);
     }
@@ -140,15 +140,15 @@ class Reducer extends Smart {
   _parseState(current, next, action, path, depth = -1) {
     if (_.isPlainObject(next)) {
       return this._parsePlainObject(current, next, action, path, depth);
-    } else if (_.isArray(next) && !path) {
+    } if (_.isArray(next) && !path) {
       return this._parseArray(current, next, action, path, depth);
-    } else if (_.isFunction(next)) {
+    } if (_.isFunction(next)) {
       const resolvedState = resolve.call(this, next, current, action);
       const reducedState = this._reduce(current, resolvedState, action, path);
       return this._assignNext(current, reducedState);
-    } else if (next === null && path) {
+    } if (next === null && path) {
       return this._getInitialState(path);
-    } else if (next && next instanceof ForceAssignment) {
+    } if (next && next instanceof ForceAssignment) {
       return next._reduce(current, path);
     }
   }

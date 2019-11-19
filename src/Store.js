@@ -106,10 +106,10 @@ class Store extends Smart {
     if (darkMode) {
       return isError ? 'color: #fd4146; font-weight: bold;'
         : 'color: white; font-weight: bold;';
-    } else {
-      return isError ? 'color: #ff443a; font-weight: bold;'
-        : 'color: black; font-weight: bold;';
     }
+    return isError ? 'color: #ff443a; font-weight: bold;'
+      : 'color: black; font-weight: bold;';
+
   }
 
   _formatLog(state, action, duration) {

@@ -34,7 +34,7 @@ class ActionStack extends Smart {
   clearSome(...args) {
     const actions = argsToArray(args);
     this.stack = _.filter(this.stack, (item) => (
-      _.includes(this.persisted, item.key) && !_.includes(actions, item.key)
+      !_.includes(actions, item.key)
     ));
   }
 

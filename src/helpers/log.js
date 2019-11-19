@@ -11,11 +11,11 @@ function getStyle(level) {
   const darkMode = isDarkModeEnabled();
   if (level === 'error') {
     return darkMode ? 'color: #fd4146;' : 'color: #ff443a;';
-  } else if (level === 'warning') {
+  } if (level === 'warning') {
     return darkMode ? 'color: #fedc9e;' : 'color: #77592b;';
-  } else {
-    return darkMode ? 'color: white;' : 'color: black;';
   }
+  return darkMode ? 'color: white;' : 'color: black;';
+
 }
 
 function error(message = defaultMessage, ...args) {

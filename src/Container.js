@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { setStatic } from 'recompose';
 import PropTypes from 'prop-types';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
@@ -12,13 +11,13 @@ import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
 import SelectHelper from './helpers/select';
 
-const instanceKeys = [];
-
 export default (Pure) => {
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                         Pure props                                           *|
   \* -------------------------------------------------------------------------------------------- */
+
+  const instanceKeys = [];
 
   const composedProps = [
     'instanceKey',
@@ -52,7 +51,7 @@ export default (Pure) => {
   |*                                       Props & Context                                        *|
   \* -------------------------------------------------------------------------------------------- */
 
-  /* eslint-disable no-unused-vars */
+  /* eslint-disable-next-line no-unused-vars */
   let prevProps = {};
   let prevContext = {};
 
@@ -60,20 +59,28 @@ export default (Pure) => {
   |*                                        Action Stack                                          *|
   \* -------------------------------------------------------------------------------------------- */
 
-  let actionStack = {};
+  /* eslint-disable-next-line no-mixed-operators */
+  let actionStack = !Pure.unscopedActionStack && {};
 
   function getActionStack(instanceKey) {
-    if (!actionStack[instanceKey]) {
-      actionStack[instanceKey] = new ActionStack();
+    if (Pure.unscopedActionStack === true) {
+      return actionStack = actionStack || new ActionStack();
     }
-    return actionStack[instanceKey];
+    return actionStack[instanceKey] = actionStack[instanceKey] || new ActionStack();
+
+  }
+
+  function clearActionStack(instanceKey) {
+    if (!Pure.unscopedActionStack === true) {
+      actionStack[instanceKey] = undefined;
+    }
   }
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                           Wrapper                                            *|
   \* -------------------------------------------------------------------------------------------- */
 
-  /* eslint-disable react/no-multi-comp */
+  /* eslint-disable-next-line react/no-multi-comp */
   const wrapper = (component) => class ContainerWrapper extends React.Component {
 
     static displayName = `Wrapper(${displayName})`;
@@ -96,13 +103,13 @@ export default (Pure) => {
           composedProps.push(..._.keys(contextProps));
           if (Pure.contextToProps) {
             return factory({ ...contextProps, ...ownProps, instanceKey });
-          } else {
-            return factory({ ...ownProps, instanceKey });
           }
+          return factory({ ...ownProps, instanceKey });
+
         });
-      } else {
-        return factory({ ...ownProps, instanceKey });
       }
+      return factory({ ...ownProps, instanceKey });
+
     }
 
   };
@@ -173,6 +180,7 @@ export default (Pure) => {
   |*                                      Container Wrapper                                       *|
   \* -------------------------------------------------------------------------------------------- */
 
+  /* eslint-disable-next-line react/no-multi-comp */
   class Container extends React.Component {
 
     state = {};
@@ -248,8 +256,7 @@ export default (Pure) => {
     async componentWillUnmount() {
       const { instanceKey } = this.props;
       await new Promise(() => {
-        const actions = getActionStack(instanceKey);
-        actions.clear();
+        clearActionStack(instanceKey);
       });
     }
 
@@ -365,7 +372,7 @@ export default (Pure) => {
   const shallowCompare = (next, prev) => {
     if ((next.location || prev.location) && next.location !== prev.location) {
       return false;
-    } else if ((next.match || prev.match) && next.match !== prev.match) {
+    } if ((next.match || prev.match) && next.match !== prev.match) {
       return false;
     }
     return _.isEqual(next, prev);
@@ -378,11 +385,15 @@ export default (Pure) => {
     ...options,
   });
 
-  const flushActionStack = () => {
-    actionStack = [];
+  const container = compose(wrapper, reduxConnect)(Container);
+
+  /* -------------------------------------------------------------------------------------------- *\
+  |*                                       Static helpers                                         *|
+  \* -------------------------------------------------------------------------------------------- */
+
+  container.flushActionStack = () => {
+    actionStack = !Pure.unscopedActionStack && {};
   };
 
-  const withStatic = setStatic('flushActionStack', flushActionStack);
-
-  return compose(withStatic, wrapper, reduxConnect)(Container);
+  return container;
 };

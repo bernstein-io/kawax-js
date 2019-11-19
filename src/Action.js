@@ -24,7 +24,6 @@ class Action extends Smart {
     this.onError = error;
     this.onSuccess = success;
     this.log = log || true;
-    this.done = false;
     this.origin = origin || false;
     this._context = context;
     this._shouldCache = !!cache;
@@ -55,7 +54,6 @@ class Action extends Smart {
     return this.export({
       id: this.id,
       log: this.log,
-      done: this.done,
       origin: this.origin,
       payload: parsedPayload,
       status: this.status,
@@ -236,7 +234,6 @@ class Action extends Smart {
   }
 
   async _beforeDispatch(payload, ...data) {
-    this.done = true;
     if (this.status === 'success') {
       await this._resolve(this.beforeDispatch, payload, ...data);
     } else if (this.status === 'error') {

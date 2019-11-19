@@ -53,7 +53,7 @@ module.exports = {
     "react/prop-types": ["error", {
       ignore: ["actions", "context"]
     }],
-    "no-else-return": ["off"],
+    "no-return-assign": ["off"],
     "react/destructuring-assignment": ["error", "always",
       { "ignoreClassFields": true }
     ],

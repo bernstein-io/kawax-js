@@ -19,10 +19,10 @@ const cachedFetch = (url, options, expiry) => {
     if (age < expiry) {
       const response = new Response(new Blob([cached]));
       return Promise.resolve(response);
-    } else {
-      localStorage.removeItem(cacheKey);
-      localStorage.removeItem(`${cacheKey}:ts`);
     }
+    localStorage.removeItem(cacheKey);
+    localStorage.removeItem(`${cacheKey}:ts`);
+
   }
 
   return fetch(url, options).then((response) => {
