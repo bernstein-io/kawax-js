@@ -18,6 +18,8 @@ class Action extends Smart {
 
   static reducer = false;
 
+  static cache = false;
+
   constructor({ success, error, log, origin, cache, ...context }) {
     super(context);
     this.id = uuid();
@@ -26,7 +28,7 @@ class Action extends Smart {
     this.log = log || true;
     this.origin = origin || false;
     this._context = context;
-    this._shouldCache = !!cache;
+    this._shouldCache = this.static.cache || !!cache;
   }
 
   pendingPayload = (data) => {};

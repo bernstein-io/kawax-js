@@ -40,7 +40,7 @@ class Resource extends Smart {
       onError: resolver('onError', false) || false,
       hook: resolver('hook', false) || false,
       debug: resolver('debug') || false,
-      expiry: resolver('expiry') || 1,
+      expiry: resolver('expiry') || false,
     };
   }
 

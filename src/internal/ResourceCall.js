@@ -12,17 +12,16 @@ const throttler = new CallThrottler();
 
 const cachedFetch = (url, options, expiry) => {
   const cacheKey = url;
-  const cached = localStorage.getItem(cacheKey);
-  const whenCached = localStorage.getItem(`${cacheKey}:ts`);
+  const cached = global.sessionStorage.getItem(cacheKey);
+  const whenCached = global.sessionStorage.getItem(`${cacheKey}:ts`);
   if (cached !== null && whenCached !== null) {
     const age = (Date.now() - whenCached) / 1000;
     if (age < expiry) {
       const response = new Response(new Blob([cached]));
       return Promise.resolve(response);
     }
-    localStorage.removeItem(cacheKey);
-    localStorage.removeItem(`${cacheKey}:ts`);
-
+    global.sessionStorage.removeItem(cacheKey);
+    global.sessionStorage.removeItem(`${cacheKey}:ts`);
   }
 
   return fetch(url, options).then((response) => {
@@ -30,8 +29,8 @@ const cachedFetch = (url, options, expiry) => {
       const ct = response.headers.get('Content-Type');
       if (ct && (ct.match(/application\/json/i) || ct.match(/text\//i))) {
         response.clone().text().then((content) => {
-          localStorage.setItem(cacheKey, content);
-          localStorage.setItem(`${cacheKey}:ts`, Date.now());
+          global.sessionStorage.setItem(cacheKey, content);
+          global.sessionStorage.setItem(`${cacheKey}:ts`, Date.now());
         });
       }
     }
@@ -292,7 +291,9 @@ class ResourceCall extends Smart {
       await shadow.promise;
       return shadow.request;
     }
-    const request = method === 'GET' ? cachedFetch(url, options, expiry) : fetch(url, options);
+    const request = method === 'GET' && expiry
+      ? cachedFetch(url, options, expiry)
+      : fetch(url, options);
     this.uniqueId = throttler.push(request, { ...options, url: url.toString() });
     return request;
 
@@ -338,6 +339,7 @@ class ResourceCall extends Smart {
       if (exception instanceof Error) log.error(exception);
       const error = await this.exceptionParser(exception);
       await this.postProcess('error', error, payload);
+      throttler.clear(this.uniqueId);
       throw error;
     }
   };
