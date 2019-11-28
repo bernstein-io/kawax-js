@@ -10,7 +10,7 @@ class Action extends Smart {
 
   static actionCreators = {};
 
-  static type = '__UNDEFINED__';
+  static type = false;
 
   static warnOnClose = false;
 
@@ -60,12 +60,17 @@ class Action extends Smart {
       payload: parsedPayload,
       status: this.status,
       timestamp: this.timestamp,
-      type: this.static.type,
       class: this.constructor.name,
+      type: this.static.type || this._getType(),
       notice: await this._parseNotice(payload, ...data) || false,
       context: await this._parseContext(payload, ...data) || false,
       reducer: this.static.reducer || false,
     }, ...data);
+  };
+
+  _getType = () => {
+    const snakeCase = _.snakeCase(this.constructor.name);
+    return `~${_.toUpper(snakeCase)}`;
   };
 
   _resolve = async (callback, payload, ...data) => {
