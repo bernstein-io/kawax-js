@@ -212,7 +212,7 @@ export default (Pure) => {
     }
 
     getClassNames = (currentClassNames) => { /* eslint-disable react/prop-types */
-      const current = currentClassNames.split(' ');
+      const current = currentClassNames ? currentClassNames.split(' ') : false;
       const currentClass = current ? _.reject(current, (i) => (i === previousClassName)) : false;
       const computedClass = getCssClasses(this.fullProps, this.state) || false;
       const { className } = this.fullProps;
@@ -332,7 +332,6 @@ export default (Pure) => {
       const { getState } = Runtime('store');
       const instance = actionConstructor({
         origin: instanceKey,
-        delegate: false,
         props: props,
       });
       const id = instance.run(...data)(dispatch, getState);

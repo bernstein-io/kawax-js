@@ -14,7 +14,9 @@ class Action extends Smart {
 
   static warnOnClose = false;
 
-  static defaults = (defaults) => defaults;
+  static defaults = (options) => ({
+    context: options,
+  });
 
   static reducer = false;
 
@@ -184,12 +186,12 @@ class Action extends Smart {
     const resources = this.constructor.resources;
     _.each(resources, (resource, key) => {
       if (typeof resource === 'function') {
-        const meta = _.last(data);
-        this[key] = (options, ...rest) => resource(options, {
-          ...meta,
+        this[key] = (options, ...override) => resource(options, {
           actionId: this.id,
           type: this.constructor.type,
-          ...rest,
+          ...this.context,
+          ..._.last(data),
+          ...override,
         });
       }
     });
