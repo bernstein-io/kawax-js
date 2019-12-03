@@ -314,22 +314,11 @@ export default (Pure) => {
   |*                                           Redux                                              *|
   \* -------------------------------------------------------------------------------------------- */
 
-  function wrapStateToProps() {
-    const stateToProps = Pure.stateToProps || {};
-    return (state, { instanceKey, ...props }) => {
-      const select = getSelect(state);
-      const ownProps = omitProps(props);
-      const actions = getActionStack(instanceKey);
-      const nextProps = resolve(stateToProps, { state, actions, ownProps, select }) || {};
-      const ownActions = actions.own();
-      composedProps.push(..._.keys(nextProps));
-      return { actions, instanceKey, ownActions, ...nextProps };
-    };
-  }
+  let bindedActionCreators = {};
 
-  function createActions(actionConstructors, dispatch, { instanceKey, ...props }) {
+  function createActions(actionConstructors, { instanceKey, ...props }) {
     return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
-      const { getState } = Runtime('store');
+      const { getState, dispatch } = Runtime('store');
       const instance = actionConstructor({
         origin: instanceKey,
         props: props,
@@ -341,11 +330,47 @@ export default (Pure) => {
     });
   }
 
+  function bindActionCreators({ state, actions, nextProps, select }) {
+    const actionCreators = Pure.actionCreators || {};
+    const actionConstructors = resolve(actionCreators, { nextProps }) || {};
+    const actionsMap = createActions(actionConstructors, nextProps);
+    composedProps.push(..._.keys(actionsMap));
+    return actionsMap;
+  }
+
+  function wrapStateToProps() {
+    const stateToProps = Pure.stateToProps || {};
+    return (state, { instanceKey, ...props }) => {
+      const select = getSelect(state);
+      const ownProps = omitProps(props);
+      const actions = getActionStack(instanceKey);
+      const stateProps = resolve(stateToProps, { state, actions, ownProps, select }) || {};
+      composedProps.push(..._.keys(stateProps));
+      const ownActions = actions.own();
+      const nextProps = { actions, instanceKey, ownActions, ...stateProps };
+      bindedActionCreators = bindActionCreators({ state, actions, nextProps, select });
+      return nextProps;
+    };
+  }
+
+  function bindPlainAction(actions, dispatch) {
+    return _.mapValues(actions, (action) => (...data) => action(...data)(dispatch));
+  }
+
   function wrapDispatchToProps() {
-    const dispatchToProps = Pure.dispatchToProps || Pure.actionCreators || {};
-    return (dispatch, ownProps) => {
-      const actionConstructors = resolve(dispatchToProps, { dispatch, ownProps }) || {};
-      const actions = createActions(actionConstructors, dispatch, ownProps);
+    const dispatchToProps = Pure.dispatchToProps || {};
+    if (_.isFunction(dispatchToProps)) {
+      return (dispatch, ownProps) => {
+        const plainActions = resolve(dispatchToProps, { dispatch, ownProps }) || {};
+        const bindedActions = bindPlainAction(plainActions, dispatch);
+        const actions = { ...bindedActionCreators, ...bindedActions };
+        composedProps.push(..._.keys(actions));
+        return actions;
+      };
+    }
+    return (dispatch) => {
+      const bindedActions = bindPlainAction(dispatchToProps, dispatch);
+      const actions = { ...bindedActionCreators, ...bindedActions };
       composedProps.push(..._.keys(actions));
       return actions;
     };
