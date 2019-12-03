@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { Router as ReactRouter } from 'react-router-dom';
 import Container from './Container';
 import History from './History';
-// import HistoryHook from './instance/HistoryHook';
 import Runtime from './Runtime';
 
 class Router extends React.Component {
@@ -16,18 +15,26 @@ class Router extends React.Component {
     };
   };
 
-  static dispatchToProps = ({ ownProps, dispatch }) => {
-    const customHistoryHook = ownProps.historyHook;
+  static actionCreators = ({ nextProps }) => {
+    const historyHook = nextProps.historyHook;
     return {
-      // historyHook: HistoryHook.build({ customHistoryHook }),
-      customHistoryHook,
+      historyHook: historyHook || false,
+    };
+  };
+
+  static dispatchToProps = ({ dispatch, actionCreators }) => {
+    const historyHook = actionCreators.historyHook;
+    return {
+      historyHook: historyHook || ((payload) => dispatch({
+        type: '@@NAVIGATE',
+        payload: payload,
+      })),
     };
   };
 
   static propTypes = {
     history: PropTypes.object,
-    // historyHook: PropTypes.func.isRequired,
-    customHistoryHook: PropTypes.func.isRequired,
+    historyHook: PropTypes.func.isRequired,
   };
 
   static defaultProps = {
@@ -46,10 +53,9 @@ class Router extends React.Component {
 
   constructor(props, state) {
     super(props, state);
-    const { history, customHistoryHook } = this.props;
+    const { history, historyHook } = this.props;
     this.toggleHistory = history.listen((location, action) => {
-      customHistoryHook({ location, action });
-      // historyHook({ location, action });
+      historyHook({ location, action });
     });
   }
 

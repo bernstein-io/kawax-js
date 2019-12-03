@@ -317,16 +317,20 @@ export default (Pure) => {
   let bindedActionCreators = {};
 
   function createActions(actionConstructors, { instanceKey, ...props }) {
-    return _.mapValues(actionConstructors, (actionConstructor, key) => (...data) => {
-      const { getState, dispatch } = Runtime('store');
-      const instance = actionConstructor({
-        origin: instanceKey,
-        props: props,
-      });
-      const id = instance.run(...data)(dispatch, getState);
-      const actions = getActionStack(instanceKey);
-      actions.push({ id, key, instance });
-      return id;
+    return _.mapValues(actionConstructors, (actionConstructor, key) => {
+      if (_.isFunction(actionConstructor)) {
+        return (...data) => {
+          const { getState, dispatch } = Runtime('store');
+          const instance = actionConstructor({
+            origin: instanceKey,
+            props: props,
+          });
+          const id = instance.run(...data)(dispatch, getState);
+          const actions = getActionStack(instanceKey);
+          actions.push({ id, key, instance });
+          return id;
+        };
+      }
     });
   }
 
@@ -347,30 +351,25 @@ export default (Pure) => {
       const stateProps = resolve(stateToProps, { state, actions, ownProps, select }) || {};
       composedProps.push(..._.keys(stateProps));
       const ownActions = actions.own();
-      const nextProps = { actions, instanceKey, ownActions, ...stateProps };
+      const nextProps = { ...ownProps, ...stateProps, actions, instanceKey, ownActions };
       bindedActionCreators = bindActionCreators({ state, actions, nextProps, select });
-      return nextProps;
+      return { actions, instanceKey, ownActions, ...stateProps };
     };
-  }
-
-  function bindPlainAction(actions, dispatch) {
-    return _.mapValues(actions, (action) => (...data) => action(...data)(dispatch));
   }
 
   function wrapDispatchToProps() {
     const dispatchToProps = Pure.dispatchToProps || {};
     if (_.isFunction(dispatchToProps)) {
       return (dispatch, ownProps) => {
-        const plainActions = resolve(dispatchToProps, { dispatch, ownProps }) || {};
-        const bindedActions = bindPlainAction(plainActions, dispatch);
-        const actions = { ...bindedActionCreators, ...bindedActions };
+        const actionCreators = bindedActionCreators;
+        const plainActions = resolve(dispatchToProps, { dispatch, ownProps, actionCreators }) || {};
+        const actions = { ...actionCreators, ...plainActions };
         composedProps.push(..._.keys(actions));
         return actions;
       };
     }
     return (dispatch) => {
-      const bindedActions = bindPlainAction(dispatchToProps, dispatch);
-      const actions = { ...bindedActionCreators, ...bindedActions };
+      const actions = { ...bindedActionCreators, ...dispatchToProps };
       composedProps.push(..._.keys(actions));
       return actions;
     };

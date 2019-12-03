@@ -68,31 +68,47 @@ class Store extends Smart {
     return applyMiddleware(...middlewares);
   }
 
-  _logger({ getState }) {
+  _withCustomLogger(next, action) {
+    let duration = null;
+    if (action.status === 'pending') {
+      this.pendingActions.push({ id: action.id, startTime: performance.now() });
+    }
+    const payload = next(action);
+    if (action.status !== 'pending') {
+      const [initialAction] = _.remove(this.pendingActions,
+        (pendingAction) => pendingAction.id === action.id);
+      duration = performance.now() - (initialAction ? initialAction.startTime : 0);
+    }
+    if (action.log) {
+      const output = this._formatLog(action, duration);
+      const actionPayload = _.cloneDeep(action);
+      if (action.status === 'error') {
+        log.error(...output, 'Action:', actionPayload);
+      } else if (action.log && action.status === 'success') {
+        log.debug(...output, '\n ', actionPayload);
+      }
+    }
+    return payload;
+  }
+
+  _withSimpleLogger(next, action) {
+    const output = this._formatLog({
+      status: 'success',
+      class: next.constructor.name,
+      ...action,
+    }, false);
+    const payload = next(action);
+    const actionPayload = _.cloneDeep(action);
+    log.debug(...output, '\n', actionPayload);
+    return payload;
+  }
+
+  _logger() {
     return (next) => (action) => {
-      let state;
-      let duration = null;
-      if (action.status === 'pending') {
-        state = getState();
-        this.pendingActions.push({ id: action.id, startTime: performance.now() });
+      if (action.id && action.status) {
+        return this._withCustomLogger(next, action);
       }
-      const payload = next(action);
-      if (action.status !== 'pending') {
-        state = getState();
-        const [initialAction] = _.remove(this.pendingActions,
-          (pendingAction) => pendingAction.id === action.id);
-        duration = performance.now() - (initialAction ? initialAction.startTime : 0);
-      }
-      if (action.log) {
-        const output = this._formatLog(state, action, duration);
-        const actionPayload = _.cloneDeep(action);
-        if (action.status === 'error') {
-          log.error(...output, 'Action:', actionPayload);
-        } else if (action.log && action.status === 'success') {
-          log.debug(...output, '\n ', actionPayload);
-        }
-      }
-      return payload;
+      return this._withSimpleLogger(next, action);
     };
   }
 
@@ -112,22 +128,17 @@ class Store extends Smart {
 
   }
 
-  _formatLog(state, action, duration) {
+  _formatLog(action, duration) {
     const className = String(action.class);
     const header = String(action.type);
     const status = (action.status ? `${action.status}` : 'no-status');
     const style = this._getStyle(action.status);
-    let time = ' ';
-    if (duration) {
-      time = `${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}`;
-    }
+    const time = duration
+      ? `${duration >= 1000 ? `${(duration / 1000).toFixed(2)}s` : `${duration.toFixed(0)}ms`}`
+      : 'synchronous';
     return action.status === 'error'
       ? [`${className}: ${status} (${header}) (${time})`]
       : [`%c${className}: ${status} (${header}) (${time})`, style];
-  }
-
-  reducer(state, action) {
-    return Object.assign({}, state);
   }
 
 }
