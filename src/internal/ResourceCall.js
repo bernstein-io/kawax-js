@@ -70,9 +70,9 @@ class ResourceCall extends Smart {
     return payload;
   }
 
-  contextParser(originalPayload, parsedData) {
-    const { context, contextParser, responseTransform, uniqueId } = this.options;
-    const parsedOptions = resolve(contextParser, originalPayload || {});
+  metaParser(originalPayload, parsedData) {
+    const { context, metaParser, responseTransform, uniqueId } = this.options;
+    const parsedMeta = resolve(metaParser, originalPayload || {});
     if (context) {
       const store = Runtime('store');
       store._dispatch({
@@ -84,9 +84,9 @@ class ResourceCall extends Smart {
           search: context.search,
           actionId: context.actionId,
           itemIds: _.map(parsedData, (entity) => entity.id),
-          context: responseTransform
-            ? this.transform(parsedOptions, responseTransform)
-            : parsedOptions,
+          meta: responseTransform
+            ? this.transform(parsedMeta, responseTransform)
+            : parsedMeta,
         },
       });
     }
@@ -94,13 +94,13 @@ class ResourceCall extends Smart {
 
   responseParser = async (response, body) => {
     const { responseParser, collection,
-      responseTransform, contextParser, entityParser } = this.options;
+      responseTransform, metaParser, entityParser } = this.options;
     const payload = resolve(responseParser, response, body, this.options) || body;
     let data = collection ? await this.collectionParser(payload) : payload;
     data = responseTransform ? this.transform(data, responseTransform) : data;
     if (response.ok === true) {
       data = entityParser ? await this.switchParser(data) : data;
-      if (collection && contextParser) this.contextParser(payload, data);
+      if (collection && metaParser) this.metaParser(payload, data);
     }
     return data;
   };

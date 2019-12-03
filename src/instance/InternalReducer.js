@@ -17,7 +17,7 @@ class InternalReducer extends Reducer {
   }
 
   mapResource(state, { payload }) {
-    const pageNo = _.get(payload, 'context.currentPage');
+    const pageNo = _.get(payload, 'meta.currentPage');
     const sort = payload.sort && _.snakeCase(payload.sort);
     const order = payload.order && _.snakeCase(payload.order);
     const search = payload.search && _.snakeCase(payload.search);
@@ -27,11 +27,11 @@ class InternalReducer extends Reducer {
       return {
         [resourceKey]: {
           actionIds: [payload.actionId],
-          totalPages: _.get(payload, 'context.totalPages'),
+          totalPages: _.get(payload, 'meta.totalPages'),
           pages: {
             [pageNo]: {
               itemIds: payload.itemIds,
-              timestamp: _.get(payload, 'context.timestamp'),
+              timestamp: _.get(payload, 'meta.timestamp'),
             },
           },
         },

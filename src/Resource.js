@@ -7,9 +7,10 @@ class Resource extends Smart {
 
   uniqueId = `${this.constructor.name}#${_.uniqueId()}`;
 
-  _optionsParser(resolver, options, context) {
+  _optionsParser(resolver, base, runtime, context) {
     return {
-      ...options,
+      ...base,
+      ...runtime,
       uniqueId: this.uniqueId,
       resourceName: this.constructor.name,
       schema: resolver('schema') || {},
@@ -34,29 +35,31 @@ class Resource extends Smart {
       requestTransform: resolver('requestTransform') === false ? false : _.snakeCase,
       responseTransform: resolver('responseTransform') === false ? false : _.camelCase,
       collectionParser: resolver('collectionParser', false) || ((payload) => payload.collection),
-      contextParser: resolver('contextParser', false) || ((payload) => payload.pagination),
+      metaParser: resolver('metaParser', false) || ((payload) => payload.pagination),
       resourceClass: this.constructor.name || 'Resource',
       onSuccess: resolver('onSuccess', false) || false,
       onError: resolver('onError', false) || false,
       hook: resolver('hook', false) || false,
       debug: resolver('debug') || false,
       expiry: resolver('expiry') || false,
+      context: { ...context, ...runtime },
     };
   }
 
-  _getResolver = (payload, options, context) => (key, call = true) => {
+  _getResolver = (payload, base, runtime, context) => (key, call = true) => {
+    const options = { ...base, ...context, ...runtime, payload };
     const resolver = call ? resolve : (value) => value;
-    const option = resolver(options[key]) || resolver(context[key]);
-    if (option || option === false) return option;
-    return resolver.call(this, this.static[key], { ...options, context, payload });
+    return resolver(runtime[key], options)
+           || resolver(context[key], options)
+           || resolver(base[key], options)
+           || resolver(this.static[key], options);
   };
 
   define(base) {
-    return ({ payload, ...options } = {}, context = {}) => {
-      const mergedOptions = { ...base, ...options };
-      const resolver = this._getResolver(payload, mergedOptions, context);
-      const parsedOptions = this._optionsParser(resolver, mergedOptions, context);
-      const resource = new ResourceCall({ ...parsedOptions, context });
+    return ({ payload, ...runtime } = {}, context = {}) => {
+      const resolver = this._getResolver(payload, base, runtime, context);
+      const parsedOptions = this._optionsParser(resolver, base, runtime, context);
+      const resource = new ResourceCall(parsedOptions);
       return resource.call(payload);
     };
   }
