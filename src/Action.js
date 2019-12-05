@@ -125,8 +125,8 @@ class Action extends Smart {
       this._defineDispatchSuccess(...data);
       new Promise(async (success) => { /* eslint-disable-line no-new */
         try {
-          this._bindResources(...data);
           this._bindActionsCreators(...data);
+          await this._bindResources(...data);
           await this._dispatchPending(...data);
           const cache = this._getCachedPayload(...data);
           const payload = cache || await this._processPayload(...data);
@@ -182,8 +182,8 @@ class Action extends Smart {
     this._dispatch(action);
   }
 
-  _bindResources(...data) {
-    const resources = this.constructor.resources;
+  async _bindResources(...data) {
+    const resources = resolve.call(this, this.static.resources, ...data);
     _.each(resources, (resource, key) => {
       if (typeof resource === 'function') {
         this[key] = (options, ...override) => resource(options, {

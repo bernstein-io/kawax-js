@@ -1,4 +1,4 @@
-// import { createSelector } from 'reselect';
+import { createSelector } from 'reselect';
 import Smart from './Smart';
 import Runtime from './Runtime';
 import select from './helpers/select';
@@ -20,7 +20,7 @@ class Selector extends Smart {
     return false;
   };
 
-  createSelector = (path) => (options) => this.select(path);
+  createSelector = (...options) => createSelector(...options);
 
 }
 

@@ -10,7 +10,6 @@ class Resource extends Smart {
   _optionsParser(resolver, base, runtime, context) {
     return {
       ...base,
-      ...runtime,
       uniqueId: this.uniqueId,
       resourceName: this.constructor.name,
       schema: resolver('schema') || {},
@@ -47,7 +46,7 @@ class Resource extends Smart {
   }
 
   _getResolver = (payload, base, runtime, context) => (key, call = true) => {
-    const options = { ...base, ...context, ...runtime, payload };
+    const options = { ...context, ...runtime, payload };
     const resolver = call ? resolve : (value) => value;
     return resolver(runtime[key], options)
            || resolver(context[key], options)
