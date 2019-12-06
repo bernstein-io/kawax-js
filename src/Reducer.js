@@ -170,24 +170,23 @@ class Reducer extends Smart {
   _parseArray(current, next, action, path, depth = -1) {
     const union = [];
     const unionKey = this.unionKey;
-    const nextItems = _.cloneDeep(next);
     _.each(current, (currentItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
       const nextDepth = (depth < 0 || depth > 1) ? _.clone(depth) - 1 : false;
       if (currentItem) {
         union[key] = currentItem;
-        _.each(nextItems, (nextItem, nextKey) => {
+        _.each(next, (nextItem, nextKey) => {
           const matchKey = (nextItem && nextItem[unionKey]) ? nextItem[unionKey] : false;
           if (matchKey && currentItem[unionKey] === matchKey) {
             union[key] = nextDepth ? this._reduce(
               currentItem, nextItem, action, currentPath, nextDepth,
             ) : nextItem;
-            nextItems[nextKey] = null;
+            next[nextKey] = null;
           }
         });
       }
     });
-    return _.compact([...union, ...nextItems]);
+    return _.compact([...union, ...next]);
   }
 
   _assignNext(current, next) {

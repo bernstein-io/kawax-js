@@ -10,9 +10,14 @@ class InternalReducer extends Reducer {
   };
 
   logActions(state, action) {
-    const { status } = action;
-    if (action.id && !action.context.delegate) {
-      return [(status === 'success') ? _.omit(action, ['payload']) : action];
+    if (action.id) {
+      return [{
+        id: action.id,
+        status: action.status,
+        timestamp: action.timestamp,
+        type: action.type,
+        ...action,
+      }];
     }
   }
 

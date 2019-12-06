@@ -9,12 +9,12 @@ class Store extends Smart {
 
   groupLog = false;
 
+  pendingActions: [];
+
   initialize({ reducer, name, customMiddlewares }) {
     this.internal = this._createInternalStore(name);
     this.main = this._createMainStore(customMiddlewares, reducer, name);
-    if (__DEV__) {
-      this.extend({ pendingActions: [] });
-    }
+    if (__DEV__) this.extend({ pendingActions: [] });
   }
 
   dispatch = (action) => {
@@ -81,11 +81,10 @@ class Store extends Smart {
     }
     if (action.log) {
       const output = this._formatLog(action, duration);
-      const actionPayload = _.cloneDeep(action);
       if (action.status === 'error') {
-        log.error(...output, 'Action:', actionPayload);
+        log.error(...output, 'Action:', action);
       } else if (action.log && action.status === 'success') {
-        log.debug(...output, '\n ', actionPayload);
+        log.debug(...output, '\n ', action);
       }
     }
     return payload;
@@ -98,17 +97,19 @@ class Store extends Smart {
       ...action,
     }, false);
     const payload = next(action);
-    const actionPayload = _.cloneDeep(action);
-    log.debug(...output, '\n', actionPayload);
+    log.debug(...output, '\n', action);
     return payload;
   }
 
   _logger() {
     return (next) => (action) => {
-      if (action.id && action.status) {
-        return this._withCustomLogger(next, action);
+      if (__DEV__) {
+        if (action.id && action.status) {
+          return this._withCustomLogger(next, action);
+        }
+        return this._withSimpleLogger(next, action);
       }
-      return this._withSimpleLogger(next, action);
+      return next(action);
     };
   }
 
