@@ -19,6 +19,8 @@ class Reducer extends Smart {
 
   static initialState = null;
 
+  static applyEmbeddedReducer = true;
+
   unionKey = 'id';
 
   onPending = (pointer) => (state, action) => this._matchWithStatus(['pending'], pointer)(state, action);
@@ -60,13 +62,8 @@ class Reducer extends Smart {
   call(state, { depth = 0, ...action }) {
     const path = [];
     const current = _.isEmpty(state) ? this._getInitialState(path) : state;
-    let baseState = current;
     action.depth = depth + 1;
-    if (action.reducer && action.depth === 1) {
-      const reducerCallback = resolve.call(this, action.reducer, action) || {};
-      const bundledState = resolve.call(this, reducerCallback, this) || {};
-      baseState = this._reduce(current, bundledState, action);
-    }
+    const baseState = this._embeddedReducer(current, action) || current;
     const resolvedState = resolve.call(this, this.state, baseState, action);
     const next = (resolvedState === undefined) ? current : resolvedState;
     return this._reduce(current, next, action, path);
@@ -104,6 +101,14 @@ class Reducer extends Smart {
       });
       return next;
     };
+  }
+
+  _embeddedReducer(state, action) {
+    if (this.static.applyEmbeddedReducer && action.reducer && action.depth === 1) {
+      const reducerCallback = resolve.call(this, action.reducer, action) || {};
+      const bundledState = resolve.call(this, reducerCallback, this) || {};
+      return this._reduce(state, bundledState, action);
+    }
   }
 
   _forceAssign = (helper) => new ForceAssignment(helper);

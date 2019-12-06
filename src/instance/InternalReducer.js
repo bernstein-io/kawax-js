@@ -3,6 +3,8 @@ import Reducer from '../Reducer';
 
 class InternalReducer extends Reducer {
 
+  static applyEmbeddedReducer = false;
+
   static initialState = {
     actions: [],
     router: [],
