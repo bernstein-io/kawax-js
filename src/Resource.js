@@ -45,13 +45,18 @@ class Resource extends Smart {
     };
   }
 
+  _;
+
   _getResolver = (payload, base, runtime, context) => (key, call = true) => {
+    let parsedOption;
     const options = { ...context, ...runtime, payload };
     const resolver = call ? resolve : (value) => value;
-    return resolver(runtime[key], options)
-           || resolver(context[key], options)
-           || resolver(base[key], options)
-           || resolver(this.static[key], options);
+    const priorityStack = [runtime, context, base, this.static];
+    _.each(priorityStack, (scope) => {
+      parsedOption = resolver(scope[key], options);
+      if (!_.isUndefined(parsedOption)) return false;
+    });
+    return parsedOption;
   };
 
   define(base) {
