@@ -67,7 +67,6 @@ export default (Pure) => {
       return actionStack = actionStack || new ActionStack();
     }
     return actionStack[instanceKey] = actionStack[instanceKey] || new ActionStack();
-
   }
 
   function clearActionStack(instanceKey) {

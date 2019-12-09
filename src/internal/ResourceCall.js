@@ -326,17 +326,18 @@ class ResourceCall extends Smart {
     return false;
   };
 
-  async* defaultHook(request, parser, { payload, options }) {
+  async* defaultHook(request, parser, payload) {
     const response = yield request(payload);
     return yield parser(response);
   }
 
   async process(payload) {
-    const options = this.options;
+    const { hook } = this.options;
+    const context = this.getContext();
     const request = this.requestProcessor;
     const parser = this.responseProcessor;
-    const hook = options.hook || this.defaultHook;
-    const generator = await hook(request, parser, { payload, options });
+    const requestHook = hook || this.defaultHook;
+    const generator = await requestHook(request, parser, payload, context);
     const responseProcessor = await generator.next();
     const response = await responseProcessor.value;
     const bodyProcessor = await generator.next(response);
