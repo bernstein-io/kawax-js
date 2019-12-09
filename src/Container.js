@@ -391,11 +391,6 @@ export default (Pure) => {
   |*                                      Compose and Render                                      *|
   \* -------------------------------------------------------------------------------------------- */
 
-  // if ((next.location || prev.location) && next.location !== prev.location) {
-  //   return false;
-  // } if ((next.match || prev.match) && next.match !== prev.match) {
-  //   return false;
-  // }
   const shallowCompare = (next, prev) => _.isEqual(next, prev);
 
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
