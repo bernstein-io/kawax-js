@@ -55,7 +55,7 @@ class ResourceCall extends Smart {
     const { entityParser } = this.options;
     const context = this.getContext();
     try {
-      const parsedEntity = resolve(entityParser, entity, context);
+      const parsedEntity = await resolve(entityParser, entity, context);
       return parsedEntity;
     } catch (exception) {
       log.error(exception);
