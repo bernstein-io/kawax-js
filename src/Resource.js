@@ -45,8 +45,6 @@ class Resource extends Smart {
     };
   }
 
-  _;
-
   _getResolver = (payload, base, runtime, context) => (key, call = true) => {
     let parsedOption;
     const options = { ...context, ...runtime, payload };
