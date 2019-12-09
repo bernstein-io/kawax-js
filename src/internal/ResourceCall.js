@@ -52,7 +52,8 @@ class ResourceCall extends Smart {
   }
 
   async entityParser(entity) {
-    const { entityParser, context } = this.options;
+    const { entityParser } = this.options;
+    const context = this.getContext();
     try {
       const parsedEntity = resolve(entityParser, entity, context);
       return parsedEntity;
@@ -70,8 +71,17 @@ class ResourceCall extends Smart {
     return payload;
   }
 
+  getContext = () => {
+    const { context, ...resource } = this.options;
+    return {
+      ...context,
+      resource,
+    };
+  };
+
   metaParser(originalPayload, parsedData) {
-    const { context, metaParser, responseTransform, uniqueId } = this.options;
+    const { metaParser, responseTransform, uniqueId } = this.options;
+    const context = this.getContext();
     const parsedMeta = resolve(metaParser, originalPayload || {});
     if (context) {
       const store = Runtime('store');
@@ -93,8 +103,9 @@ class ResourceCall extends Smart {
   }
 
   responseParser = async (response, body) => {
-    const { responseParser, collection, context,
-      responseTransform, metaParser, entityParser } = this.options;
+    const { responseParser, collection, responseTransform,
+      metaParser, entityParser } = this.options;
+    const context = this.getContext();
     const payload = resolve(responseParser, response, body, context) || body;
     let data = collection ? await this.collectionParser(payload) : payload;
     data = responseTransform ? this.transform(data, responseTransform) : data;
@@ -184,7 +195,8 @@ class ResourceCall extends Smart {
 
   async requestPayloadParser(payload) {
     let parsedPayload;
-    const { payloadParser, requestTransform, context } = this.options;
+    const { payloadParser, requestTransform } = this.options;
+    const context = this.getContext();
     if (payloadParser) {
       parsedPayload = await resolve(payloadParser, payload, context);
     } else {
@@ -208,7 +220,8 @@ class ResourceCall extends Smart {
   }
 
   buildRequest = async (payload) => {
-    const { method, headers, allowCors, credentials, formData, context } = this.options;
+    const { method, headers, allowCors, credentials, formData } = this.options;
+    const context = this.getContext();
     const parsedHeaders = resolve(headers, context);
     const requestOptions = {
       method: method,
@@ -230,17 +243,17 @@ class ResourceCall extends Smart {
     return requestOptions;
   };
 
-  requestUrl = (baseUrl, basePath, path) => {
-    const { context } = this.options;
+  requestUrl = (baseUrl, path) => {
+    const context = this.getContext();
     const parsedPath = resolve(path, context);
-    const parsedBasePath = resolve(basePath, context);
     const parsedBaseUri = resolve(baseUrl, context);
-    const urlArray = _.compact([parsedBaseUri, parsedBasePath, parsedPath]);
+    const urlArray = _.compact([parsedBaseUri, parsedPath]);
     return urlArray.join('/').replace(/([^:]\/)\/+/g, '$1') || '/';
   };
 
   mock = ({ body }) => {
-    const { mock, context } = this.options;
+    const { mock } = this.options;
+    const context = this.getContext();
     const parsedBody = JSON.parse(body);
     const parsedMock = resolve(mock, parsedBody, context);
     const mockedBody = _.isPlainObject(parsedMock) ? parsedMock : parsedBody;
@@ -261,8 +274,9 @@ class ResourceCall extends Smart {
   }
 
   getRequestPaginator() {
-    const { paginate, context } = this.options;
-    const pagination = resolve(paginate, context);
+    const { paginate } = this.options;
+    const context = this.getContext();
+    const pagination = resolve(paginate);
     return pagination || (context ? cleanDeep({
       sort: _.snakeCase(context.sort),
       order: context.order,
@@ -271,7 +285,8 @@ class ResourceCall extends Smart {
   }
 
   getRequestParams() {
-    const { filter, context } = this.options;
+    const { filter } = this.options;
+    const context = this.getContext();
     const params = resolve(filter, context);
     if (context) {
       const { search } = context;
@@ -281,8 +296,8 @@ class ResourceCall extends Smart {
   }
 
   requestProcessor = async (payload) => {
-    const { baseUrl, basePath, path, mock, expiry, method } = this.options;
-    const url = new URL(this.requestUrl(baseUrl, basePath, path));
+    const { baseUrl, path, mock, expiry, method } = this.options;
+    const url = new URL(this.requestUrl(baseUrl, path));
     const pagination = this.getRequestPaginator();
     const params = this.getRequestParams();
     const requestOptions = await this.buildRequest(payload);

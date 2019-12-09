@@ -15,7 +15,6 @@ class Resource extends Smart {
       schema: resolver('schema') || {},
       mock: resolver('mock', false) || false,
       path: resolver('path', false),
-      basePath: resolver('basePath', false),
       baseUrl: resolver('baseUrl', false),
       method: resolver('method') || 'GET',
       allowCors: resolver('allowCors') || false,
@@ -60,8 +59,8 @@ class Resource extends Smart {
   define(base) {
     return ({ payload, ...runtime } = {}, context = {}) => {
       const resolver = this._getResolver(payload, base, runtime, context);
-      const parsedOptions = this._optionsParser(resolver, base, runtime, context);
-      const resource = new ResourceCall(parsedOptions);
+      const options = this._optionsParser(resolver, base, runtime, context);
+      const resource = new ResourceCall(options);
       return resource.call(payload);
     };
   }
