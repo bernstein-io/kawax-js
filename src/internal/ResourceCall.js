@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import uuid from 'uuid';
+import queryString from 'query-string';
 import cleanDeep from 'clean-deep';
 import Smart from '../Smart';
 import log from '../helpers/log';
@@ -245,8 +246,8 @@ class ResourceCall extends Smart {
 
   requestUrl = (baseUrl, path) => {
     const context = this.getContext();
-    const parsedPath = resolve(path, context);
     const parsedBaseUri = resolve(baseUrl, context);
+    const parsedPath = resolve(path, context);
     const urlArray = _.compact([parsedBaseUri, parsedPath]);
     return urlArray.join('/').replace(/([^:]\/)\/+/g, '$1') || '/';
   };
@@ -297,12 +298,20 @@ class ResourceCall extends Smart {
 
   requestProcessor = async (payload) => {
     const { baseUrl, path, mock, expiry, method } = this.options;
-    const url = new URL(this.requestUrl(baseUrl, path));
+    const parsedUrl = this.requestUrl(baseUrl, path);
+    const url = new URL(parsedUrl);
+    const searchParams = queryString.parse(url.search);
     const pagination = this.getRequestPaginator();
     const params = this.getRequestParams();
     const requestOptions = await this.buildRequest(payload);
     if (mock) return this.mock(requestOptions);
-    if (params || pagination) url.search = new URLSearchParams({ ...pagination, ...params });
+    if (params || pagination) {
+      url.search = new URLSearchParams({
+        ...searchParams,
+        ...pagination,
+        ...params,
+      });
+    }
     const shadow = throttler.match({ ...requestOptions, url: url.toString() });
     if (shadow) {
       this.uniqueId = shadow.id;
