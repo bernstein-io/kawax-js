@@ -406,7 +406,7 @@ export default (Pure) => {
   |*                                       Static helpers                                         *|
   \* -------------------------------------------------------------------------------------------- */
 
-  container.flushActionStack = () => {
+  container.clearActionStack = () => {
     actionStack = !Pure.unscopedActionStack && {};
   };
 
