@@ -203,7 +203,7 @@ class Action extends Smart {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise(async (success, error) => {
           const actionInstance = action({
-            origin: this.constructor.name,
+            origin: this.origin,
             success: success,
             error: error,
           });

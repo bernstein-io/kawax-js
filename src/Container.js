@@ -71,6 +71,8 @@ export default (Pure) => {
 
   function clearActionStack(instanceKey) {
     if (!Pure.unscopedActionStack === true) {
+      const store = Runtime('store');
+      store._dispatch({ type: '@@CLEAR_ACTION', payload: instanceKey });
       actionStack[instanceKey] = undefined;
     }
   }

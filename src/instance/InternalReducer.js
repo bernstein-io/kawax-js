@@ -11,17 +11,15 @@ class InternalReducer extends Reducer {
     resources: {},
   };
 
-  logActions(state, action) {
-    if (action.id) {
-      return [{
-        id: action.id,
-        status: action.status,
-        timestamp: action.timestamp,
-        type: action.type,
-        ...action,
-      }];
+  logAction(state, { id, type, status, timestamp, origin, context: { props, ...context } = {} }) {
+    if (id && status) {
+      return [{ id, status, timestamp, origin, type, context }];
     }
   }
+
+  clearAction = (state, { payload: origin }) => this.removeItem(
+    (action) => (action.origin === origin),
+  );
 
   mapResource(state, { payload }) {
     const pageNo = _.get(payload, 'meta.currentPage');
@@ -47,12 +45,15 @@ class InternalReducer extends Reducer {
   }
 
   routerEvent(state, { payload }) {
-    return [payload];
+    return payload;
   }
 
   state = this.match({
     '.': {
-      actions: this.logActions,
+      actions: this.logAction,
+    },
+    '@@CLEAR_ACTION': {
+      actions: this.clearAction,
     },
     '@@ROUTER_EVENT': {
       router: this.routerEvent,
