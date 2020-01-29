@@ -1,13 +1,25 @@
 import _ from 'lodash';
 
-function match(object, selector) {
-  return _.filter(object, (item) => _.isMatch(item, selector));
+const argsToArray = (args = []) => ((_.isArray(_.first(args))) ? _.first(args) : args);
+
+const parsePathArray = (args) => {
+  const paths = argsToArray(args);
+  const parsedPath = [];
+  _.each(paths, (path) => {
+    parsedPath.push(_.isString(path) ? path.split('.') : path);
+  });
+  return _.flatten(parsedPath);
+};
+
+function match(source, selector) {
+  return _.filter(source, (item) => _.isMatch(item, selector));
 }
 
-export default function select(object, path, { primaryKey = 'id' } = {}) {
-  let value = object;
+export default function select(source, ...args) {
+  let value = source;
   const currentPath = [];
-  const pathArray = _.isString(path) ? path.split('.') : path;
+  const primaryKey = 'id';
+  const pathArray = parsePathArray(args);
   _.each(pathArray, (selector) => {
     currentPath.push(selector);
     if (_.isArray(value)) {
