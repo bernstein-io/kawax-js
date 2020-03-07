@@ -5,6 +5,7 @@ export Exception from './Exception';
 export Reducer from './Reducer';
 export Resource from './Resource';
 export Router from './Router';
+export Routes from './Routes';
 export History from './History';
 export Runtime from './Runtime';
 export Selector from './Selector';
