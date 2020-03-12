@@ -3,7 +3,7 @@ import _ from 'lodash';
 import Thunk from 'redux-thunk';
 import Smart from './Smart';
 import log from './helpers/log';
-import InternalReducer from './instance/InternalReducer';
+import InternalReducer from './internal/InternalReducer';
 
 class Store extends Smart {
 

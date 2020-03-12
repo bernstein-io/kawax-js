@@ -1,6 +1,6 @@
 import { createSelector } from 'reselect';
 import Smart from './Smart';
-import Runtime from './Runtime';
+import Runtime from './instance/Runtime';
 import select from './helpers/select';
 
 class Selector extends Smart {

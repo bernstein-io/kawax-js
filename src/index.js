@@ -1,16 +1,20 @@
 export Action from './Action';
+
+/* ----------------------------------------- COMPONENTS ----------------------------------------- */
 export Component from './Component';
-export Container from './Container';
 export Exception from './Exception';
 export Reducer from './Reducer';
 export Resource from './Resource';
-export Router from './Router';
 export Routes from './Routes';
 export History from './History';
-export Runtime from './Runtime';
 export Selector from './Selector';
 export Smart from './Smart';
 
+/* ------------------------------------ INSTANCE & HELPERS--------------------------------------- */
+export Context from './instance/Context';
+export Router from './instance/Router';
+export Runtime from './instance/Runtime';
 export * as Helpers from './Helpers';
 
+/* -------------------------------------------- CORE -------------------------------------------- */
 export default from './Core';

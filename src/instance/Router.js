@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Router as ReactRouter } from 'react-router-dom';
-import Container from './Container';
+import Component from '../Component';
 import History from './History';
 import Runtime from './Runtime';
 
@@ -70,4 +70,4 @@ class Router extends React.Component {
 
 }
 
-export default Container(Router);
+export default Component(Router);

@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import Smart from '../Smart';
-import Runtime from '../Runtime';
+import Runtime from '../instance/Runtime';
 
 const argsToArray = (keys = []) => ((_.isArray(_.first(keys))) ? _.first(keys) : keys);
 

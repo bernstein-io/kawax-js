@@ -3,8 +3,9 @@ import { render } from 'react-dom';
 import { Provider } from 'react-redux';
 import Smart from './Smart';
 import Store from './Store';
-import Router from './Router';
-import { setRuntime } from './Runtime';
+import Router from './instance/Router';
+import Context from './instance/Context';
+import { setRuntime } from './instance/Runtime';
 
 class Core extends Smart {
 
@@ -17,7 +18,7 @@ class Core extends Smart {
     history: options.history || undefined,
     historyHook: options.historyHook || undefined,
     reducer: options.reducer || ((state) => state),
-    context: options.context || React.createContext({}),
+    context: options.context || Context,
     store: new Store({
       name: options.name,
       reducer: options.reducer,

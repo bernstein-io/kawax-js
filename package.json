@@ -39,9 +39,7 @@
     "dev": "npm run watch & npm run lint:watch",
     "lint": "eslint src tests --fix",
     "lint:watch": "nodemon -e js -x 'npm run lint'",
-    "prepare": "npm run clean && npm run build",
-    "test": "BABEL_ENV=commonjs jest",
-    "test:watch": "npm run test -- --watch"
+    "prepare": "npm run clean && npm run build"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -87,7 +85,6 @@
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-jsx-a11y": "^6.1.1",
     "eslint-plugin-react": "^7.11.1",
-    "jest": "^25.1.0",
     "merge": ">=1.2.1",
     "nodemon": "^1.18.2",
     "react": "^16.8.6",

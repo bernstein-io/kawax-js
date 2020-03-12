@@ -7,7 +7,7 @@ import log from '../helpers/log';
 import resolve from '../helpers/resolve';
 import promiseAll from '../helpers/promiseAll';
 import CallThrottler from './CallThrottler';
-import Runtime from '../Runtime';
+import Runtime from '../instance/Runtime';
 
 const throttler = new CallThrottler();
 
