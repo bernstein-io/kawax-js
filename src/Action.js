@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import uuid from 'uuid';
+import { v4 as uuid } from 'uuid';
 import Smart from './Smart';
 import Runtime from './instance/Runtime';
 import resolve from './helpers/resolve';

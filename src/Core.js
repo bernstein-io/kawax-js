@@ -46,6 +46,7 @@ class Core extends Smart {
   _routerRenderer() {
     const ReactRouter = this.router;
     if (this.withRouter === true) {
+      console.log('RENDER ROUTER');
       return (
         <ReactRouter history={this.history} historyHook={this.historyHook}>
           {React.createElement(this.container)}
