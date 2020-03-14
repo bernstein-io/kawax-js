@@ -1,7 +1,6 @@
 import React from 'react';
 import { render } from 'react-dom';
 import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
 import Smart from './Smart';
 import Store from './Store';
 import Router from './instance/Router';
@@ -19,7 +18,7 @@ class Core extends Smart {
     htmlRoot: options.htmlRoot || false,
     reducer: options.reducer || ((state) => state),
     root: options.root || (() => React.createElement('div', null, 'It works!')),
-    // router: options.router || Router,
+    router: options.router || Router,
     store: new Store({
       name: options.name,
       reducer: options.reducer,
@@ -48,13 +47,10 @@ class Core extends Smart {
     const ReactRouter = this.router;
     if (this.withRouter === true) {
       return (
-        <BrowserRouter>
+        <ReactRouter history={this.history} historyHook={this.historyHook}>
           {React.createElement(this.root)}
-        </BrowserRouter>
+        </ReactRouter>
       );
-      // <ReactRouter history={this.history} historyHook={this.historyHook}>
-      //   {React.createElement(this.root)}
-      // </ReactRouter>
     }
     return React.createElement(this.root);
   }
