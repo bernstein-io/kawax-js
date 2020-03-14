@@ -12,7 +12,7 @@ import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
 import SelectHelper from './helpers/select';
 
-export default (Pure, meta = function () {}) => {
+export default function Component(Pure, meta = function () {}) {
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                         Pure props                                           *|
@@ -184,7 +184,7 @@ export default (Pure, meta = function () {}) => {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line react/no-multi-comp */
-  class Component extends React.Component {
+  class Wrapper extends React.Component {
 
     state = {};
 
@@ -403,7 +403,7 @@ export default (Pure, meta = function () {}) => {
     ...options,
   });
 
-  const component = compose(wrapper, reduxConnect)(Component);
+  const component = compose(wrapper, reduxConnect)(Wrapper);
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                       Static helpers                                         *|
@@ -414,4 +414,4 @@ export default (Pure, meta = function () {}) => {
   };
 
   return component;
-};
+}
