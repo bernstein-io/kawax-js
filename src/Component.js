@@ -99,20 +99,19 @@ export default (Pure, meta = function () {}) => {
     render() {
       const ownProps = this.props;
       const instanceKey = this.instanceKey;
-      const factory = React.createFactory(component);
       if (Meta.contextToProps || Meta.propsToContext) {
         return React.createElement(Context.Consumer, null, (context) => {
           prevContext = context;
           const contextProps = resolve.call(this, Pure.contextToProps, { context, ownProps });
           composedProps.push(..._.keys(contextProps));
           if (Meta.contextToProps) {
-            return factory({ ...contextProps, ...ownProps, instanceKey });
+            return React.createElement(component, { ...contextProps, ...ownProps, instanceKey });
           }
-          return factory({ ...ownProps, instanceKey });
+          return React.createElement(component, { ...ownProps, instanceKey });
 
         });
       }
-      return factory({ ...ownProps, instanceKey });
+      return React.createElement(component, { ...ownProps, instanceKey });
 
     }
 
@@ -265,21 +264,20 @@ export default (Pure, meta = function () {}) => {
     }
 
     render() {
-      const factory = React.createFactory(Pure);
       if (Meta.propsToContext) {
-        return this.contextProvider(factory);
+        return this.contextProvider();
       }
-      return this.renderComponent(factory);
+      return this.renderComponent();
     }
 
-    renderComponent(factory, ownProps = {}) {
+    renderComponent(ownProps = {}) {
       const ownClassNames = this.classNames || String();
       this.fullProps = { ...ownProps, ...this.props, ownClassNames };
       const props = functionnal ? this.fullProps : {
         ...this.fullProps,
         ref: (reference) => { this.componentInstance = reference; },
       };
-      return factory(props);
+      return React.createElement(Pure, props);
     }
 
     computeContext(ownProps) {
@@ -295,21 +293,21 @@ export default (Pure, meta = function () {}) => {
       return propsToContext;
     }
 
-    contextProvider = (factory) => {
+    contextProvider = () => {
       const ownProps = omitProps(this.props);
       const propsToContext = this.computeContext(ownProps);
       if (propsToContext) {
         composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
         return (
           <Context.Provider value={{ ...prevContext, ...propsToContext }}>
-            {this.renderComponent(factory, {
+            {this.renderComponent({
               ...ownProps,
               ref: (reference) => { this.componentInstance = reference; },
             })}
           </Context.Provider>
         );
       }
-      return this.renderComponent(factory, ownProps);
+      return this.renderComponent(ownProps);
     };
 
   }

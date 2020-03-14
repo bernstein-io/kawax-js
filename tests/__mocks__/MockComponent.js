@@ -19,7 +19,7 @@ class MockComponent extends React.Component {
       <h1>
         {foobar}
         {' '}
-:
+        :
         {' '}
         {defaultProp}
       </h1>

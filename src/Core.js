@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from 'react-dom';
 import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
 import Smart from './Smart';
 import Store from './Store';
 import Router from './instance/Router';
@@ -11,20 +12,20 @@ class Core extends Smart {
 
   static defaults = (options) => setRuntime({
     ...options,
+    context: options.context || Context,
     name: options.name || 'App',
-    htmlRoot: options.htmlRoot || false,
-    router: options.router || Router,
-    withRouter: options.withRouter !== false,
     history: options.history || undefined,
     historyHook: options.historyHook || undefined,
+    htmlRoot: options.htmlRoot || false,
     reducer: options.reducer || ((state) => state),
-    context: options.context || Context,
+    root: options.root || (() => React.createElement('div', null, 'It works!')),
+    // router: options.router || Router,
     store: new Store({
       name: options.name,
       reducer: options.reducer,
       customMiddlewares: options.customMiddlewares,
     }),
-    container: options.container || (() => React.createElement('div', null, 'It works!')),
+    withRouter: options.withRouter !== false,
   });
 
   initialize(env) {
@@ -46,14 +47,16 @@ class Core extends Smart {
   _routerRenderer() {
     const ReactRouter = this.router;
     if (this.withRouter === true) {
-      console.log('RENDER ROUTER');
       return (
-        <ReactRouter history={this.history} historyHook={this.historyHook}>
-          {React.createElement(this.container)}
-        </ReactRouter>
+        <BrowserRouter>
+          {React.createElement(this.root)}
+        </BrowserRouter>
       );
+      // <ReactRouter history={this.history} historyHook={this.historyHook}>
+      //   {React.createElement(this.root)}
+      // </ReactRouter>
     }
-    return React.createElement(this.container);
+    return React.createElement(this.root);
   }
 
 }
