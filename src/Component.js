@@ -12,7 +12,7 @@ import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
 import SelectHelper from './helpers/select';
 
-export default function Component(Pure, meta = function () {}) {
+export default function Component(Pure, meta = function RefectComponent() {}) {
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                         Pure props                                           *|
