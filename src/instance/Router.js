@@ -44,11 +44,6 @@ class Router extends React.Component {
   static propsToContext = ({ ownProps }) => ({
     location: ownProps.history.location,
     history: ownProps.history,
-    navigateTo: (to) => (event) => {
-      const { history } = ownProps;
-      event.preventDefault();
-      history.push(to);
-    },
   });
 
   constructor(props, state) {

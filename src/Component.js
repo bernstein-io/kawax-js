@@ -2,6 +2,7 @@ import _ from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import warning from 'warning';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
@@ -12,14 +13,13 @@ import ActionStack from './internal/ActionStack';
 import resolve from './helpers/resolve';
 import SelectHelper from './helpers/select';
 
-export default function Component(Pure, meta = function RefectComponent() {}) {
+export default function Component(Pure) {
+
+  if (!Pure.prototype.isReactComponent) warning(Pure, 'should be a class based React Component');
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                         Pure props                                           *|
   \* -------------------------------------------------------------------------------------------- */
-
-  const functionnal = !(Pure.prototype.isReactComponent);
-  const Meta = functionnal ? meta : Pure;
 
   const instanceKeys = [];
 
@@ -33,13 +33,13 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
     'ownClassNames',
   ];
 
-  Meta.prototype.getPureProps = function getPureProps() {
+  Pure.prototype.getPureProps = function getPureProps() {
     return _.omitBy(this.props, (value, key) => _.includes(composedProps, key));
   };
 
-  Meta.prototype.getForwardProps = function getForwardProps() {
+  Pure.prototype.getForwardProps = function getForwardProps() {
     /* eslint-disable-next-line react/forbid-foreign-prop-types */
-    const ownProps = _.keys(Meta.propTypes);
+    const ownProps = _.keys(Pure.propTypes);
     return _.omitBy(
       this.props, (value, key) => (_.includes(ownProps, key) || _.includes(composedProps, key)),
     );
@@ -49,32 +49,74 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   |*                                        Display Name                                          *|
   \* -------------------------------------------------------------------------------------------- */
 
-  const displayName = Meta.name || 'Functionnal';
+  const displayName = Pure.name || 'Functionnal';
 
   /* -------------------------------------------------------------------------------------------- *\
-  |*                                       Props & Context                                        *|
+  |*                                  Props, Context & Instance                                   *|
   \* -------------------------------------------------------------------------------------------- */
 
+  let componentInstance;
   /* eslint-disable-next-line no-unused-vars */
   let prevProps = {};
   let prevContext = {};
+
+  /* -------------------------------------------------------------------------------------------- *\
+  |*                                            Mixins                                            *|
+  \* -------------------------------------------------------------------------------------------- */
+
+  function aggregateStaticWithMixins(key) {
+    return _.compact([
+      Pure[key] || {},
+      ..._.map(Pure.mixins, (mixin) => _.isObject(mixin.static) && mixin.static[key]),
+    ]);
+  }
+
+  function resolveStaticWithMixins(key, options = {}) {
+    const resolved = {};
+    const staticMap = aggregateStaticWithMixins(key);
+    _.each(staticMap, (item) => {
+      _.assign(resolved, resolve.call(componentInstance, item, options));
+    });
+    return resolved;
+  }
+
+  function bindMixin(mixin) {
+    if (_.isFunction(mixin)) return mixin.bind(componentInstance);
+    if (_.isObject(mixin) && !_.isUndefined(mixin.call)) {
+      return (...options) => {
+        _.assign(mixin, componentInstance);
+        return mixin.call(...options);
+      };
+    }
+    return mixin;
+  }
+
+  function getMixins() {
+    const mixins = {};
+    if (Pure.mixins && componentInstance) {
+      _.each(Pure.mixins, (mixin, key) => {
+        mixins[key] = bindMixin(mixin);
+      });
+    }
+    return mixins;
+  }
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                        Action Stack                                          *|
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line no-mixed-operators */
-  let actionStack = !Meta.unscopedActionStack && {};
+  let actionStack = !Pure.unscopedActionStack && {};
 
   function getActionStack(instanceKey) {
-    if (Meta.unscopedActionStack === true) {
+    if (Pure.unscopedActionStack === true) {
       return actionStack = actionStack || new ActionStack();
     }
     return actionStack[instanceKey] = actionStack[instanceKey] || new ActionStack();
   }
 
   function clearActionStack(instanceKey) {
-    if (!Meta.unscopedActionStack === true) {
+    if (!Pure.unscopedActionStack === true) {
       const store = Runtime('store');
       store._dispatch({ type: '@@CLEAR_ACTION', payload: instanceKey });
       actionStack[instanceKey] = undefined;
@@ -86,7 +128,7 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line react/no-multi-comp */
-  const wrapper = (component) => class ComponentWrapper extends React.Component {
+  const contextCrapper = (component) => class ContextWrapper extends React.Component {
 
     static displayName = `Wrapper(${displayName})`;
 
@@ -99,12 +141,13 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
     render() {
       const ownProps = this.props;
       const instanceKey = this.instanceKey;
-      if (Meta.contextToProps || Meta.propsToContext) {
+      const contextToProps = aggregateStaticWithMixins('contextToProps');
+      if (!_.isEmpty(contextToProps) || Pure.propsToContext) {
         return React.createElement(Context.Consumer, null, (context) => {
           prevContext = context;
-          const contextProps = resolve.call(this, Pure.contextToProps, { context, ownProps });
+          const contextProps = resolveStaticWithMixins('contextToProps', { context, ownProps });
           composedProps.push(..._.keys(contextProps));
-          if (Meta.contextToProps) {
+          if (Pure.contextToProps) {
             return React.createElement(component, { ...contextProps, ...ownProps, instanceKey });
           }
           return React.createElement(component, { ...ownProps, instanceKey });
@@ -121,7 +164,7 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   |*                                     CSS Helpers Vars                                         *|
   \* -------------------------------------------------------------------------------------------- */
 
-  const defaultClassName = Meta.className || false;
+  const defaultClassName = Pure.className || false;
   let previousClassName = false;
   let uniqClassName = false;
 
@@ -149,10 +192,10 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   }
 
   function getCssClasses(props, state) {
-    if (_.isFunction(Meta.css) || uniqClassName === false) {
-      const componentStyle = resolve(Meta.css, props, state);
+    if (_.isFunction(Pure.css) || uniqClassName === false) {
+      const componentStyle = resolve(Pure.css, props, state);
       if (componentStyle) {
-        const className = Meta.name || 'Component';
+        const className = Pure.name || 'Component';
         const stylesheet = StyleSheet.create({ [className]: componentStyle });
         const styleWithNesting = mapNestedStyle(stylesheet);
         if (uniqClassName) previousClassName = uniqClassName;
@@ -169,7 +212,7 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   \* -------------------------------------------------------------------------------------------- */
 
   function omitProps(props) {
-    const omitted = Meta.omitProps || ['staticContext'];
+    const omitted = Pure.omitProps || ['staticContext'];
     return _.omit(props, omitted);
   }
 
@@ -184,18 +227,16 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line react/no-multi-comp */
-  class Wrapper extends React.Component {
+  class PureReflection extends React.Component {
 
     state = {};
-
-    componentInstance = false;
 
     static displayName = `Component(${displayName})`;
 
     // eslint-disable-next-line react/forbid-foreign-prop-types
-    static propTypes = Meta.propTypes;
+    static propTypes = Pure.propTypes;
 
-    static defaultProps = Meta.defaultProps;
+    static defaultProps = Pure.defaultProps;
 
     static contextTypes = {
       store: PropTypes.shape({
@@ -224,36 +265,34 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
       return classNames(_.compact(uniq));
     };
 
-    assignCssClasses() { /* eslint-disable react/no-find-dom-node */
-      const { className } = this.fullProps;
-      const cssClasses = getCssClasses(this.fullProps, this.state);
-      const fiber = _.get(this.componentInstance, '_reactInternalFiber');
-      const sibling = _.get(fiber, 'child.sibling');
-      const node = ReactDOM.findDOMNode(fiber.stateNode);
-      if (node && (className || cssClasses)) {
-        if (sibling) {
-          const parent = node ? node.parentNode : false;
-          if (parent) {
-            this.classNames = this.getClassNames(parent.className);
-            parent.className = this.classNames;
+    mapCssClasses() { /* eslint-disable react/no-find-dom-node */
+      if (Pure.className || Pure.css) {
+        const { className } = this.fullProps;
+        const cssClasses = getCssClasses(this.fullProps, this.state);
+        const fiber = _.get(componentInstance, '_reactInternalFiber');
+        const sibling = _.get(fiber, 'child.sibling');
+        const node = ReactDOM.findDOMNode(fiber.stateNode);
+        if (node && (className || cssClasses)) {
+          if (sibling) {
+            const parent = node ? node.parentNode : false;
+            if (parent) {
+              this.classNames = this.getClassNames(parent.className);
+              parent.className = this.classNames;
+            }
+          } else {
+            this.classNames = this.getClassNames(node.className);
+            node.className = this.classNames;
           }
-        } else {
-          this.classNames = this.getClassNames(node.className);
-          node.className = this.classNames;
         }
       }
     }
 
     componentDidUpdate = () => {
-      if (Meta.className || Meta.css) {
-        if (!functionnal) this.assignCssClasses();
-      }
+      this.mapCssClasses();
     };
 
     componentDidMount = () => {
-      if (Meta.className || Meta.css) {
-        if (!functionnal) this.assignCssClasses();
-      }
+      this.mapCssClasses();
     };
 
     async componentWillUnmount() {
@@ -263,29 +302,13 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
       });
     }
 
-    render() {
-      if (Meta.propsToContext) {
-        return this.contextProvider();
-      }
-      return this.renderComponent();
-    }
-
-    renderComponent(ownProps = {}) {
-      const ownClassNames = this.classNames || String();
-      this.fullProps = { ...ownProps, ...this.props, ownClassNames };
-      const props = functionnal ? this.fullProps : {
-        ...this.fullProps,
-        ref: (reference) => { this.componentInstance = reference; },
-      };
-      return React.createElement(Pure, props);
-    }
-
     computeContext(ownProps) {
       const withRouter = !!Runtime('withRouter');
       const { getState } = Runtime('store');
       const state = getState();
       const select = getSelect(state);
-      const propsToContext = resolve(Meta.propsToContext, { ownProps, select });
+      const mixins = getMixins();
+      const propsToContext = resolveStaticWithMixins('propsToContext', { ownProps, mixins, select });
       if (withRouter && ownProps.match) {
         const match = ownProps.match;
         return { match, ...(propsToContext || {}) };
@@ -302,13 +325,30 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
           <Context.Provider value={{ ...prevContext, ...propsToContext }}>
             {this.renderComponent({
               ...ownProps,
-              ref: (reference) => { this.componentInstance = reference; },
+              ref: (reference) => { componentInstance = reference; },
             })}
           </Context.Provider>
         );
       }
       return this.renderComponent(ownProps);
     };
+
+    renderComponent(ownProps = {}) {
+      const ownClassNames = this.classNames || String();
+      this.fullProps = { ...ownProps, ...this.props, ownClassNames };
+      const props = {
+        ...this.fullProps,
+        ref: (reference) => { componentInstance = reference; },
+      };
+      return React.createElement(Pure, props);
+    }
+
+    render() {
+      if (Pure.propsToContext) {
+        return this.contextProvider();
+      }
+      return this.renderComponent();
+    }
 
   }
 
@@ -337,7 +377,7 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   }
 
   function bindActionCreators({ state, actions, nextProps, select }) {
-    const actionCreators = Meta.actionCreators || {};
+    const actionCreators = Pure.actionCreators || {};
     const actionConstructors = resolve(actionCreators, { nextProps }) || {};
     const actionsMap = createActions(actionConstructors, nextProps);
     composedProps.push(..._.keys(actionsMap));
@@ -345,12 +385,12 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   }
 
   function wrapStateToProps() {
-    const stateToProps = Meta.stateToProps || {};
     return (state, { instanceKey, ...props }) => {
       const select = getSelect(state);
       const ownProps = omitProps(props);
       const actions = getActionStack(instanceKey);
-      const stateProps = resolve(stateToProps, { state, actions, ownProps, select }) || {};
+      const mixins = getMixins();
+      const stateProps = resolveStaticWithMixins('stateToProps', { state, actions, ownProps, mixins, select });
       composedProps.push(..._.keys(stateProps));
       const ownActions = actions.own();
       const nextProps = { ...ownProps, ...stateProps, actions, instanceKey, ownActions };
@@ -360,7 +400,7 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   }
 
   function wrapDispatchToProps() {
-    const dispatchToProps = Meta.dispatchToProps || {};
+    const dispatchToProps = Pure.dispatchToProps || {};
     if (_.isFunction(dispatchToProps)) {
       return (dispatch, ownProps) => {
         const actionCreators = bindedActionCreators;
@@ -378,11 +418,11 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
   }
 
   function mergeConnectProps() {
-    return Meta.mergeConnectProps || null;
+    return Pure.mergeConnectProps || null;
   }
 
   function getConnectOptions() {
-    return Meta.connectOptions || {};
+    return Pure.connectOptions || {};
   }
 
   const mapStateToProps = wrapStateToProps();
@@ -403,14 +443,14 @@ export default function Component(Pure, meta = function RefectComponent() {}) {
     ...options,
   });
 
-  const component = compose(wrapper, reduxConnect)(Wrapper);
+  const component = compose(contextCrapper, reduxConnect)(PureReflection);
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                       Static helpers                                         *|
   \* -------------------------------------------------------------------------------------------- */
 
   component.clearActionStack = () => {
-    actionStack = !Meta.unscopedActionStack && {};
+    actionStack = !Pure.unscopedActionStack && {};
   };
 
   return component;
