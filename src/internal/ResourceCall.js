@@ -285,15 +285,22 @@ class ResourceCall extends Smart {
     }) : false);
   }
 
-  getRequestParams() {
-    const { filter } = this.options;
+  parseFilters() {
     const context = this.getContext();
-    const params = resolve(filter, context);
+    const { filter: rawFilter } = this.options;
+    const filters = resolve(rawFilter, context);
+    const parsedFilters = this.transform(filters, _.snakeCase);
+    return _.pickBy(parsedFilters, _.identity);
+  }
+
+  getRequestParams() {
+    const context = this.getContext();
+    const filters = this.parseFilters();
     if (context) {
       const { search } = context;
-      return search ? { search, ...params } : params;
+      return search ? { search, ...filters } : filters;
     }
-    return params;
+    return filters;
   }
 
   requestProcessor = async (payload) => {
