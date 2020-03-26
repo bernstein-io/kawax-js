@@ -81,15 +81,17 @@ class ResourceCall extends Smart {
   };
 
   metaParser(originalPayload, parsedData) {
-    const { metaParser, responseTransform, uniqueId } = this.options;
+    const { baseUrl, path, metaParser, responseTransform, uniqueId } = this.options;
     const context = this.getContext();
     const parsedMeta = resolve(metaParser, originalPayload || {});
+    const requestUrl = this.requestUrl(baseUrl, path);
     if (context) {
       const store = Runtime('store');
       store._dispatch({
         type: `@@RESOURCE_CALL[${context.type}]`,
         payload: {
           resourceId: uniqueId,
+          url: requestUrl,
           sort: context.sort,
           order: context.order,
           search: context.search,
