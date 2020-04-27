@@ -16,14 +16,14 @@ class Router extends React.Component {
   };
 
   static actionCreators = ({ nextProps }) => {
-    const historyHook = nextProps.historyHook;
+    const { historyHook } = nextProps;
     return {
       historyHook: historyHook || false,
     };
   };
 
   static dispatchToProps = ({ dispatch, actionCreators }) => {
-    const historyHook = actionCreators.historyHook;
+    const { historyHook } = actionCreators;
     return {
       historyHook: historyHook || ((payload) => dispatch({
         type: '@@NAVIGATE',

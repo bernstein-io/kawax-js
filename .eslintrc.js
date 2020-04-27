@@ -64,7 +64,12 @@ module.exports = {
       { "max": 1, "maxEOF": 1 }
     ],
     "prefer-destructuring": ["error", {
-      AssignmentExpression: {"array": true, "object": true }
+      "AssignmentExpression": {
+        "array": false,
+        "object": false
+      }
+    }, {
+      "enforceForRenamedProperties": false
     }],
     "quotes": ["warn", "single", {
       allowTemplateLiterals: true

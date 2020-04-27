@@ -39,7 +39,7 @@ class Reducer extends Smart {
 
   matchDone = (map) => this.onDone(this.match(map));
 
-  replace = (state, { payload }) => this._forceAssign((object) => payload);
+  replace = (next) => this.shallow(next, -1);
 
   assign = (state, { payload }) => payload;
 
@@ -174,7 +174,7 @@ class Reducer extends Smart {
 
   _parseArray(current, next, action, path, depth = -1) {
     const union = [];
-    const unionKey = this.unionKey;
+    const { unionKey } = this;
     const nextItems = [...next];
     _.each(current, (currentItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
@@ -203,7 +203,7 @@ class Reducer extends Smart {
   }
 
   _getInitialState(path) {
-    const initialState = this.constructor.initialState;
+    const { initialState } = this.constructor;
     const state = initialState
       ? this._reduce({}, this.constructor.initialState, { type: '@@kawax/INIT' }, [])
       : null;

@@ -12,6 +12,7 @@ export Smart from './Smart';
 
 /* ------------------------------------ INSTANCE & HELPERS--------------------------------------- */
 export Context from './instance/Context';
+export Junction from './instance/Junction';
 export History from './instance/History';
 export Router from './instance/Router';
 export Runtime from './instance/Runtime';

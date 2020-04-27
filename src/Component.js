@@ -93,7 +93,7 @@ export default function Component(Pure) {
 
   function getMixins() {
     const mixins = {};
-    if (Pure.mixins && componentInstance) {
+    if (Pure.mixins) {
       _.each(Pure.mixins, (mixin, key) => {
         mixins[key] = bindMixin(mixin);
       });
@@ -128,11 +128,11 @@ export default function Component(Pure) {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line react/no-multi-comp */
-  const contextCrapper = (component) => class ContextWrapper extends React.Component {
+  const contextCrapper = (component) => class Wrapper extends React.Component {
 
     static displayName = `Wrapper(${displayName})`;
 
-    instanceKey = `${displayName}-${_.uniqueId()}`;
+    instanceKey = `${displayName}Component${_.uniqueId()}`;
 
     componentDidMount() {
       instanceKeys.push(this.instanceKey);
@@ -140,7 +140,7 @@ export default function Component(Pure) {
 
     render() {
       const ownProps = this.props;
-      const instanceKey = this.instanceKey;
+      const { instanceKey } = this;
       const contextToProps = aggregateStaticWithMixins('contextToProps');
       if (!_.isEmpty(contextToProps) || Pure.propsToContext) {
         return React.createElement(Context.Consumer, null, (context) => {
@@ -229,7 +229,9 @@ export default function Component(Pure) {
   /* eslint-disable-next-line react/no-multi-comp */
   class PureReflection extends React.Component {
 
-    state = {};
+    state = {
+      initialized: false,
+    };
 
     static displayName = `Component(${displayName})`;
 
@@ -259,9 +261,7 @@ export default function Component(Pure) {
       const current = currentClassNames ? currentClassNames.split(' ') : false;
       const currentClass = current ? _.reject(current, (i) => (i === previousClassName)) : false;
       const computedClass = getCssClasses(this.fullProps, this.state) || false;
-      const { className } = this.fullProps;
-      const propClasses = className ? className.split(' ') : false;
-      const uniq = _.uniq([...currentClass, ...computedClass, propClasses]);
+      const uniq = _.uniq([...currentClass, ...computedClass]);
       return classNames(_.compact(uniq));
     };
 
@@ -310,44 +310,38 @@ export default function Component(Pure) {
       const mixins = getMixins();
       const propsToContext = resolveStaticWithMixins('propsToContext', { ownProps, mixins, select });
       if (withRouter && ownProps.match) {
-        const match = ownProps.match;
+        const { match } = ownProps;
         return { match, ...(propsToContext || {}) };
       }
       return propsToContext;
     }
 
-    contextProvider = () => {
-      const ownProps = omitProps(this.props);
-      const propsToContext = this.computeContext(ownProps);
-      if (propsToContext) {
-        composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
-        return (
-          <Context.Provider value={{ ...prevContext, ...propsToContext }}>
-            {this.renderComponent({
-              ...ownProps,
-              ref: (reference) => { componentInstance = reference; },
-            })}
-          </Context.Provider>
-        );
-      }
-      return this.renderComponent(ownProps);
-    };
-
     renderComponent(ownProps = {}) {
       const ownClassNames = this.classNames || String();
       this.fullProps = { ...ownProps, ...this.props, ownClassNames };
-      const props = {
+      return React.createElement(Pure, {
         ...this.fullProps,
         ref: (reference) => { componentInstance = reference; },
-      };
-      return React.createElement(Pure, props);
+      });
     }
 
     render() {
+      const ownProps = omitProps(this.props);
       if (Pure.propsToContext) {
-        return this.contextProvider();
+        const propsToContext = this.computeContext(ownProps);
+        if (propsToContext) {
+          composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
+          return (
+            <Context.Provider value={{ ...prevContext, ...propsToContext }}>
+              {this.renderComponent({
+                ...ownProps,
+                ref: (reference) => { componentInstance = reference; },
+              })}
+            </Context.Provider>
+          );
+        }
       }
-      return this.renderComponent();
+      return this.renderComponent(ownProps);
     }
 
   }

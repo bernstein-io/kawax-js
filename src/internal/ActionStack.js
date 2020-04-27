@@ -165,7 +165,7 @@ class ActionStack extends Smart {
   groups() {
     const store = Runtime('store');
     const state = store.getInternalState();
-    const actions = state.actions;
+    const { actions } = state;
     const groups = _.groupBy(this.stack, 'key');
     return _.mapValues(groups, (stack) => _.map(stack, (item) => {
       const stackId = item.id;
@@ -176,7 +176,7 @@ class ActionStack extends Smart {
   own() {
     const Store = Runtime('store');
     const state = Store.getInternalState();
-    const actions = state.actions;
+    const { actions } = state;
     const map = _.map(this.stack, (item) => {
       const stackId = item.id;
       return _.find(actions, (action) => (stackId === action.id));
@@ -195,7 +195,7 @@ class ActionStack extends Smart {
     if (action) {
       const Store = Runtime('store');
       const state = Store.getInternalState();
-      const resources = state.resources;
+      const { resources } = state;
       return _.find(resources, (meta) => _.includes(meta.actionIds, action.id));
     }
   }

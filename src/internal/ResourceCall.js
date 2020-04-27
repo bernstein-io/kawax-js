@@ -170,7 +170,7 @@ class ResourceCall extends Smart {
       }
       throttler.set(this.uniqueId, { body });
     } catch (exception) {
-      const status = response.status;
+      const { status } = response;
       throw new Error(`Unexpected content: Could not parse ${reader} (status: ${status})`);
     }
     return body;
@@ -246,10 +246,18 @@ class ResourceCall extends Smart {
     return requestOptions;
   };
 
-  requestUrl = (baseUrl, path) => {
+  parseUrl = (urlPointer) => {
     const context = this.getContext();
-    const parsedBaseUri = resolve(baseUrl, context);
-    const parsedPath = resolve(path, context);
+    const url = resolve(urlPointer, context);
+    if (_.isArray(url)) {
+      return _.compact(url).join('/');
+    }
+    return url;
+  };
+
+  requestUrl = (baseUrl, path) => {
+    const parsedBaseUri = this.parseUrl(baseUrl);
+    const parsedPath = this.parseUrl(path);
     const urlArray = _.compact([parsedBaseUri, parsedPath]);
     return urlArray.join('/').replace(/([^:]\/)\/+/g, '$1') || '/';
   };
@@ -267,7 +275,7 @@ class ResourceCall extends Smart {
   };
 
   async postProcess(status, body, payload) {
-    const options = this.options;
+    const { options } = this;
     const { onSuccess, onError } = this.options;
     if (onSuccess && status === 'success') {
       await onSuccess(body, { payload, options });

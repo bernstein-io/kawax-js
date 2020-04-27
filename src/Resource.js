@@ -9,7 +9,6 @@ class Resource extends Smart {
 
   _optionsParser(resolver, base, runtime, context) {
     return {
-      ...base,
       uniqueId: this.uniqueId,
       resourceName: this.constructor.name,
       schema: resolver('schema') || {},
@@ -40,7 +39,7 @@ class Resource extends Smart {
       hook: resolver('hook', false) || false,
       debug: resolver('debug') || false,
       expiry: resolver('expiry') || false,
-      context: { ...context, ...runtime },
+      context: { ...resolver('context'), ...context, ...runtime },
     };
   }
 
@@ -56,7 +55,7 @@ class Resource extends Smart {
     return parsedOption;
   };
 
-  define(base) {
+  define(base = {}) {
     return ({ payload, ...runtime } = {}, context = {}) => {
       const resolver = this._getResolver(payload, base, runtime, context);
       const options = this._optionsParser(resolver, base, runtime, context);
