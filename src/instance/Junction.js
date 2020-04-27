@@ -49,11 +49,12 @@ class Junction extends React.Component {
 
   renderWrapper() {
     const scope = this.getScope();
+    const routes = this.renderRoutes();
     if (scope.layout) {
       const Layout = loadable(scope.layout);
-      return (<Layout>{this.renderRoutes()}</Layout>);
+      return (<Layout>{routes}</Layout>);
     }
-    return this.renderRoutes();
+    return routes;
   }
 
   render() {
