@@ -30,7 +30,7 @@ class Junction extends React.Component {
 
   getFullPath = (path) => {
     const { basePath } = this.props;
-    return basePath ? `/${basePath}/${path}` : path;
+    return basePath ? `/${basePath}${path}` : path;
   };
 
   renderRoutes() {
