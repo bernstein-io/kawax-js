@@ -105,15 +105,22 @@ class ResourceCall extends Smart {
     }
   }
 
+  schemaParser(data) {
+    const { schema, schemaParser } = this.options;
+    const context = this.getContext();
+    return schemaParser ? schemaParser(data, schema, context) : data;
+  }
+
   responseParser = async (response, body) => {
     const { responseParser, collection, responseTransform,
-      metaParser, entityParser } = this.options;
+      metaParser, entityParser, schema } = this.options;
     const context = this.getContext();
     const payload = resolve(responseParser, response, body, context) || body;
     let data = collection ? await this.collectionParser(payload) : payload;
     data = responseTransform ? this.transform(data, responseTransform) : data;
     if (response.ok === true) {
       data = entityParser ? await this.switchParser(data) : data;
+      data = !_.isEmpty(schema) ? this.schemaParser(data) : data;
       if (collection && metaParser) this.metaParser(payload, data);
     }
     return data;
@@ -314,7 +321,7 @@ class ResourceCall extends Smart {
   }
 
   requestProcessor = async (payload) => {
-    const { baseUrl, path, mock, expiry, method } = this.options;
+    const { baseUrl, path, mock, expiry, cache, method } = this.options;
     const parsedUrl = this.requestUrl(baseUrl, path);
     const url = new URL(parsedUrl);
     const searchParams = queryString.parse(url.search);
@@ -335,7 +342,7 @@ class ResourceCall extends Smart {
       await shadow.promise;
       return shadow.request;
     }
-    const request = method === 'GET' && expiry
+    const request = method === 'GET' && expiry && cache !== false
       ? cachedFetch(url, requestOptions, expiry)
       : fetch(url, requestOptions);
     this.uniqueId = throttler.push(request, { ...requestOptions, url: url.toString() });

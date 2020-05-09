@@ -18,12 +18,12 @@ export default function Component(Pure) {
   if (!Pure.prototype.isReactComponent) warning(Pure, 'should be a class based React Component');
 
   /* -------------------------------------------------------------------------------------------- *\
-  |*                                         Pure props                                           *|
+  |*                                          Instance                                            *|
   \* -------------------------------------------------------------------------------------------- */
 
   const instanceKeys = [];
 
-  const composedProps = [
+  let composedProps = [
     'instanceKey',
     'select',
     'actions',
@@ -32,6 +32,15 @@ export default function Component(Pure) {
     'ownActions',
     'ownClassNames',
   ];
+
+  function updateComposedProps(props) {
+    composedProps = _.uniq([...composedProps, ..._.keys(props)]);
+    return composedProps;
+  }
+
+  /* -------------------------------------------------------------------------------------------- *\
+  |*                                         Pure props                                           *|
+  \* -------------------------------------------------------------------------------------------- */
 
   Pure.prototype.getPureProps = function getPureProps() {
     return _.omitBy(this.props, (value, key) => _.includes(composedProps, key));
@@ -128,7 +137,7 @@ export default function Component(Pure) {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line react/no-multi-comp */
-  const contextCrapper = (component) => class Wrapper extends React.Component {
+  const contextWrapper = (component) => class Wrapper extends React.Component {
 
     static displayName = `Wrapper(${displayName})`;
 
@@ -141,21 +150,26 @@ export default function Component(Pure) {
     render() {
       const ownProps = this.props;
       const { instanceKey } = this;
+      const withRouter = !!Runtime('withRouter');
       const contextToProps = aggregateStaticWithMixins('contextToProps');
       if (!_.isEmpty(contextToProps) || Pure.propsToContext) {
         return React.createElement(Context.Consumer, null, (context) => {
           prevContext = context;
           const contextProps = resolveStaticWithMixins('contextToProps', { context, ownProps });
-          composedProps.push(..._.keys(contextProps));
-          if (Pure.contextToProps) {
-            return React.createElement(component, { ...contextProps, ...ownProps, instanceKey });
+          const routerProps = withRouter ? { location: context.location } : {};
+          updateComposedProps({ ...routerProps, ...contextProps });
+          if (!_.isEmpty(contextProps)) {
+            return React.createElement(component, {
+              ...routerProps,
+              ...contextProps,
+              ...ownProps,
+              instanceKey,
+            });
           }
-          return React.createElement(component, { ...ownProps, instanceKey });
-
+          return React.createElement(component, { ...routerProps, ...ownProps, instanceKey });
         });
       }
       return React.createElement(component, { ...ownProps, instanceKey });
-
     }
 
   };
@@ -303,17 +317,11 @@ export default function Component(Pure) {
     }
 
     computeContext(ownProps) {
-      const withRouter = !!Runtime('withRouter');
       const { getState } = Runtime('store');
       const state = getState();
       const select = getSelect(state);
       const mixins = getMixins();
-      const propsToContext = resolveStaticWithMixins('propsToContext', { ownProps, mixins, select });
-      if (withRouter && ownProps.match) {
-        const { match } = ownProps;
-        return { match, ...(propsToContext || {}) };
-      }
-      return propsToContext;
+      return resolveStaticWithMixins('propsToContext', { ownProps, mixins, select });
     }
 
     renderComponent(ownProps = {}) {
@@ -330,13 +338,10 @@ export default function Component(Pure) {
       if (Pure.propsToContext) {
         const propsToContext = this.computeContext(ownProps);
         if (propsToContext) {
-          composedProps.push(..._.keys({ ...prevContext, ...propsToContext }));
+          updateComposedProps({ ...prevContext, ...propsToContext });
           return (
             <Context.Provider value={{ ...prevContext, ...propsToContext }}>
-              {this.renderComponent({
-                ...ownProps,
-                ref: (reference) => { componentInstance = reference; },
-              })}
+              {this.renderComponent(ownProps)}
             </Context.Provider>
           );
         }
@@ -374,7 +379,7 @@ export default function Component(Pure) {
     const actionCreators = Pure.actionCreators || {};
     const actionConstructors = resolve(actionCreators, { nextProps }) || {};
     const actionsMap = createActions(actionConstructors, nextProps);
-    composedProps.push(..._.keys(actionsMap));
+    updateComposedProps(actionsMap);
     return actionsMap;
   }
 
@@ -385,7 +390,7 @@ export default function Component(Pure) {
       const actions = getActionStack(instanceKey);
       const mixins = getMixins();
       const stateProps = resolveStaticWithMixins('stateToProps', { state, actions, ownProps, mixins, select });
-      composedProps.push(..._.keys(stateProps));
+      updateComposedProps(stateProps);
       const ownActions = actions.own();
       const nextProps = { ...ownProps, ...stateProps, actions, instanceKey, ownActions };
       bindedActionCreators = bindActionCreators({ state, actions, nextProps, select });
@@ -400,13 +405,13 @@ export default function Component(Pure) {
         const actionCreators = bindedActionCreators;
         const plainActions = resolve(dispatchToProps, { dispatch, ownProps, actionCreators }) || {};
         const actions = { ...actionCreators, ...plainActions };
-        composedProps.push(..._.keys(actions));
+        updateComposedProps(actions);
         return actions;
       };
     }
     return (dispatch) => {
       const actions = { ...bindedActionCreators, ...dispatchToProps };
-      composedProps.push(..._.keys(actions));
+      updateComposedProps(actions);
       return actions;
     };
   }
@@ -428,16 +433,18 @@ export default function Component(Pure) {
   |*                                      Compose and Render                                      *|
   \* -------------------------------------------------------------------------------------------- */
 
+  const strictCompare = (next, prev) => (prev === next);
+
   const shallowCompare = (next, prev) => _.isEqual(next, prev);
 
   const reduxConnect = connect(mapStateToProps, mapDispatchToProps, mergeProps, {
-    areStatesEqual: (next, prev) => (prev === next),
+    areStatesEqual: (next, prev) => strictCompare(next, prev),
     areStatePropsEqual: (next, prev) => shallowCompare(next, prev),
     areMergedPropsEqual: (next, prev) => shallowCompare(next, prev),
     ...options,
   });
 
-  const component = compose(contextCrapper, reduxConnect)(PureReflection);
+  const component = compose(contextWrapper, reduxConnect)(PureReflection);
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                       Static helpers                                         *|
