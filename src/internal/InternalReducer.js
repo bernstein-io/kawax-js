@@ -11,9 +11,18 @@ class InternalReducer extends Reducer {
     resources: {},
   };
 
-  logAction(state, { id, type, status, timestamp, origin, context: { props, ...context } = {} }) {
-    if (id && status) {
-      return [{ id, status, timestamp, origin, type, context }];
+  logAction(state, {
+    id,
+    type,
+    status,
+    origin,
+    tracked,
+    timestamp,
+    class: className,
+    context: { props, ...context } = {},
+  }) {
+    if (id && status && tracked) {
+      return [{ id, status, timestamp, className, origin, type, context }];
     }
   }
 

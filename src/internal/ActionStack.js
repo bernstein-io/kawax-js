@@ -205,6 +205,14 @@ class ActionStack extends Smart {
     return _.isArray(groups[key]) ? groups[key].map((item) => item.instance) : [];
   }
 
+  async abort() {
+    _.each(this.stack, ({ instance }) => {
+      if (instance) {
+        instance.abort();
+      }
+    });
+  }
+
 }
 
 export default ActionStack;

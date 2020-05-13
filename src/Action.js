@@ -12,7 +12,9 @@ class Action extends Smart {
 
   static type = false;
 
-  static warnOnClose = false;
+  static safeguard = false;
+
+  static tracked = false;
 
   static defaults = (options) => ({
     context: options,
@@ -22,15 +24,16 @@ class Action extends Smart {
 
   static cache = false;
 
-  constructor({ success, error, log, origin, cache, ...context }) {
+  constructor({ success, error, log, origin, tracked, cache, ...context }) {
     super(context);
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
     this.log = log || true;
     this.origin = origin || false;
+    this.tracked = tracked || true;
     this._context = context;
-    this._shouldCache = this.static.cache || !!cache;
+    this._cache = this.static.cache || !!cache;
   }
 
   pendingPayload = (data) => {};
@@ -53,19 +56,22 @@ class Action extends Smart {
 
   export = (action, ...data) => action;
 
+  aborted = false;
+
   _export = async (payload, ...data) => {
     const parsedPayload = await this._parsePayload(payload, ...data);
     return this.export({
       id: this.id,
       log: this.log,
       origin: this.origin,
+      tracked: this.tracked,
       payload: parsedPayload,
       status: this.status,
       timestamp: this.timestamp,
       class: this.constructor.name,
       type: this.static.type || this._getType(),
       notice: await this._parseNotice(payload, ...data) || false,
-      context: await this._parseContext(payload, ...data) || false,
+      context: await this._parseContext(payload, ...data) || {},
       reducer: this.static.reducer || false,
     }, ...data);
   };
@@ -104,7 +110,7 @@ class Action extends Smart {
   }
 
   _getCachedPayload = (...data) => {
-    if (this._shouldCache) {
+    if (this._cache) {
       const cache = resolve.call(this, this.cache, ...data);
       if (cache && !_.isEmpty(cache)) {
         this.setStatus('success');
@@ -115,7 +121,7 @@ class Action extends Smart {
   };
 
   run(...data) {
-    this._setWindowUnloadListener();
+    this._setSafeguard();
     this.timestamp = Date.now();
     return (dispatch, getState) => {
       this._getState = getState;
@@ -131,19 +137,20 @@ class Action extends Smart {
           const cache = this._getCachedPayload(...data);
           const payload = cache || await this._processPayload(...data);
           const action = await this._export(payload, ...data);
-          await this._beforeDispatch(payload, ...data);
-          await dispatch(action);
+          await this._assertPromise(this._beforeDispatch)(payload, ...data);
+          await this._assertPromise(dispatch)(action);
           if (this.status === 'success') {
-            await resolve.call(this, this.onSuccess, payload, ...data);
+            await this._assertPromise(this.onSuccess)(payload, ...data);
           } else {
-            await resolve.call(this, this.onError, payload, ...data);
+            await this._assertPromise(this.onError)(payload, ...data);
           }
-          await this._afterDispatch(payload, ...data);
-          this._removeWindowUnloadListener();
+          await this._assertPromise(this._afterDispatch)(payload, ...data);
+          this._removeSafeguard();
           success();
         } catch (exception) {
           Log.error(exception);
           this.setStatus('error');
+          this._removeSafeguard();
           return exception;
         }
       });
@@ -203,7 +210,8 @@ class Action extends Smart {
       if (typeof action === 'function') {
         this[key] = (...data) => new Promise(async (success, error) => {
           const actionInstance = action({
-            origin: this.origin,
+            origin: this.origin || this.constructor.name,
+            tracked: this.static.tracked || false,
             success: success,
             error: error,
           });
@@ -213,6 +221,11 @@ class Action extends Smart {
       }
     });
   }
+
+  _assertPromise = (callback) => (...options) => {
+    if (!this.aborted || this.safeguard) return resolve.call(this, callback, ...options);
+    return false;
+  };
 
   async _processPayload(...data) {
     if (typeof this.call === 'function') {
@@ -262,22 +275,26 @@ class Action extends Smart {
     this.state = await resolve.call(this, this.state, ...args);
   }
 
-  _setWindowUnloadListener() {
-    if (this.constructor.warnOnClose) {
-      window.addEventListener('beforeunload', this._handleWindowUnloadEvent);
+  _setSafeguard() {
+    if (this.constructor.safeguard) {
+      window.addEventListener('beforeunload', this._windowSafeguard);
     }
   }
 
-  _removeWindowUnloadListener() {
-    if (this.constructor.warnOnClose) {
-      window.removeEventListener('beforeunload', this._handleWindowUnloadEvent);
+  _removeSafeguard() {
+    if (this.constructor.safeguard) {
+      window.removeEventListener('beforeunload', this._windowSafeguard);
     }
   }
 
-  _handleWindowUnloadEvent(event) {
-    const dialogText = 'Changes you made may not be saved!';
-    event.returnValue = dialogText;
-    return dialogText;
+  _windowSafeguard(event = window.event) {
+    event.preventDefault();
+    event.returnValue = 'Changes that you made may not be saved.';
+    return event.returnValue;
+  }
+
+  abort() {
+    this.aborted = true;
   }
 
   static bind(context) {

@@ -18,6 +18,10 @@ class Junction extends React.Component {
     basePath: undefined,
   };
 
+  // static contextToProps = ({ context }) => ({
+  //   location: context.location,
+  // });
+
   getScope() {
     const { routes, scope } = this.props;
     return routes.scope(scope);

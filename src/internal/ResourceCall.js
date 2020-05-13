@@ -11,34 +11,6 @@ import Runtime from '../instance/Runtime';
 
 const throttler = new CallThrottler();
 
-const cachedFetch = (url, options, expiry) => {
-  const cacheKey = url;
-  const cached = global.sessionStorage.getItem(cacheKey);
-  const whenCached = global.sessionStorage.getItem(`${cacheKey}:ts`);
-  if (cached !== null && whenCached !== null) {
-    const age = (Date.now() - whenCached) / 1000;
-    if (age < expiry) {
-      const response = new Response(new Blob([cached]));
-      return Promise.resolve(response);
-    }
-    global.sessionStorage.removeItem(cacheKey);
-    global.sessionStorage.removeItem(`${cacheKey}:ts`);
-  }
-
-  return fetch(url, options).then((response) => {
-    if (response.status === 200) {
-      const ct = response.headers.get('Content-Type');
-      if (ct && (ct.match(/application\/json/i) || ct.match(/text\//i))) {
-        response.clone().text().then((content) => {
-          global.sessionStorage.setItem(cacheKey, content);
-          global.sessionStorage.setItem(`${cacheKey}:ts`, Date.now());
-        });
-      }
-    }
-    return response;
-  });
-};
-
 class ResourceCall extends Smart {
 
   static defaults = (options) => ({ options });
@@ -320,6 +292,32 @@ class ResourceCall extends Smart {
     return filters;
   }
 
+  async cachedFetch(url, options, expiry) {
+    const cacheKey = url;
+    const cached = global.sessionStorage.getItem(cacheKey);
+    const whenCached = global.sessionStorage.getItem(`${cacheKey}:ts`);
+    if (cached !== null && whenCached !== null) {
+      const age = (Date.now() - whenCached) / 1000;
+      if (age < expiry) {
+        const response = new Response(new Blob([cached]));
+        return Promise.resolve(response);
+      }
+      global.sessionStorage.removeItem(cacheKey);
+      global.sessionStorage.removeItem(`${cacheKey}:ts`);
+    }
+    const response = await fetch(url, options);
+    if (response.status === 200) {
+      const contentType = response.headers.get('Content-Type');
+      if (contentType && contentType.match(/application\/json/i)) {
+        const responseClone = await response.clone();
+        const content = await responseClone.text();
+        global.sessionStorage.setItem(cacheKey, content);
+        global.sessionStorage.setItem(`${cacheKey}:ts`, Date.now());
+      }
+    }
+    return response;
+  }
+
   requestProcessor = async (payload) => {
     const { baseUrl, path, mock, expiry, cache, method } = this.options;
     const parsedUrl = this.requestUrl(baseUrl, path);
@@ -342,8 +340,8 @@ class ResourceCall extends Smart {
       await shadow.promise;
       return shadow.request;
     }
-    const request = method === 'GET' && expiry && cache !== false
-      ? cachedFetch(url, requestOptions, expiry)
+    const request = (method === 'GET' && expiry && cache !== false)
+      ? this.cachedFetch(url, requestOptions, expiry)
       : fetch(url, requestOptions);
     this.uniqueId = throttler.push(request, { ...requestOptions, url: url.toString() });
     return request;

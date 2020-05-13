@@ -17,6 +17,8 @@ export default function Component(Pure) {
 
   if (!Pure.prototype.isReactComponent) warning(Pure, 'should be a class based React Component');
 
+  Pure.unscopedActionStack = false;
+
   /* -------------------------------------------------------------------------------------------- *\
   |*                                          Instance                                            *|
   \* -------------------------------------------------------------------------------------------- */
@@ -124,12 +126,16 @@ export default function Component(Pure) {
     return actionStack[instanceKey] = actionStack[instanceKey] || new ActionStack();
   }
 
-  function clearActionStack(instanceKey) {
-    if (!Pure.unscopedActionStack === true) {
-      const store = Runtime('store');
-      store._dispatch({ type: '@@CLEAR_ACTION', payload: instanceKey });
-      actionStack[instanceKey] = undefined;
-    }
+  async function clearActionStack(keys = _.keys(actionStack)) {
+    const store = Runtime('store');
+    actionStack = _.pickBy(actionStack, async (instance, key) => {
+      if (_.includes(keys, key)) {
+        await instance.abort();
+        store._dispatch({ type: '@@CLEAR_ACTION', payload: key });
+      } else {
+        return true;
+      }
+    });
   }
 
   /* -------------------------------------------------------------------------------------------- *\
@@ -150,23 +156,16 @@ export default function Component(Pure) {
     render() {
       const ownProps = this.props;
       const { instanceKey } = this;
-      const withRouter = !!Runtime('withRouter');
       const contextToProps = aggregateStaticWithMixins('contextToProps');
       if (!_.isEmpty(contextToProps) || Pure.propsToContext) {
         return React.createElement(Context.Consumer, null, (context) => {
           prevContext = context;
           const contextProps = resolveStaticWithMixins('contextToProps', { context, ownProps });
-          const routerProps = withRouter ? { location: context.location } : {};
-          updateComposedProps({ ...routerProps, ...contextProps });
+          updateComposedProps(contextProps);
           if (!_.isEmpty(contextProps)) {
-            return React.createElement(component, {
-              ...routerProps,
-              ...contextProps,
-              ...ownProps,
-              instanceKey,
-            });
+            return React.createElement(component, { ...contextProps, ...ownProps, instanceKey });
           }
-          return React.createElement(component, { ...routerProps, ...ownProps, instanceKey });
+          return React.createElement(component, { ...ownProps, instanceKey });
         });
       }
       return React.createElement(component, { ...ownProps, instanceKey });
@@ -310,10 +309,10 @@ export default function Component(Pure) {
     };
 
     async componentWillUnmount() {
-      const { instanceKey } = this.props;
-      await new Promise(() => {
-        clearActionStack(instanceKey);
-      });
+      if (!Pure.unscopedActionStack === true) {
+        const { instanceKey } = this.props;
+        await clearActionStack([instanceKey]);
+      }
     }
 
     computeContext(ownProps) {
@@ -364,6 +363,7 @@ export default function Component(Pure) {
           const { getState, dispatch } = Runtime('store');
           const instance = actionConstructor({
             origin: instanceKey,
+            tracked: true,
             props: props,
           });
           const id = instance.run(...data)(dispatch, getState);
@@ -451,7 +451,7 @@ export default function Component(Pure) {
   \* -------------------------------------------------------------------------------------------- */
 
   component.clearActionStack = () => {
-    actionStack = !Pure.unscopedActionStack && {};
+    clearActionStack();
   };
 
   return component;
