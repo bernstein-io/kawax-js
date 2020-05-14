@@ -104,7 +104,7 @@ class Reducer extends Smart {
   }
 
   _embeddedReducer(state, action) {
-    if (this.static.applyEmbeddedReducer && action.reducer && action.depth === 1) {
+    if (this.props.applyEmbeddedReducer && action.reducer && action.depth === 1) {
       const reducerCallback = resolve.call(this, action.reducer, action) || {};
       const bundledState = resolve.call(this, reducerCallback, this) || {};
       return this._reduce(state, bundledState, action);

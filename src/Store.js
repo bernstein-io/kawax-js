@@ -7,14 +7,12 @@ import InternalReducer from './internal/InternalReducer';
 
 class Store extends Smart {
 
-  groupLog = false;
-
   pendingActions: [];
 
   initialize({ reducer, name, customMiddlewares }) {
     this.internal = this._createInternalStore(name);
     this.main = this._createMainStore(customMiddlewares, reducer, name);
-    if (__DEV__) this.extend({ pendingActions: [] });
+    if (__DEV__) Object.assign(this, { pendingActions: [] });
   }
 
   dispatch = (action) => {

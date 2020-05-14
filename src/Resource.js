@@ -49,7 +49,7 @@ class Resource extends Smart {
     let parsedOption;
     const options = { ...context, ...runtime, payload };
     const resolver = call ? resolve : (value) => value;
-    const priorityStack = [runtime, context, base, this.static];
+    const priorityStack = [runtime, context, base, this.props];
     _.each(priorityStack, (scope) => {
       parsedOption = resolver(scope[key], options);
       if (!_.isUndefined(parsedOption)) return false;

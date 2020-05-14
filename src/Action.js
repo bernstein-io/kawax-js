@@ -24,17 +24,20 @@ class Action extends Smart {
 
   static cache = false;
 
-  constructor({ success, error, log, origin, tracked, cache, ...context }) {
+  constructor({ success, error, log, origin, tracked, safeguard, cache, ...context }) {
     super(context);
     this.id = uuid();
     this.onError = error;
     this.onSuccess = success;
     this.log = log || true;
     this.origin = origin || false;
-    this.tracked = tracked || true;
     this._context = context;
-    this._cache = this.static.cache || !!cache;
+    this._tracked = tracked || this.props.tracked;
+    this._safeguard = safeguard || this.props.safeguard;
+    this._cache = this.props.cache || !!cache;
   }
+
+  delegatedActions = [];
 
   pendingPayload = (data) => {};
 
@@ -64,15 +67,16 @@ class Action extends Smart {
       id: this.id,
       log: this.log,
       origin: this.origin,
-      tracked: this.tracked,
-      payload: parsedPayload,
       status: this.status,
+      tracked: this._tracked,
+      safeguard: this._safeguard,
       timestamp: this.timestamp,
-      class: this.constructor.name,
-      type: this.static.type || this._getType(),
+      reducer: this.props.reducer || false,
+      type: this.props.type || this._getType(),
       notice: await this._parseNotice(payload, ...data) || false,
       context: await this._parseContext(payload, ...data) || {},
-      reducer: this.static.reducer || false,
+      class: this.constructor.name,
+      payload: parsedPayload,
     }, ...data);
   };
 
@@ -190,7 +194,7 @@ class Action extends Smart {
   }
 
   async _bindResources(...data) {
-    const resources = resolve.call(this, this.static.resources, ...data);
+    const resources = resolve.call(this, this.props.resources, ...data);
     _.each(resources, (resource, key) => {
       if (typeof resource === 'function') {
         this[key] = (options, ...override) => resource(options, {
@@ -211,11 +215,12 @@ class Action extends Smart {
         this[key] = (...data) => new Promise(async (success, error) => {
           const actionInstance = action({
             origin: this.origin || this.constructor.name,
-            tracked: this.static.tracked || false,
+            tracked: this._tracked || false,
+            safeguard: this._safeguard || false,
             success: success,
             error: error,
           });
-          await actionInstance._setState(...data);
+          this.delegatedActions.push(actionInstance);
           actionInstance.run(...data)(this._dispatch, this._getState);
         });
       }
@@ -223,7 +228,7 @@ class Action extends Smart {
   }
 
   _assertPromise = (callback) => (...options) => {
-    if (!this.aborted || this.safeguard) return resolve.call(this, callback, ...options);
+    if (!this.aborted || this._safeguard) return resolve.call(this, callback, ...options);
     return false;
   };
 
@@ -271,18 +276,14 @@ class Action extends Smart {
     }
   }
 
-  async _setState(...args) {
-    this.state = await resolve.call(this, this.state, ...args);
-  }
-
   _setSafeguard() {
-    if (this.constructor.safeguard) {
+    if (this._safeguard) {
       window.addEventListener('beforeunload', this._windowSafeguard);
     }
   }
 
   _removeSafeguard() {
-    if (this.constructor.safeguard) {
+    if (this._safeguard) {
       window.removeEventListener('beforeunload', this._windowSafeguard);
     }
   }
@@ -301,7 +302,6 @@ class Action extends Smart {
     return (...data) => new Promise(async (success, error) => {
       const { dispatch, getState } = Runtime('store');
       const action = new this({ success, error, ...context });
-      await action._setState(...data);
       action.run(...data)(dispatch, getState);
     });
   }

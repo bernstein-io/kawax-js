@@ -1,8 +1,7 @@
 import _ from 'lodash';
 import resolve from './helpers/resolve';
-import Log from './helpers/log';
 
-const EXCLUDE_STATIC = ['export', 'new', 'build'];
+const EXCLUDE_STATIC = ['export', 'build'];
 
 class Smart {
 
@@ -13,51 +12,34 @@ class Smart {
     return (...context) => instance._call(...context);
   }
 
-  static new(...args) {
-    return new this(...args);
-  }
-
   static build(options, ...args) {
     return (context) => new this({ ...options, ...context }, ...args);
   }
 
   constructor(options, ...args) {
-    this.static = this._defineStatic();
+    this.props = this._defineProps();
     this._defineDetaults(options);
     return this.initialize(options, ...args);
   }
 
   initialize() { return this; }
 
-  warn(message, ...args) {
-    return Log.warning(`[${this.constructor.name}] ${message}`, ...args);
-  }
-
-  _defineStatic(parent = false) {
-    const staticProperties = {};
-    const prototype = parent || Object.getPrototypeOf(this);
-    _.each(prototype.constructor, (property, key) => {
-      if (!_.includes(EXCLUDE_STATIC, key)) {
-        staticProperties[key] = property;
-      }
-    });
-    const extend = Object.getPrototypeOf(prototype);
-    const hasParent = (extend instanceof Smart);
-    const extendStatic = hasParent ? this._defineStatic(extend) : {};
-    return { ...extendStatic, ...staticProperties };
+  _defineProps(instance = false) {
+    const prototype = instance || Object.getPrototypeOf(this);
+    const parent = Object.getPrototypeOf(prototype);
+    const statics = prototype.constructor;
+    const props = _.pickBy(statics, (property, key) => !_.includes(EXCLUDE_STATIC, key));
+    const inheritedProps = (parent instanceof Smart) ? this._defineProps(parent) : {};
+    return { ...inheritedProps, ...props };
   }
 
   _defineDetaults(options) {
-    const defaults = resolve.call(this, this.static.defaults, options, this.static);
-    this.extend(defaults);
+    const defaults = resolve.call(this, this.props.defaults, options, this.props);
+    Object.assign(this, defaults);
   }
 
   _call(...args) {
-    return this.call ? this.call(...args) : false;
-  }
-
-  extend(object) {
-    return Object.assign(this, object);
+    return this.call ? resolve.call(this, this.call, ...args) : false;
   }
 
 }

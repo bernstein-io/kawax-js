@@ -17,7 +17,7 @@ export default function Component(Pure) {
 
   if (!Pure.prototype.isReactComponent) warning(Pure, 'should be a class based React Component');
 
-  Pure.unscopedActionStack = false;
+  const persistActionStack = Pure.persistActionStack || false;
 
   /* -------------------------------------------------------------------------------------------- *\
   |*                                          Instance                                            *|
@@ -117,16 +117,16 @@ export default function Component(Pure) {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line no-mixed-operators */
-  let actionStack = !Pure.unscopedActionStack && {};
+  let actionStack = !persistActionStack && {};
 
   function getActionStack(instanceKey) {
-    if (Pure.unscopedActionStack === true) {
+    if (persistActionStack === true) {
       return actionStack = actionStack || new ActionStack();
     }
     return actionStack[instanceKey] = actionStack[instanceKey] || new ActionStack();
   }
 
-  async function clearActionStack(keys = _.keys(actionStack)) {
+  async function clearActionStack(keys = actionStack.keys) {
     const store = Runtime('store');
     actionStack = _.pickBy(actionStack, async (instance, key) => {
       if (_.includes(keys, key)) {
@@ -309,7 +309,7 @@ export default function Component(Pure) {
     };
 
     async componentWillUnmount() {
-      if (!Pure.unscopedActionStack === true) {
+      if (!persistActionStack === true) {
         const { instanceKey } = this.props;
         await clearActionStack([instanceKey]);
       }

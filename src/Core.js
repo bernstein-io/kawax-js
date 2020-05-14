@@ -9,6 +9,10 @@ import { setRuntime } from './instance/Runtime';
 
 class Core extends Smart {
 
+  static init(...args) {
+    return new this(...args);
+  }
+
   static defaults = (options) => setRuntime({
     ...options,
     context: options.context || Context,
