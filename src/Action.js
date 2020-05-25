@@ -221,6 +221,7 @@ class Action extends Smart {
             error: error,
           });
           this.delegatedActions.push(actionInstance);
+          actionInstance.setState(...data);
           actionInstance.run(...data)(this._dispatch, this._getState);
         });
       }
@@ -302,6 +303,7 @@ class Action extends Smart {
     return (...data) => new Promise(async (success, error) => {
       const { dispatch, getState } = Runtime('store');
       const action = new this({ success, error, ...context });
+      action.setState(...data);
       action.run(...data)(dispatch, getState);
     });
   }

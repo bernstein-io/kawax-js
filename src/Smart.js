@@ -22,7 +22,14 @@ class Smart {
     return this.initialize(options, ...args);
   }
 
+  state = {};
+
   initialize() { return this; }
+
+  setState(...args) {
+    Object.assign(this.state, resolve.call(this, this.state, ...args));
+    return this.state;
+  }
 
   _defineProps(instance = false) {
     const prototype = instance || Object.getPrototypeOf(this);
@@ -39,6 +46,7 @@ class Smart {
   }
 
   _call(...args) {
+    this.setState(...args);
     return this.call ? resolve.call(this, this.call, ...args) : false;
   }
 
