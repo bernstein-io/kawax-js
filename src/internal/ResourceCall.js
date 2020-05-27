@@ -297,7 +297,7 @@ class ResourceCall extends Smart {
     const cached = global.sessionStorage.getItem(cacheKey);
     const whenCached = global.sessionStorage.getItem(`${cacheKey}:ts`);
     if (cached !== null && whenCached !== null) {
-      const age = (Date.now() - whenCached) / 1000;
+      const age = (Date.now() - whenCached);
       if (age < expiry) {
         const response = new Response(new Blob([cached]));
         return Promise.resolve(response);
