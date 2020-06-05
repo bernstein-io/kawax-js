@@ -78,7 +78,7 @@ export default function Component(Pure) {
   function aggregateStaticWithMixins(key) {
     return _.compact([
       Pure[key] || {},
-      ..._.map(Pure.mixins, (mixin) => _.isObject(mixin.static) && mixin.static[key]),
+      ..._.map(Pure.mixins, (mixin) => _.isObject(mixin.props) && mixin.props[key]),
     ]);
   }
 
