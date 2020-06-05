@@ -391,7 +391,7 @@ export default function Component(Pure) {
       const mixins = getMixins();
       const stateProps = resolveStaticWithMixins('stateToProps', { state, actions, ownProps, mixins, select });
       updateComposedProps(stateProps);
-      const ownActions = actions.own();
+      const ownActions = _.isEmpty(actions) ? {} : actions.own();
       const nextProps = { ...ownProps, ...stateProps, actions, instanceKey, ownActions };
       bindedActionCreators = bindActionCreators({ state, actions, nextProps, select });
       return { actions, instanceKey, ownActions, ...stateProps };
