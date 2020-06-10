@@ -60,7 +60,7 @@ class ResourceCall extends Smart {
     if (context) {
       const store = Runtime('store');
       store._dispatch({
-        type: `@@RESOURCE_CALL[${context.type}]`,
+        type: `@@RESOURCE_CALL[${uniqueId}]`,
         payload: {
           resourceId: uniqueId,
           url: requestUrl,
