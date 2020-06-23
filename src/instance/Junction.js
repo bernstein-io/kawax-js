@@ -23,14 +23,17 @@ class Junction extends React.Component {
   };
 
   shouldComponentUpdate(nextProps, nextState) {
+    const { basePath } = this.props;
     const { match } = this.state;
-    const shouldUpdate = (!_.isEqual(match, nextState.match));
+    const shouldUpdate = (!_.isEqual(match, nextState.match)
+                          || !_.isEqual(basePath, nextProps.basePath));
     return shouldUpdate;
   }
 
-  setRef = (reference) => {
+  setRef = (route) => (reference) => {
     if (reference) {
       this.setState({
+        route: route,
         location: _.get(reference, 'props.location'),
         match: _.get(reference, 'props.computedMatch'),
       });
@@ -72,12 +75,12 @@ class Junction extends React.Component {
         <Route
           key={key}
           path={fullPath}
-          ref={this.setRef}
+          ref={this.setRef(route)}
           render={this.renderWithProviders(screen, providers)}
         />
       );
     }
-    return <Route key={key} path={fullPath} component={screen} ref={this.setRef} />;
+    return <Route key={key} path={fullPath} component={screen} ref={this.setRef(route)} />;
   }
 
   renderRoutes() {
@@ -92,10 +95,10 @@ class Junction extends React.Component {
   renderWrapper() {
     const scope = this.getScope();
     const routes = this.renderRoutes();
-    const { match, location } = this.state;
+    const { match, location, route } = this.state;
     if (scope.layout) {
       const Layout = loadable(scope.layout);
-      return (<Layout location={location} match={match}>{routes}</Layout>);
+      return (<Layout location={location} match={match} route={route}>{routes}</Layout>);
     }
     return routes;
   }
