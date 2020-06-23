@@ -50,6 +50,10 @@ class Reducer extends Smart {
     return current;
   });
 
+  mergeBy = (unionKey, next) => (prev, action) => this._forceAssign(
+    (current, path) => this._parseArray(prev, next, action, path, -1, unionKey),
+  );
+
   shallow = (next, depth = 1) => this._forceAssign(
     (current, action, path) => {
       if (!path) {
@@ -172,9 +176,8 @@ class Reducer extends Smart {
     return this._assignNext(current, state);
   }
 
-  _parseArray(current, next, action, path, depth = -1) {
+  _parseArray(current, next, action, path, depth = -1, unionKey = this.unionKey) {
     const union = [];
-    const { unionKey } = this;
     const nextItems = [...next];
     _.each(current, (currentItem, key) => {
       const currentPath = path ? _.concat(path, key) : false;
