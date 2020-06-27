@@ -117,13 +117,12 @@ export default function Component(Pure) {
   \* -------------------------------------------------------------------------------------------- */
 
   /* eslint-disable-next-line no-mixed-operators */
-  let actionStack = !persistActionStack && {};
+  let actionStack = {};
 
   function getActionStack(instanceKey) {
-    if (persistActionStack === true) {
-      return actionStack = actionStack || new ActionStack();
-    }
-    return actionStack[instanceKey] = actionStack[instanceKey] || new ActionStack();
+    const key = (persistActionStack === true) ? '__persistent__' : instanceKey;
+    actionStack[key] = actionStack[key] || new ActionStack();
+    return actionStack[key];
   }
 
   async function clearActionStack(keys = actionStack.keys) {
@@ -387,8 +386,8 @@ export default function Component(Pure) {
     return (state, { instanceKey, ...props }) => {
       const select = getSelect(state);
       const ownProps = omitProps(props);
-      const actions = getActionStack(instanceKey);
       const mixins = getMixins();
+      const actions = getActionStack(instanceKey);
       const stateProps = resolveStaticWithMixins('stateToProps', { state, actions, ownProps, mixins, select });
       updateComposedProps(stateProps);
       const ownActions = _.isEmpty(actions) ? {} : actions.own();
