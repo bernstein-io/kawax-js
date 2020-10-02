@@ -1,35 +1,13 @@
-
 {
-  "presets": ["react"],
+  "presets": [
+    "@babel/preset-env",
+    "@babel/preset-react"
+  ],
   "plugins": [
-    "transform-runtime",
-    "transform-object-rest-spread",
-    "transform-export-extensions",
-    "transform-class-properties",
-    "check-es2015-constants",
-    "transform-es2015-arrow-functions",
-    "transform-es2015-block-scoped-functions",
-    "transform-es2015-block-scoping",
-    [ "transform-es2015-classes", { "loose": true } ],
-    ["transform-es2015-computed-properties", { "loose": true }],
-    ["transform-es2015-destructuring", { "loose": true }],
-    "transform-es2015-duplicate-keys",
-    ["transform-es2015-for-of", { "loose": true }],
-    "transform-es2015-function-name",
-    "transform-es2015-literals",
-    "transform-es2015-object-super",
-    "transform-es2015-parameters",
-    "transform-es2015-shorthand-properties",
-    ["transform-es2015-spread", { "loose": true }],
-    "transform-es2015-sticky-regex",
-    "transform-es2015-template-literals",
-    "transform-es2015-typeof-symbol",
-    "transform-es2015-unicode-regex",
-    "transform-regenerator",
-    "transform-exponentiation-operator",
-    "transform-async-to-generator",
-    "transform-async-generator-functions",
-    "syntax-trailing-function-commas",
+    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-proposal-export-default-from",
+    "@babel/plugin-transform-modules-commonjs",
+    ["@babel/plugin-transform-spread", { "loose": true }],
     [ "inline-replace-variables",
       {
         "__DEV__": {
@@ -42,7 +20,13 @@
   ],
   "env": {
     "commonjs": {
-      "plugins": [ ["transform-es2015-modules-commonjs", { "loose": true }] ]
+      "plugins": [
+        ["@babel/plugin-transform-modules-commonjs", { "loose": true }]
+      ]
+    },
+    "test": {
+      "presets": ["env"],
+      "plugins": [],
     }
   }
 }

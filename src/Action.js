@@ -248,7 +248,7 @@ class Action extends Smart {
     } else if (this.call !== undefined) {
       return this.call;
     }
-    return this._processSuccess(data);
+    return this._processSuccess({}, data);
   }
 
   async _processSuccess(payload, data) {

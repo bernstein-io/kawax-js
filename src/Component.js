@@ -85,8 +85,9 @@ export default function Component(Pure) {
   function resolveStaticWithMixins(key, options = {}) {
     const resolved = {};
     const staticMap = aggregateStaticWithMixins(key);
-    _.each(staticMap, (item) => {
-      _.assign(resolved, resolve.call(componentInstance, item, options));
+    _.each(staticMap, (mixin) => {
+      const mixinResult = resolve.call(componentInstance, mixin, options);
+      Object.assign(resolved, mixinResult);
     });
     return resolved;
   }
@@ -94,9 +95,9 @@ export default function Component(Pure) {
   function bindMixin(mixin) {
     if (_.isFunction(mixin)) return mixin.bind(componentInstance);
     if (_.isObject(mixin) && !_.isUndefined(mixin.call)) {
-      return (...options) => {
+      return (...args) => {
         _.assign(mixin, componentInstance);
-        return mixin.call(...options);
+        return mixin.call(...args);
       };
     }
     return mixin;
@@ -327,7 +328,9 @@ export default function Component(Pure) {
       this.fullProps = { ...ownProps, ...this.props, ownClassNames };
       return React.createElement(Pure, {
         ...this.fullProps,
-        ref: (reference) => { componentInstance = reference; },
+        ref: (reference) => {
+          componentInstance = reference || componentInstance;
+        },
       });
     }
 

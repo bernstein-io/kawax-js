@@ -7,7 +7,7 @@ import InternalReducer from './internal/InternalReducer';
 
 class Store extends Smart {
 
-  pendingActions: [];
+  pendingActions = [];
 
   initialize({ reducer, name, customMiddlewares }) {
     this.internal = this._createInternalStore(name);
@@ -81,7 +81,7 @@ class Store extends Smart {
       const output = this._formatLog(action, duration);
       if (action.status === 'error') {
         log.error(...output, 'Action:', action);
-      } else if (action.log && action.status === 'success') {
+      } else if (action.status === 'success') {
         log.debug(...output, '\n ', action);
       }
     }
