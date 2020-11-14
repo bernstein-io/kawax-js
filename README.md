@@ -3,7 +3,7 @@ Kawax: (React + Redux) on steroids 🚀
 
 [![npm](https://img.shields.io/npm/v/kawax-js.svg?style=flat-square)](https://www.npmjs.com/package/kawax-js)
 
-Kawax is a complete framework build around React and Redux.
+Kawax is a convention-first, full-featured framework built around React and Redux.
 
 ## Install
 
