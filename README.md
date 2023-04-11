@@ -1,3 +1,8 @@
+# Kawax has moved! ⚠️
+
+https://github.com/somelibs/kawajs
+
+
 Kawax: (React + Redux) on steroids 🚀
 =======
 
